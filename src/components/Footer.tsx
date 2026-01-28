@@ -53,7 +53,7 @@ export const Footer = () => {
               </svg>
             </a>
             <a
-              href="https://linkedin.com/in/andreashatlem"
+              href="https://linkedin.com/in/hatlem"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
