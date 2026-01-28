@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "locale": "no",
+    "title": "Andreas Hatlem",
+    "description": "Digital Entreprenør fra Oslo med 25+ års erfaring"
+  },
+  "nav": {
+    "about": "Om Meg",
+    "projects": "Prosjekter",
+    "blog": "Blogg",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "terminal": "> hei --from oslo",
+    "role": "Digital Entreprenør · Oslo · Bygget Siden 1999",
+    "description": "Bygger for web siden før det var \"kult.\" Fra oppringt internett og nordiske vintrer til AI-drevne produkter—alltid shipping, alltid læring.",
+    "cta": {
+      "about": "Om Meg",
+      "projects": "Prosjekter"
+    },
+    "location": "OSLO, NORGE"
+  },
+  "blog": {
+    "title": "Blogg",
+    "section": "Skriver",
+    "description": "Tanker om webutvikling, programvareutvikling, og kunsten å bygge produkter som folk faktisk bruker.",
+    "featured": "Utvalgt",
+    "archive": "Arkiv",
+    "allPosts": "Alle Innlegg",
+    "readingTime": "{minutes} min lesing"
+  },
+  "about": {
+    "title": "Om Meg",
+    "section": "Bakgrunn",
+    "description": "25+ år med webutvikling. Fra oppringt internett og nordiske vintrer til AI-drevne produkter.",
+    "terminal": "> cat ~/om.md",
+    "intro": "Alt startet i 1999.",
+    "story": {
+      "p1": "Jeg husker jeg så på de tidlige startsidene på internett og tenkte: \"Dette kan jeg sikkert bygge selv.\" Mens de fleste fortsatt prøvde å komme seg på nett, leste jeg artikler i fysiske aviser om et nytt konsept kalt \"affiliate marketing.\"",
+      "p2": "Jeg tok disse papirbaserte lærdommene og anvendte dem i den digitale verden—tilbake da \"keyword stuffing\" var en legitim strategi og jeg lærte å fange oppmerksomheten til tidlige søkemotorer.",
+      "p3": "Overgangen fra hobby til business skjedde fort. Mens jevnaldrende forhandlet om høyere ukepenger, skalerte jeg mine første affiliate-prosjekter. Før ungdomsskolen var digitale provisjoner allerede betydelig høyere enn lommepengene jeg fikk hjemmefra.",
+      "p4": "Jeg begynte å utforske AI i 2022, og tidlig i 2023 \"vibe codet\" jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide og dele minne. Rart å tenke på at det allerede er tre år siden. Verktøyene utvikler seg, men nysgjerrigheten som drev meg i 1999 er den samme som driver meg fremover i dag."
+    },
+    "stats": {
+      "years": "År med Bygging",
+      "exit": "Agency Exit",
+      "projects": "Prosjekter Levert"
+    },
+    "timeline": {
+      "title": "Tidslinje",
+      "1999": {
+        "title": "Begynnelsen",
+        "description": "Sikret mine første gratis .com-domener under dot-com-boblen. Bygde encyklopedisider, lærte SEO før det hadde et navn."
+      },
+      "2000s": {
+        "title": "Prisbelønt Trolldom",
+        "description": "Vant priser fra et stort norsk forlag for Harry Potter-sider. Digitale provisjoner overgikk ukepengene før ungdomsskolen."
+      },
+      "2005": {
+        "title": "Første Nettbutikk",
+        "description": "Lanserte min første e-handelsbutikk. Lærte de harde leksene om varelager, logistikk og kundeservice på egenhånd."
+      },
+      "2012": {
+        "title": "Gadgets & Kuponger",
+        "description": "Åpnet min andre nettbutikk—en gadget-butikk—mens jeg bygde et nettverk av vellykkede kupong- og rabattsider."
+      },
+      "2015": {
+        "title": "Byrå-Exit",
+        "description": "Grunnla et medie- og webbyrå. Jobbet med Norges største merkevarer. Bygde et team, skalerte virksomheten, og solgte den."
+      },
+      "2022": {
+        "title": "AI-Pivoten",
+        "description": "Begynte å utforske AI-verktøy tidlig. I 2023 vibe codet jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide med delt minne. Tre år senere er det vanskelig å forestille seg å bygge på noen annen måte."
+      }
+    },
+    "note": "I dag bruker jeg et kvart århundre med erfaring for å hjelpe bedrifter navigere det digitale landskapet med strategier som faktisk leverer."
+  },
+  "projects": {
+    "title": "Prosjekter",
+    "section": "Utvalgt Arbeid",
+    "description": "Et utvalg av ting jeg har bygget gjennom Getia og egne prosjekter—AI-verktøy, SaaS-produkter og mer.",
+    "terminal": "> ls ~/prosjekter",
+    "viewAll": "Se Alle Prosjekter",
+    "sourceCode": "{title} kildekode",
+    "liveDemo": "{title} live",
+    "onIce": "På Is",
+    "andMore": "...og mange flere prosjekter under Getia."
+  },
+  "contact": {
+    "title": "Kontakt",
+    "section": "Ta Kontakt",
+    "description": "Har du et prosjekt i tankene? Vil du samarbeide? Eller bare si hei? Jeg vil gjerne høre fra deg.",
+    "terminal": "> contact.send()",
+    "form": {
+      "name": "Navn",
+      "namePlaceholder": "Ditt navn",
+      "email": "E-post",
+      "emailPlaceholder": "deg@eksempel.no",
+      "message": "Melding",
+      "messagePlaceholder": "Fortell meg om prosjektet ditt...",
+      "send": "Send Melding",
+      "sending": "Sender...",
+      "sent": "Melding Sendt",
+      "sentMessage": "Takk for at du tok kontakt. Jeg svarer så snart jeg kan."
+    },
+    "alternative": "Alternativ"
+  },
+  "footer": {
+    "role": "Digital Entreprenør — Oslo, Norge",
+    "copyright": "Andreas Hatlem. Laget i Norge.",
+    "tagline": "Bygget med intensjon, ikke maler."
+  },
+  "common": {
+    "backToBlog": "Tilbake til blogg",
+    "toggleMenu": "Åpne meny",
+    "location": "Oslo, Norge",
+    "locationShort": "Oslo",
+    "timezone": "CET/CEST",
+    "coordinates": "59°54'N 10°45'E"
+  },
+  "terminal": {
+    "navInit": "navigation.init()",
+    "ready": "ready_",
+    "blogCd": "cd ~/blogg",
+    "contactInit": "contact.init()"
+  }
+}

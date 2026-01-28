@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "locale": "de",
+    "title": "Andreas Hatlem",
+    "description": "Digitaler Unternehmer aus Oslo mit über 25 Jahren Erfahrung"
+  },
+  "nav": {
+    "about": "Über Mich",
+    "projects": "Projekte",
+    "blog": "Blog",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "terminal": "> hallo --from oslo",
+    "role": "Digitaler Unternehmer · Oslo · Baut Seit 1999",
+    "description": "Baue fürs Web seit bevor es \"cool\" war. Von Einwahlverbindungen und nordischen Wintern zu KI-gesteuerten Produkten—immer am Liefern, immer am Lernen.",
+    "cta": {
+      "about": "Über Mich",
+      "projects": "Projekte"
+    },
+    "location": "OSLO, NORWEGEN"
+  },
+  "blog": {
+    "title": "Blog",
+    "section": "Schreiben",
+    "description": "Gedanken über Webentwicklung, Softwareentwicklung und die Kunst, Produkte zu bauen, die Menschen tatsächlich nutzen.",
+    "featured": "Ausgewählt",
+    "archive": "Archiv",
+    "allPosts": "Alle Beiträge",
+    "readingTime": "{minutes} Min. Lesezeit"
+  },
+  "about": {
+    "title": "Über Mich",
+    "section": "Hintergrund",
+    "description": "Über 25 Jahre Webentwicklung. Von Einwahlverbindungen und nordischen Wintern zu KI-gesteuerten Produkten.",
+    "terminal": "> cat ~/ueber.md",
+    "intro": "Alles begann 1999.",
+    "story": {
+      "p1": "Ich erinnere mich, wie ich die frühen Startseiten des Internets ansah und dachte: \"Das könnte ich wahrscheinlich selbst bauen.\" Während die meisten Leute noch versuchten, online zu kommen, las ich Artikel in Zeitungen über ein neues Konzept namens \"Affiliate Marketing.\"",
+      "p2": "Ich nahm diese papierbasierten Lektionen und wandte sie in der digitalen Welt an—damals als \"Keyword Stuffing\" eine legitime Strategie war und ich lernte, die Aufmerksamkeit früher Suchmaschinen zu gewinnen.",
+      "p3": "Der Übergang vom Hobby zum Geschäft ging schnell. Während meine Altersgenossen um höheres Taschengeld verhandelten, skalierte ich meine ersten Affiliate-Projekte. Vor der Mittelstufe waren meine digitalen Provisionen bereits deutlich höher als das Taschengeld, das ich von meinen Eltern bekam.",
+      "p4": "Ich begann 2022 mit der Erforschung von KI, und Anfang 2023 habe ich BurnBacon \"vibe coded\"—mein erstes KI-Projekt—und erforschte, wie Agenten zusammenarbeiten und Speicher teilen könnten. Seltsam zu denken, dass es schon drei Jahre her ist. Die Werkzeuge entwickeln sich weiter, aber die Neugier, die mich 1999 antrieb, ist dieselbe, die mich heute vorantreibt."
+    },
+    "stats": {
+      "years": "Jahre Entwicklung",
+      "exit": "Agentur-Exit",
+      "projects": "Projekte Geliefert"
+    },
+    "timeline": {
+      "title": "Zeitleiste",
+      "1999": {
+        "title": "Der Anfang",
+        "description": "Sicherte mir meine ersten kostenlosen .com-Domains während der Dot-Com-Blase. Baute Enzyklopädie-Seiten, lernte SEO bevor es einen Namen hatte."
+      },
+      "2000s": {
+        "title": "Preisgekrönte Zauberei",
+        "description": "Gewann Auszeichnungen von einem großen norwegischen Verlag für Harry-Potter-Seiten. Digitale Provisionen übertrafen mein Taschengeld vor der Mittelstufe."
+      },
+      "2005": {
+        "title": "Erster Online-Shop",
+        "description": "Startete meinen ersten E-Commerce-Shop. Lernte die harten Lektionen von Lagerhaltung, Logistik und Kundensupport aus erster Hand."
+      },
+      "2012": {
+        "title": "Gadgets & Gutscheine",
+        "description": "Eröffnete meinen zweiten Online-Shop—einen Gadget-Shop—während ich ein Netzwerk erfolgreicher Gutschein- und Rabattseiten aufbaute."
+      },
+      "2015": {
+        "title": "Der Agentur-Exit",
+        "description": "Gründete eine Medien- und Webagentur. Arbeitete mit Norwegens größten Marken. Baute ein Team auf, skalierte das Geschäft, verkaufte es dann."
+      },
+      "2022": {
+        "title": "Der KI-Pivot",
+        "description": "Begann früh mit der Erforschung von KI-Tools. 2023 habe ich BurnBacon vibe coded—mein erstes KI-Projekt—und erforschte, wie Agenten mit geteiltem Speicher zusammenarbeiten könnten. Drei Jahre später ist es schwer vorstellbar, auf andere Weise zu bauen."
+      }
+    },
+    "note": "Heute nutze ich dieses Vierteljahrhundert an Erfahrung, um Unternehmen zu helfen, die digitale Landschaft mit Strategien zu navigieren, die tatsächlich liefern."
+  },
+  "projects": {
+    "title": "Projekte",
+    "section": "Ausgewählte Arbeiten",
+    "description": "Eine Auswahl von Dingen, die ich durch Getia und persönliche Projekte gebaut habe—KI-Tools, SaaS-Produkte und mehr.",
+    "terminal": "> ls ~/projekte",
+    "viewAll": "Alle Projekte Ansehen",
+    "sourceCode": "{title} Quellcode",
+    "liveDemo": "{title} Live",
+    "onIce": "Auf Eis",
+    "andMore": "...und viele weitere Projekte unter Getia."
+  },
+  "contact": {
+    "title": "Kontakt",
+    "section": "Kontakt Aufnehmen",
+    "description": "Haben Sie ein Projekt im Sinn? Möchten Sie zusammenarbeiten? Oder einfach nur Hallo sagen? Ich freue mich von Ihnen zu hören.",
+    "terminal": "> contact.send()",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Ihr Name",
+      "email": "E-Mail",
+      "emailPlaceholder": "sie@beispiel.de",
+      "message": "Nachricht",
+      "messagePlaceholder": "Erzählen Sie mir von Ihrem Projekt...",
+      "send": "Nachricht Senden",
+      "sending": "Wird gesendet...",
+      "sent": "Nachricht Gesendet",
+      "sentMessage": "Danke für Ihre Nachricht. Ich melde mich bald bei Ihnen."
+    },
+    "alternative": "Alternativ"
+  },
+  "footer": {
+    "role": "Digitaler Unternehmer — Oslo, Norwegen",
+    "copyright": "Andreas Hatlem. Hergestellt in Norwegen.",
+    "tagline": "Mit Absicht gebaut, nicht aus Vorlagen."
+  },
+  "common": {
+    "backToBlog": "Zurück zum Blog",
+    "toggleMenu": "Menü umschalten",
+    "location": "Oslo, Norwegen",
+    "locationShort": "Oslo",
+    "timezone": "CET/CEST",
+    "coordinates": "59°54'N 10°45'E"
+  },
+  "terminal": {
+    "navInit": "navigation.init()",
+    "ready": "ready_",
+    "blogCd": "cd ~/blog",
+    "contactInit": "contact.init()"
+  }
+}

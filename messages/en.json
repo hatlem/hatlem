@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "locale": "en",
+    "title": "Andreas Hatlem",
+    "description": "Digital Entrepreneur from Oslo with 25+ years of experience"
+  },
+  "nav": {
+    "about": "About",
+    "projects": "Projects",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "hero": {
+    "terminal": "> hello --from oslo",
+    "role": "Digital Entrepreneur · Oslo · Building Since 1999",
+    "description": "Building for the web since before it was \"cool.\" From dial-up connections and Nordic winters to AI-powered products—always shipping, always learning.",
+    "cta": {
+      "about": "About Me",
+      "projects": "Projects"
+    },
+    "location": "OSLO, NORWAY"
+  },
+  "blog": {
+    "title": "Blog",
+    "section": "Writing",
+    "description": "Thoughts on web development, software engineering, and the craft of building products that people actually use.",
+    "featured": "Featured",
+    "archive": "Archive",
+    "allPosts": "All Posts",
+    "readingTime": "{minutes} min read"
+  },
+  "about": {
+    "title": "About",
+    "section": "Background",
+    "description": "25+ years building for the web. From dial-up connections and Nordic winters to AI-powered products.",
+    "terminal": "> cat ~/about.md",
+    "intro": "It all started in 1999.",
+    "story": {
+      "p1": "I remember looking at the early start-pages of the internet and thinking, \"I could probably build that myself.\" While most people were still figuring out how to get online, I was reading articles in physical newspapers about a new concept called \"affiliate marketing.\"",
+      "p2": "I took those paper-based lessons and applied them to the digital world—back when \"keyword stuffing\" was a legitimate strategy and I was learning how to command the attention of early search engines.",
+      "p3": "The transition from hobby to business happened fast. While my peers were negotiating for a higher weekly allowance, I was busy scaling my first affiliate projects. By middle school, my digital commissions were already significantly higher than the pocket money I got from my parents.",
+      "p4": "I started exploring AI in 2022, and by early 2023 I \"vibe coded\" BurnBacon—my first AI project—exploring how agents could collaborate and share memory. Strange to think it's already been three years. The tools keep evolving, but the curiosity that drove me in 1999 is the same one pushing me forward today."
+    },
+    "stats": {
+      "years": "Years Building",
+      "exit": "Agency Exit",
+      "projects": "Projects Shipped"
+    },
+    "timeline": {
+      "title": "Timeline",
+      "1999": {
+        "title": "The Beginning",
+        "description": "Grabbed my first free .com domains during the dot-com bubble. Built encyclopedia sites, learned SEO before it had a name."
+      },
+      "2000s": {
+        "title": "Award-winning Wizardry",
+        "description": "Won awards from a major Norwegian publisher for Harry Potter sites. Digital commissions surpassed my allowance by middle school."
+      },
+      "2005": {
+        "title": "First Online Store",
+        "description": "Launched my first e-commerce store. Learned the hard lessons of inventory, logistics, and customer support firsthand."
+      },
+      "2012": {
+        "title": "Gadgets & Coupons",
+        "description": "Opened my second online store—a gadget shop—while building a network of successful coupon and discount sites."
+      },
+      "2015": {
+        "title": "The Agency Exit",
+        "description": "Founded a media and web agency. Worked with Norway's biggest brands. Built a team, scaled the business, then sold it."
+      },
+      "2022": {
+        "title": "The AI Pivot",
+        "description": "Started exploring AI tools early. By 2023, I vibe coded BurnBacon—my first AI project—exploring how agents could work together with shared memory. Three years later, it's hard to imagine building any other way."
+      }
+    },
+    "note": "Today, I use that quarter-century of experience to help businesses navigate the digital landscape with strategies that actually deliver."
+  },
+  "projects": {
+    "title": "Projects",
+    "section": "Selected Work",
+    "description": "A selection of things I've built through Getia and personal projects—AI tools, SaaS products, and more.",
+    "terminal": "> ls ~/projects",
+    "viewAll": "View All Projects",
+    "sourceCode": "{title} source code",
+    "liveDemo": "{title} live",
+    "onIce": "On Ice",
+    "andMore": "...and many more projects under Getia."
+  },
+  "contact": {
+    "title": "Contact",
+    "section": "Get in Touch",
+    "description": "Have a project in mind? Want to collaborate? Or just want to say hello? I'd love to hear from you.",
+    "terminal": "> contact.send()",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "message": "Message",
+      "messagePlaceholder": "Tell me about your project...",
+      "send": "Send Message",
+      "sending": "Sending...",
+      "sent": "Message Sent",
+      "sentMessage": "Thanks for reaching out. I'll get back to you soon."
+    },
+    "alternative": "Alternative"
+  },
+  "footer": {
+    "role": "Digital Entrepreneur — Oslo, Norway",
+    "copyright": "Andreas Hatlem. Made in Norway.",
+    "tagline": "Built with intention, not templates."
+  },
+  "common": {
+    "backToBlog": "Back to blog",
+    "toggleMenu": "Toggle menu",
+    "location": "Oslo, Norway",
+    "locationShort": "Oslo",
+    "timezone": "CET/CEST",
+    "coordinates": "59°54'N 10°45'E"
+  },
+  "terminal": {
+    "navInit": "navigation.init()",
+    "ready": "ready_",
+    "blogCd": "cd ~/blog",
+    "contactInit": "contact.init()"
+  }
+}
