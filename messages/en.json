@@ -90,20 +90,7 @@
     "title": "Contact",
     "section": "Get in Touch",
     "description": "Have a project in mind? Want to collaborate? Or just want to say hello? I'd love to hear from you.",
-    "terminal": "> contact.send()",
-    "form": {
-      "name": "Name",
-      "namePlaceholder": "Your name",
-      "email": "Email",
-      "emailPlaceholder": "you@example.com",
-      "message": "Message",
-      "messagePlaceholder": "Tell me about your project...",
-      "send": "Send Message",
-      "sending": "Sending...",
-      "sent": "Message Sent",
-      "sentMessage": "Thanks for reaching out. I'll get back to you soon."
-    },
-    "alternative": "Alternative"
+    "email": "Email"
   },
   "footer": {
     "role": "Digital Entrepreneur — Oslo, Norway",

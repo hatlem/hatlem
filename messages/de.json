@@ -90,20 +90,7 @@
     "title": "Kontakt",
     "section": "Kontakt Aufnehmen",
     "description": "Haben Sie ein Projekt im Sinn? Möchten Sie zusammenarbeiten? Oder einfach nur Hallo sagen? Ich freue mich von Ihnen zu hören.",
-    "terminal": "> contact.send()",
-    "form": {
-      "name": "Name",
-      "namePlaceholder": "Ihr Name",
-      "email": "E-Mail",
-      "emailPlaceholder": "sie@beispiel.de",
-      "message": "Nachricht",
-      "messagePlaceholder": "Erzählen Sie mir von Ihrem Projekt...",
-      "send": "Nachricht Senden",
-      "sending": "Wird gesendet...",
-      "sent": "Nachricht Gesendet",
-      "sentMessage": "Danke für Ihre Nachricht. Ich melde mich bald bei Ihnen."
-    },
-    "alternative": "Alternativ"
+    "email": "E-Mail"
   },
   "footer": {
     "role": "Digitaler Unternehmer — Oslo, Norwegen",

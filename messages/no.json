@@ -90,20 +90,7 @@
     "title": "Kontakt",
     "section": "Ta Kontakt",
     "description": "Har du et prosjekt i tankene? Vil du samarbeide? Eller bare si hei? Jeg vil gjerne høre fra deg.",
-    "terminal": "> contact.send()",
-    "form": {
-      "name": "Navn",
-      "namePlaceholder": "Ditt navn",
-      "email": "E-post",
-      "emailPlaceholder": "deg@eksempel.no",
-      "message": "Melding",
-      "messagePlaceholder": "Fortell meg om prosjektet ditt...",
-      "send": "Send Melding",
-      "sending": "Sender...",
-      "sent": "Melding Sendt",
-      "sentMessage": "Takk for at du tok kontakt. Jeg svarer så snart jeg kan."
-    },
-    "alternative": "Alternativ"
+    "email": "E-post"
   },
   "footer": {
     "role": "Digital Entreprenør — Oslo, Norge",
