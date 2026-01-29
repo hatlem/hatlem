@@ -3,6 +3,8 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { projects } from "@/data/projects";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
+import type { Locale } from "@/i18n/config";
+import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -15,6 +17,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: getCanonicalUrl("/projects", locale as Locale),
+      languages: getAlternateLanguages("/projects"),
+    },
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: getCanonicalUrl("/projects", locale as Locale),
+      siteName: SITE_NAME,
+      locale: ogLocaleMap[locale as Locale],
+    },
   };
 }
 

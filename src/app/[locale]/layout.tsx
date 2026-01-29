@@ -4,6 +4,8 @@ import { setRequestLocale, getMessages, getTranslations } from "next-intl/server
 import { NextIntlClientProvider } from "next-intl";
 import { hasLocale } from "next-intl";
 import { locales } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { ogLocaleMap } from "@/lib/seo";
 import { Navigation } from "@/components/Navigation";
 import { NoiseOverlay } from "@/components/NoiseOverlay";
 
@@ -26,6 +28,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       template: `%s — ${t("title")}`,
     },
     description: t("description"),
+    openGraph: {
+      locale: ogLocaleMap[locale as Locale] ?? "nb_NO",
+    },
   };
 }
 

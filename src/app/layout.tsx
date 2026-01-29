@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   description:
     "Digital entrepreneur building for the web since 1999. Explore my projects, read my blog, or get in touch.",
   metadataBase: new URL("https://andreashatlem.no"),
+  openGraph: {
+    type: "website",
+    siteName: "Andreas Hatlem",
+    locale: "nb_NO",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

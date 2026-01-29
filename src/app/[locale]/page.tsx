@@ -1,13 +1,42 @@
+import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getPosts, type BlogPost } from "@/data/posts";
 import type { Locale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
 import { KineticHero } from "@/components/KineticHero";
+import { JsonLd } from "@/components/JsonLd";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  SITE_URL,
+  SITE_NAME,
+  ogLocaleMap,
+  getCanonicalUrl,
+  getAlternateLanguages,
+} from "@/lib/seo";
 
 interface Props {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "meta" });
+
+  return {
+    alternates: {
+      canonical: getCanonicalUrl("/", locale as Locale),
+      languages: getAlternateLanguages("/"),
+    },
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: getCanonicalUrl("/", locale as Locale),
+      siteName: SITE_NAME,
+      locale: ogLocaleMap[locale as Locale],
+      type: "website",
+    },
+  };
 }
 
 /* ─────────────────────────────────────────────
@@ -268,8 +297,21 @@ export default async function Home({ params }: Props) {
     allPosts: t("blog.allPosts"),
   };
 
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: "Andreas Hatlem",
+    url: SITE_URL,
+    jobTitle: heroTranslations.role,
+    sameAs: [
+      "https://linkedin.com/in/hatlem",
+      "https://github.com/hatlem",
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={personJsonLd} />
       <HeroSection t={heroTranslations} />
       <BlogSection t={blogTranslations} posts={getPosts(locale as Locale)} />
       <Footer />

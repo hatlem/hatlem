@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import type { Locale } from "@/i18n/config";
+import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -14,6 +16,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: getCanonicalUrl("/about", locale as Locale),
+      languages: getAlternateLanguages("/about"),
+    },
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: getCanonicalUrl("/about", locale as Locale),
+      siteName: SITE_NAME,
+      locale: ogLocaleMap[locale as Locale],
+    },
   };
 }
 

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
+import type { Locale } from "@/i18n/config";
+import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
 interface ContactPageProps {
   params: Promise<{ locale: string }>;
@@ -14,6 +16,17 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
   return {
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: getCanonicalUrl("/contact", locale as Locale),
+      languages: getAlternateLanguages("/contact"),
+    },
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: getCanonicalUrl("/contact", locale as Locale),
+      siteName: SITE_NAME,
+      locale: ogLocaleMap[locale as Locale],
+    },
   };
 }
 
