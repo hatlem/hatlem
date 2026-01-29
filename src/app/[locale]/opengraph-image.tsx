@@ -7,9 +7,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const subtitles: Record<string, string> = {
-  no: "Digital entrepren\u00F8r",
-  en: "Digital Entrepreneur",
-  de: "Digitaler Unternehmer",
+  no: "Produktbygger",
+  en: "Product Builder",
+  de: "Produktentwickler",
 };
 
 export default async function OgImage({

@@ -2,7 +2,7 @@
   "meta": {
     "locale": "no",
     "title": "Andreas Hatlem",
-    "description": "Digital Entreprenør fra Oslo med 25+ års erfaring"
+    "description": "Produktbygger fra Oslo med 25+ års erfaring"
   },
   "nav": {
     "about": "Om Meg",
@@ -12,7 +12,7 @@
   },
   "hero": {
     "terminal": "> hei --from oslo",
-    "role": "Digital Entreprenør · Oslo · Bygget Siden 1999",
+    "role": "Produktbygger · Oslo · Bygget Siden 1999",
     "description": "Bygger for web siden før det var \"kult.\" Fra oppringt internett og nordiske vintrer til AI-drevne produkter—alltid shipping, alltid læring.",
     "cta": {
       "about": "Om Meg",
@@ -93,7 +93,7 @@
     "email": "E-post"
   },
   "footer": {
-    "role": "Digital Entreprenør — Oslo, Norge",
+    "role": "Produktbygger — Oslo, Norge",
     "copyright": "Andreas Hatlem. Laget i Norge.",
     "tagline": "Bygget med intensjon, ikke maler."
   },

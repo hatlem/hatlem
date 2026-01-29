@@ -2,7 +2,7 @@
   "meta": {
     "locale": "de",
     "title": "Andreas Hatlem",
-    "description": "Digitaler Unternehmer aus Oslo mit über 25 Jahren Erfahrung"
+    "description": "Produktentwickler aus Oslo mit über 25 Jahren Erfahrung"
   },
   "nav": {
     "about": "Über Mich",
@@ -12,7 +12,7 @@
   },
   "hero": {
     "terminal": "> hallo --from oslo",
-    "role": "Digitaler Unternehmer · Oslo · Baut Seit 1999",
+    "role": "Produktentwickler · Oslo · Baut Seit 1999",
     "description": "Baue fürs Web seit bevor es \"cool\" war. Von Einwahlverbindungen und nordischen Wintern zu KI-gesteuerten Produkten—immer am Liefern, immer am Lernen.",
     "cta": {
       "about": "Über Mich",
@@ -93,7 +93,7 @@
     "email": "E-Mail"
   },
   "footer": {
-    "role": "Digitaler Unternehmer — Oslo, Norwegen",
+    "role": "Produktentwickler — Oslo, Norwegen",
     "copyright": "Andreas Hatlem. Hergestellt in Norwegen.",
     "tagline": "Mit Absicht gebaut, nicht aus Vorlagen."
   },

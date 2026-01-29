@@ -18,11 +18,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Andreas Hatlem — Digital Entrepreneur",
+    default: "Andreas Hatlem — Product Builder",
     template: "%s — Andreas Hatlem",
   },
   description:
-    "Digital entrepreneur building for the web since 1999. Explore my projects, read my blog, or get in touch.",
+    "Product builder shipping for the web since 1999. Explore my projects, read my blog, or get in touch.",
   metadataBase: new URL("https://andreashatlem.no"),
   openGraph: {
     type: "website",

@@ -2,7 +2,7 @@
   "meta": {
     "locale": "en",
     "title": "Andreas Hatlem",
-    "description": "Digital Entrepreneur from Oslo with 25+ years of experience"
+    "description": "Product Builder from Oslo with 25+ years of experience"
   },
   "nav": {
     "about": "About",
@@ -12,7 +12,7 @@
   },
   "hero": {
     "terminal": "> hello --from oslo",
-    "role": "Digital Entrepreneur · Oslo · Building Since 1999",
+    "role": "Product Builder · Oslo · Building Since 1999",
     "description": "Building for the web since before it was \"cool.\" From dial-up connections and Nordic winters to AI-powered products—always shipping, always learning.",
     "cta": {
       "about": "About Me",
@@ -93,7 +93,7 @@
     "email": "Email"
   },
   "footer": {
-    "role": "Digital Entrepreneur — Oslo, Norway",
+    "role": "Product Builder — Oslo, Norway",
     "copyright": "Andreas Hatlem. Made in Norway.",
     "tagline": "Built with intention, not templates."
   },

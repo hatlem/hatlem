@@ -6,7 +6,10 @@
       "Bash(node --version:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm build:*)",
-      "Bash(/usr/bin/python3.12:*)"
+      "Bash(/usr/bin/python3.12:*)",
+      "Bash(command -v:*)",
+      "Bash(unalias:*)",
+      "Bash(/usr/bin/python3:*)"
     ]
   }
 }
