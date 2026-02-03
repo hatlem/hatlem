@@ -2,7 +2,7 @@
 title: "Das Moltbot-Phänomen: Was Siri hätte sein sollen?"
 excerpt: "Von dedizierten Mac Minis bis zu AWS-Sandboxen — warum alle über Moltbot reden, und ob es sich schon lohnt."
 date: "2026-01-29"
-readingTime: "6 Min."
+readingTime: "7 Min."
 tags: ["KI", "Agenten", "Open Source"]
 featured: true
 ---
@@ -21,6 +21,19 @@ Was es auszeichnet, ist die Ausführung. Es generiert nicht nur Text; es hat tie
 - **Ihren Browser zu steuern:** Websites navigieren, Formulare ausfüllen und Daten extrahieren.
 - **Terminal-Befehle auszuführen:** Code ausführen und Aufgaben auf Systemebene verwalten.
 - **Dauerhaftes Gedächtnis:** Es merkt sich Ihre Präferenzen und den Kontext über verschiedene Plattformen und Sitzungen hinweg.
+- **Cron Jobs:** Planen Sie automatisch ausgeführte Aufgaben — Erinnerungen, tägliche Zusammenfassungen, automatisierte Workflows.
+
+## Wie es sich mit Claude Code vergleicht
+
+Seien wir klar: Claude Code im Web funktioniert für das meiste hervorragend. Für Programmierung, Schreiben, Analyse und allgemeine Unterstützung ist es schwer zu übertreffen. Ich nutze es täglich.
+
+Aber wo Moltbot glänzt, sind zwei spezifische Bereiche: **Gedächtnis** und **geplante Automatisierung**.
+
+Claude hat jetzt etwas geteiltes Gedächtnis, aber es ist minimal. Moltbot erinnert sich, worüber Sie letzte Woche gesprochen haben. Es kennt Ihre Präferenzen, Ihren Projektkontext, Ihre Eigenheiten. Diese Kontinuität lässt Interaktionen weniger wie das Befragen eines Orakels wirken und mehr wie die Arbeit mit einem Assistenten, der Sie tatsächlich kennt.
+
+Und dann sind da die Cron Jobs. Moltbot kann Sie an Dinge erinnern, ohne gefragt zu werden. Es kann tägliche Gesundheitschecks auf Ihren Servern durchführen, Ihnen ein morgendliches Briefing senden oder Sie an die Aufgabe erinnern, die Sie ständig aufschieben. Claude kann das nicht — noch nicht.
+
+Es würde mich nicht überraschen, wenn Anthropic bald Lösungen für beides herausbringt. Gedächtnis und proaktive Agenten fühlen sich wie offensichtliche nächste Schritte an. Aber im Moment, wenn Sie diese Funktionen brauchen, liefert Moltbot.
 
 ## Das Setup: Lokal vs. AWS EC2
 

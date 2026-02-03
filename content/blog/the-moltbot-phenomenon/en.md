@@ -2,7 +2,7 @@
 title: "The Moltbot Phenomenon: What Siri Was Supposed to Be?"
 excerpt: "From dedicated Mac Minis to AWS sandboxes — why everyone is talking about Moltbot, and whether you should care yet."
 date: "2026-01-29"
-readingTime: "6 min"
+readingTime: "7 min"
 tags: ["AI", "Agents", "Open Source"]
 featured: true
 ---
@@ -21,6 +21,19 @@ What sets it apart is execution. It doesn't just generate text; it has deep syst
 - **Control your browser:** Navigate websites, fill out forms, and extract data.
 - **Run terminal commands:** Execute code and manage system-level tasks.
 - **Persistent memory:** It remembers your preferences and context across different platforms and sessions.
+- **Cron jobs:** Schedule tasks to run automatically — reminders, daily summaries, automated workflows.
+
+## How It Compares to Claude Code
+
+Let's be clear: Claude Code on the web works great for most things. For coding, writing, analysis, and general assistance, it's hard to beat. I use it daily.
+
+But where Moltbot shines is in two specific areas: **memory** and **scheduled automation**.
+
+Claude does have some shared memory now, but it's minimal. Moltbot remembers what you talked about last week. It knows your preferences, your project context, your quirks. This continuity makes interactions feel less like consulting an oracle and more like working with an assistant who actually knows you.
+
+And then there's cron jobs. Moltbot can remind you of things without being asked. It can run daily health checks on your servers, send you a morning briefing, or nudge you about that task you keep postponing. Claude can't do that — yet.
+
+I wouldn't be surprised if Anthropic ships solutions for both of these soon. Memory and proactive agents feel like obvious next steps. But for now, if you need those features, Moltbot delivers.
 
 ## The Setup: Local vs. AWS EC2
 
