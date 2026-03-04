@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Agentation } from "agentation";
 import { Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
         className={`${instrumentSerif.variable} ${jetbrainsMono.variable} antialiased`}
       >
         {children}
+        {process.env.NODE_ENV === "development" && <Agentation endpoint="http://localhost:4747" />}
       </body>
     </html>
   );
