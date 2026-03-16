@@ -133,20 +133,20 @@ function getActionLabel(actionType: string, platformName: string): string {
 
 function getActionIcon(actionType: string): string {
   const icons: Record<string, string> = {
-    signup: '\u{1F511}',
-    referral: '\u{1F91D}',
-    social_share_twitter: '\u{1F426}',
-    social_share_linkedin: '\u{1F4BC}',
-    social_share_facebook: '\u{1F30D}',
-    social_follow_twitter: '\u{2B50}',
-    social_follow_linkedin: '\u{1F4BC}',
-    newsletter_subscribe: '\u{1F4E7}',
-    review: '\u{2B50}',
-    feedback: '\u{1F4AC}',
-    blog_comment: '\u{270D}\u{FE0F}',
-    product_hunt_upvote: '\u{1F680}',
+    signup: '🔑',
+    referral: '🤝',
+    social_share_twitter: '🐦',
+    social_share_linkedin: '💼',
+    social_share_facebook: '🌍',
+    social_follow_twitter: '⭐',
+    social_follow_linkedin: '💼',
+    newsletter_subscribe: '📧',
+    review: '⭐',
+    feedback: '💬',
+    blog_comment: '✍️',
+    product_hunt_upvote: '🚀',
   }
-  return icons[actionType] || '\u{1F3AF}'
+  return icons[actionType] || '🎯'
 }
 
 // ============================================================
@@ -154,10 +154,10 @@ function getActionIcon(actionType: string): string {
 // ============================================================
 
 const REFERRAL_TIERS = [
-  { count: 1, label: 'First Referral', bonus: '+2 extra entries', icon: '\u{1F331}' },
-  { count: 3, label: 'Connector', bonus: '+5 extra entries', icon: '\u{1F31F}' },
-  { count: 5, label: 'Influencer', bonus: '+10 extra entries', icon: '\u{1F525}' },
-  { count: 10, label: 'Champion', bonus: '+25 extra entries', icon: '\u{1F451}' },
+  { count: 1, label: 'First Referral', bonus: '+2 extra entries', icon: '🌱' },
+  { count: 3, label: 'Connector', bonus: '+5 extra entries', icon: '🌟' },
+  { count: 5, label: 'Influencer', bonus: '+10 extra entries', icon: '🔥' },
+  { count: 10, label: 'Champion', bonus: '+25 extra entries', icon: '👑' },
 ]
 
 // ============================================================
@@ -199,9 +199,9 @@ function Countdown({ endDate }: { endDate: string }) {
     <div className="animate-slide-up stagger-2">
       {isUrgent && (
         <div className="flex items-center justify-center gap-2 mb-3 animate-pulse">
-          <span className="text-red-500 text-lg">\u{1F525}</span>
+          <span className="text-red-500 text-lg">🔥</span>
           <span className="text-red-500 font-bold text-sm uppercase tracking-wider">Ending soon!</span>
-          <span className="text-red-500 text-lg">\u{1F525}</span>
+          <span className="text-red-500 text-lg">🔥</span>
         </div>
       )}
       <div className="flex gap-3 justify-center">
@@ -265,12 +265,12 @@ function EntryProgress({ current, target }: { current: number; target: number })
 function LeaderboardSection({ entries }: { entries: LeaderboardEntry[] }) {
   if (entries.length === 0) return null
 
-  const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}']
+  const medals = ['🥇', '🥈', '🥉']
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-lg p-6 animate-slide-up stagger-5">
       <div className="flex items-center gap-2 mb-5">
-        <span className="text-2xl animate-trophy-bounce">\u{1F3C6}</span>
+        <span className="text-2xl animate-trophy-bounce">🏆</span>
         <h3 className="text-lg font-bold text-foreground">Leaderboard</h3>
       </div>
       <div className="space-y-2">
@@ -337,7 +337,7 @@ function NotifyForm({ platformSlug, platformName }: { platformSlug: string; plat
   if (submitted) {
     return (
       <div className="bg-card rounded-2xl border border-border shadow-xl p-10 max-w-md mx-auto text-center animate-slide-up">
-        <div className="text-6xl mb-4 animate-trophy-bounce">\u{1F389}</div>
+        <div className="text-6xl mb-4 animate-trophy-bounce">🎉</div>
         <h2 className="text-2xl font-bold text-foreground mb-2">You&apos;re on the list!</h2>
         <p className="text-muted-foreground">
           We&apos;ll email <strong className="text-foreground">{email}</strong> when our next competition launches.
@@ -349,7 +349,7 @@ function NotifyForm({ platformSlug, platformName }: { platformSlug: string; plat
   return (
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-10 animate-slide-up">
-        <div className="text-6xl mb-6 animate-float">\u{1F3C6}</div>
+        <div className="text-6xl mb-6 animate-float">🏆</div>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
           Competition Coming Soon
         </h1>
@@ -389,7 +389,7 @@ function NotifyForm({ platformSlug, platformName }: { platformSlug: string; plat
           {error && <p className="text-destructive text-sm font-medium">{error}</p>}
           <button type="submit" disabled={loading}
             className="w-full gradient-cta text-primary-foreground py-3.5 px-6 rounded-xl font-bold text-lg disabled:opacity-50 disabled:transform-none">
-            {loading ? 'Submitting...' : '\u{1F514} Notify Me When It Launches'}
+            {loading ? 'Submitting...' : '🔔 Notify Me When It Launches'}
           </button>
         </form>
       </div>
@@ -451,7 +451,7 @@ function EntryForm({ competition, referralCode, onSuccess }: {
 
       {referralCode && (
         <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-6 text-center">
-          <p className="text-sm font-medium text-primary">\u{1F381} You were referred! Both you and your friend earn bonus points.</p>
+          <p className="text-sm font-medium text-primary">🎁 You were referred! Both you and your friend earn bonus points.</p>
         </div>
       )}
 
@@ -510,13 +510,13 @@ function EntryForm({ competition, referralCode, onSuccess }: {
 
         <button type="submit" disabled={loading}
           className="w-full gradient-cta text-primary-foreground py-4 px-6 rounded-xl font-bold text-lg disabled:opacity-50 disabled:transform-none relative overflow-hidden">
-          <span className="relative z-10">{loading ? 'Entering...' : '\u{1F3AF} Enter Competition Now'}</span>
+          <span className="relative z-10">{loading ? 'Entering...' : '🎯 Enter Competition Now'}</span>
           {!loading && <div className="absolute inset-0 shimmer-bg" />}
         </button>
 
         {referralAction && (
           <p className="text-center text-xs text-muted-foreground mt-3">
-            \u{1F4A1} <strong>Pro tip:</strong> After entering, share your referral link to earn +{referralAction.points} bonus points per friend who joins!
+            💡 <strong>Pro tip:</strong> After entering, share your referral link to earn +{referralAction.points} bonus points per friend who joins!
           </p>
         )}
       </form>
@@ -593,7 +593,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
 
       {/* Points display */}
       <div className="bg-card rounded-2xl border border-border shadow-xl p-8 text-center animate-slide-up">
-        <div className="text-5xl mb-3 animate-trophy-bounce">\u{1F389}</div>
+        <div className="text-5xl mb-3 animate-trophy-bounce">🎉</div>
         <h2 className="text-2xl font-bold text-foreground mb-2">You&apos;re In!</h2>
         <p className="text-muted-foreground mb-5">
           You&apos;ve entered the competition. Earn more points to increase your chances of winning!
@@ -606,17 +606,17 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
 
       {/* HOW IT WORKS — explain the system */}
       <div className="bg-card rounded-2xl border border-border shadow-lg p-6 animate-slide-up stagger-1">
-        <h3 className="text-lg font-bold text-foreground mb-4">\u{1F4A1} How to Win</h3>
+        <h3 className="text-lg font-bold text-foreground mb-4">💡 How to Win</h3>
         <div className="grid gap-3">
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-            <span className="text-xl">\u{1F3AF}</span>
+            <span className="text-xl">🎯</span>
             <div>
               <p className="text-sm font-semibold text-foreground">More points = more chances</p>
               <p className="text-xs text-muted-foreground">Each point acts like an extra ticket in the draw. The more you earn, the higher your odds!</p>
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-            <span className="text-xl">\u{1F91D}</span>
+            <span className="text-xl">🤝</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Refer friends for bonus entries</p>
               <p className="text-xs text-muted-foreground">
@@ -626,7 +626,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
             </div>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-            <span className="text-xl">\u{2B50}</span>
+            <span className="text-xl">⭐</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Complete bonus actions</p>
               <p className="text-xs text-muted-foreground">Each action below earns you extra points. Stack them up!</p>
@@ -638,7 +638,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
       {/* Referral Link */}
       <div className="bg-card rounded-2xl border-2 border-primary/30 shadow-lg p-6 animate-slide-up stagger-2">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl">\u{1F517}</span>
+          <span className="text-xl">🔗</span>
           <h3 className="text-lg font-bold text-foreground">Your Referral Link</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
@@ -651,7 +651,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
             className="flex-1 px-4 py-2.5 border border-border rounded-xl bg-muted text-sm text-foreground font-mono truncate" />
           <button onClick={copyReferralLink}
             className="gradient-cta text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap">
-            {copied ? '\u{2705} Copied!' : '\u{1F4CB} Copy'}
+            {copied ? '✅ Copied!' : '📋 Copy'}
           </button>
         </div>
 
@@ -706,7 +706,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
       {enabledActions.length > 0 && (
         <div className="bg-card rounded-2xl border border-border shadow-lg p-6 animate-slide-up stagger-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl animate-sparkle">\u{2B50}</span>
+            <span className="text-xl animate-sparkle">⭐</span>
             <h3 className="text-lg font-bold text-foreground">Earn Bonus Points</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
@@ -732,7 +732,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
                   } disabled:cursor-not-allowed`}
                 >
                   <span className={`text-xl ${isCompleted ? 'animate-trophy-bounce' : ''}`}>
-                    {isCompleted ? '\u{2705}' : icon}
+                    {isCompleted ? '✅' : icon}
                   </span>
                   <span className="flex-1 text-left text-sm font-medium text-foreground">{label}</span>
                   <span className={`text-sm font-bold px-3 py-1 rounded-full ${
@@ -746,7 +746,7 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
           </div>
           <div className="mt-4 p-3 rounded-xl bg-muted/50 text-center">
             <p className="text-xs text-muted-foreground">
-              \u{1F4CA} Each point = 1 extra ticket in the draw. You currently have <strong className="text-foreground">{totalPoints} tickets</strong>.
+              📊 Each point = 1 extra ticket in the draw. You currently have <strong className="text-foreground">{totalPoints} tickets</strong>.
             </p>
           </div>
         </div>
@@ -760,10 +760,10 @@ function EnteredStatus({ competition, entry, platformSlug, platformName }: {
 // ============================================================
 
 function PrizeShowcase({ competition }: { competition: Competition }) {
-  const prizeIcon = competition.prize_type === 'cash' ? '\u{1F4B0}'
-    : competition.prize_type === 'product' ? '\u{1F381}'
-    : competition.prize_type === 'subscription' ? '\u{1F4AB}'
-    : '\u{1F3C6}'
+  const prizeIcon = competition.prize_type === 'cash' ? '💰'
+    : competition.prize_type === 'product' ? '🎁'
+    : competition.prize_type === 'subscription' ? '💫'
+    : '🏆'
 
   return (
     <div className="bg-card rounded-2xl border-2 border-primary/20 shadow-xl p-8 text-center animate-slide-up stagger-1 relative overflow-hidden">
@@ -895,7 +895,7 @@ function ActiveCompetition({ competition, leaderboard, platformSlug, platformNam
       {!entry && competition.total_entries > 10 && (
         <div className="text-center animate-slide-up stagger-4">
           <p className="text-sm text-muted-foreground">
-            \u{1F465} <strong className="text-foreground">{competition.total_entries.toLocaleString()} people</strong> have already entered.
+            👥 <strong className="text-foreground">{competition.total_entries.toLocaleString()} people</strong> have already entered.
             Don&apos;t miss out!
           </p>
         </div>

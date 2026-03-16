@@ -13,7 +13,7 @@
   "hero": {
     "terminal": "> hei --from oslo",
     "role": "Produktbygger · Oslo · Bygget Siden 1999",
-    "description": "Bygger for web siden før det var \"kult.\" Fra oppringt internett og nordiske vintrer til AI-drevne produkter—alltid shipping, alltid læring.",
+    "description": "Gjort markedsføring og webutvikling før det var \"kult.\" Fra dot com boblen til AI-drevne produkter—alltid shipping, alltid læring.",
     "cta": {
       "about": "Om Meg",
       "projects": "Prosjekter"
@@ -39,7 +39,7 @@
       "p1": "Jeg husker jeg så på de tidlige startsidene på internett og tenkte: \"Dette kan jeg sikkert bygge selv.\" Mens de fleste fortsatt prøvde å komme seg på nett, leste jeg artikler i fysiske aviser om et nytt konsept kalt \"affiliate marketing.\"",
       "p2": "Jeg tok disse papirbaserte lærdommene og anvendte dem i den digitale verden—tilbake da \"keyword stuffing\" var en legitim strategi og jeg lærte å fange oppmerksomheten til tidlige søkemotorer.",
       "p3": "Overgangen fra hobby til business skjedde fort. Mens jevnaldrende forhandlet om høyere ukepenger, skalerte jeg mine første affiliate-prosjekter. Før ungdomsskolen var digitale provisjoner allerede betydelig høyere enn lommepengene jeg fikk hjemmefra.",
-      "p4": "Jeg begynte å utforske AI i 2022, og tidlig i 2023 \"vibe codet\" jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide og dele minne. Rart å tenke på at det allerede er tre år siden. Verktøyene utvikler seg, men nysgjerrigheten som drev meg i 1999 er den samme som driver meg fremover i dag."
+      "p4": "AI fanget interessen min allerede i 2017 da Lyra Bird AI ble lansert og jeg oppdaget IBM Watson. Men det var først da ChatGPT kom at det virkelig tok av. Tidlig i 2023 \"vibe codet\" jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide og dele minne. Rart å tenke på at det allerede er tre år siden. Verktøyene utvikler seg, men nysgjerrigheten som drev meg i 1999 er den samme som driver meg fremover i dag."
     },
     "stats": {
       "years": "År med Bygging",
@@ -70,7 +70,15 @@
       },
       "2022": {
         "title": "AI-Pivoten",
-        "description": "Begynte å utforske AI-verktøy tidlig. I 2023 vibe codet jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide med delt minne. Tre år senere er det vanskelig å forestille seg å bygge på noen annen måte."
+        "description": "Oppdaget AI-potensialet da Lyra Bird AI og Watson fanget oppmerksomheten min i 2017. Da ChatGPT kom tok det virkelig av. I 2023 vibe codet jeg BurnBacon—mitt første AI-prosjekt—og utforsket hvordan agenter kunne samarbeide med delt minne. Tre år senere er det vanskelig å forestille seg å bygge på noen annen måte."
+      },
+      "2024": {
+        "title": "Bryllup",
+        "description": "Giftet meg med Mari Falkenberg på Thorskog Slott sommeren 2024."
+      },
+      "2025": {
+        "title": "Pappa",
+        "description": "Ble pappa for første gang i 2025."
       }
     },
     "note": "I dag bruker jeg et kvart århundre med erfaring for å hjelpe bedrifter navigere det digitale landskapet med strategier som faktisk leverer."

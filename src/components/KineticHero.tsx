@@ -1,6 +1,6 @@
 "use client";
 
-const name = "ANDREAS";
+const name = "HALEM";
 
 export const KineticHero = () => {
   return (
