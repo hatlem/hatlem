@@ -303,15 +303,42 @@ export default async function Home({ params }: Props) {
     name: "Andreas Hatlem",
     url: SITE_URL,
     jobTitle: heroTranslations.role,
+    description: heroTranslations.description,
+    email: "andreas.hatlem@gmail.com",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Oslo",
+      addressCountry: "NO",
+    },
+    worksFor: {
+      "@type": "Organization",
+      name: "Getia AS",
+      url: "https://getia.no",
+    },
     sameAs: [
-      "https://linkedin.com/in/hatlem",
+      "https://www.linkedin.com/in/hatlem/",
       "https://github.com/hatlem",
+      "https://www.facebook.com/andreas.hatlem/",
     ],
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Andreas Hatlem",
+    url: SITE_URL,
+    description: heroTranslations.description,
+    inLanguage: ["no", "en", "de"],
+    author: {
+      "@type": "Person",
+      name: "Andreas Hatlem",
+    },
   };
 
   return (
     <>
       <JsonLd data={personJsonLd} />
+      <JsonLd data={websiteJsonLd} />
       <HeroSection t={heroTranslations} />
       <BlogSection t={blogTranslations} posts={getPosts(locale as Locale)} />
       <Footer />

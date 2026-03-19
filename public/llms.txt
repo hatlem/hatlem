@@ -1,0 +1,43 @@
+# Andreas Hatlem
+
+> Product builder shipping for the web since 1999.
+
+Andreas Hatlem is a product builder and founder based in Oslo, Norway. He has been building web products since 1999, spanning startups, SaaS platforms, and enterprise software.
+
+## About
+
+- Based in Oslo, Norway (59°54'N 10°45'E)
+- Founder of Getia AS, a Norwegian software company building a portfolio of SaaS products
+- 25+ years of experience building for the web
+- Focus areas: SaaS, product development, AI-powered tools
+
+## Current Work
+
+Andreas runs Getia AS, which builds and operates multiple SaaS products including:
+- Lakehouse42 — Enterprise knowledge platform
+- SkyDrover — Drone operations management
+- GetMailer — Email marketing
+- GetChannel — Multi-channel communication
+- FaceShot — AI-powered headshot generation
+- And many more at https://getia.no
+
+## Links
+
+- Website: https://andreashatlem.no
+- About: https://andreashatlem.no/about
+- Projects: https://andreashatlem.no/projects
+- Blog: https://andreashatlem.no/blog
+- Contact: https://andreashatlem.no/contact
+- LinkedIn: https://www.linkedin.com/in/hatlem/
+- GitHub: https://github.com/hatlem
+
+## Languages
+
+This site is available in Norwegian (default), English, and German.
+
+## Contact
+
+- Email: andreas.hatlem@gmail.com
+- LinkedIn: /in/hatlem
+- GitHub: hatlem
+- Location: Oslo, Norway

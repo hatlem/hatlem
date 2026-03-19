@@ -18,6 +18,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages = ["/", "/about", "/projects", "/blog", "/contact"];
   const now = new Date();
 
+  // Non-i18n pages
+  const standaloneEntries: MetadataRoute.Sitemap = [
+    {
+      url: `${SITE_URL}/competition`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
+  ];
+
   const staticEntries: MetadataRoute.Sitemap = staticPages.map((page) => {
     const isHome = page === "/";
     return {
@@ -60,5 +70,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  return [...staticEntries, ...blogEntries];
+  return [...staticEntries, ...blogEntries, ...standaloneEntries];
 }

@@ -88,11 +88,46 @@ export default async function BlogPostPage({ params }: Props) {
       name: "Andreas Hatlem",
       url: SITE_URL,
     },
+    publisher: {
+      "@type": "Person",
+      name: "Andreas Hatlem",
+      url: SITE_URL,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": getCanonicalUrl(`/blog/${slug}`, locale as Locale),
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: getCanonicalUrl("/blog", locale as Locale),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.title,
+        item: getCanonicalUrl(`/blog/${slug}`, locale as Locale),
+      },
+    ],
   };
 
   return (
     <>
       <JsonLd data={articleJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <article className="pt-32 pb-32">
         <div className="mx-auto max-w-3xl px-6 lg:px-8">
           {/* Terminal breadcrumb */}
