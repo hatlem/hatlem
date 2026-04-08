@@ -3,7 +3,7 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4820;
 
 // Postgres connection
 const pool = new Pool({
