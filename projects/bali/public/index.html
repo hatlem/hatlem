@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bali 2026 — Reiseplanlegger</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--a1:#38bdf8;--a2:#818cf8;--a3:#f472b6;--a4:#34d399;--a5:#fbbf24;--tx:#f1f5f9;--dim:#94a3b8;--brd:#334155;--red:#ef4444}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6}
+a{color:var(--a1);text-decoration:none}
+
+/* Top bar */
+.topbar{background:rgba(15,23,42,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--brd);padding:0.5rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2000;flex-wrap:wrap;gap:0.5rem}
+.topbar h1{font-size:1.1rem;background:linear-gradient(135deg,var(--a1),var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-actions{display:flex;gap:0.4rem;flex-wrap:wrap}
+.tbtn{background:var(--card);border:1px solid var(--brd);color:var(--tx);font-family:inherit;font-size:0.75rem;padding:0.35rem 0.7rem;border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.tbtn:hover{border-color:var(--a1);background:var(--card2)}
+.tbtn.primary{background:var(--a4);color:var(--bg);border-color:var(--a4);font-weight:600}
+.tbtn.primary:hover{opacity:0.9}
+.tbtn.danger{border-color:var(--red);color:var(--red)}
+
+/* Nav */
+.nav{display:flex;gap:0.2rem;padding:0.5rem 1rem;background:var(--bg);border-bottom:1px solid var(--brd);flex-wrap:wrap;position:sticky;top:42px;z-index:1999}
+.nav button{background:transparent;border:1px solid transparent;color:var(--dim);font-family:inherit;font-size:0.8rem;font-weight:500;padding:0.4rem 1rem;border-radius:7px;cursor:pointer;transition:all 0.2s}
+.nav button:hover{color:var(--tx);background:rgba(255,255,255,0.04)}
+.nav button.on{background:var(--a1);color:var(--bg)}
+
+/* Layout */
+.main{display:flex;min-height:calc(100vh - 90px)}
+.content{flex:1;padding:1.5rem;max-width:900px;overflow-y:auto}
+.sidebar{width:400px;min-width:340px;border-left:1px solid var(--brd);position:sticky;top:90px;height:calc(100vh - 90px);display:flex;flex-direction:column}
+#map{flex:1;min-height:300px}
+.sidebar-info{padding:0.75rem;background:var(--card);border-top:1px solid var(--brd);font-size:0.82rem;color:var(--dim);max-height:180px;overflow-y:auto}
+.sidebar-info h4{color:var(--tx);margin-bottom:0.3rem}
+
+.page{display:none}
+.page.on{display:block}
+.page h2{font-size:1.5rem;font-weight:700;margin-bottom:0.2rem}
+.page .desc{color:var(--dim);font-size:0.85rem;margin-bottom:1.25rem}
+
+/* Editable field */
+.ef{background:transparent;border:1px solid transparent;border-radius:4px;color:inherit;font:inherit;padding:1px 4px;transition:all 0.15s;cursor:text;min-width:30px}
+.ef:hover{border-color:var(--brd);background:rgba(255,255,255,0.03)}
+.ef:focus{outline:none;border-color:var(--a1);background:rgba(56,189,248,0.06)}
+.ef-price{color:var(--a4);font-weight:600}
+.ef-sm{font-size:0.82rem}
+
+/* Cards */
+.icard{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem;transition:all 0.2s;cursor:pointer;position:relative}
+.icard:hover{border-color:var(--a1);background:var(--card2)}
+.icard.active{border-color:var(--a1);box-shadow:0 0 0 1px var(--a1)}
+.icard .dates{font-size:0.72rem;color:var(--a1);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.icard h3{font-size:1rem;margin:0.15rem 0}
+.icard p{color:var(--dim);font-size:0.82rem}
+.badge{display:inline-block;font-size:0.6rem;padding:0.12rem 0.45rem;border-radius:8px;font-weight:600;margin-left:0.4rem;vertical-align:middle}
+.b-booked{background:rgba(251,191,36,0.2);color:var(--a5)}
+.b-open{background:rgba(244,114,182,0.2);color:var(--a3)}
+.b-considering{background:rgba(129,140,248,0.2);color:var(--a2)}
+.tag{display:inline-block;font-size:0.65rem;padding:0.12rem 0.45rem;border-radius:14px;margin-top:0.3rem;margin-right:0.2rem;font-weight:500}
+.t-s{background:rgba(56,189,248,0.15);color:var(--a1)}
+.t-k{background:rgba(129,140,248,0.15);color:var(--a2)}
+.t-n{background:rgba(52,211,153,0.15);color:var(--a4)}
+.t-b{background:rgba(244,114,182,0.15);color:var(--a3)}
+
+/* Map pin icon on card */
+.map-pin{position:absolute;top:0.75rem;right:0.75rem;font-size:1rem;opacity:0.4;transition:opacity 0.2s}
+.icard:hover .map-pin,.icard.active .map-pin{opacity:1}
+
+/* Delete btn on card */
+.del-btn{position:absolute;top:0.75rem;right:2.2rem;font-size:0.85rem;opacity:0;cursor:pointer;transition:opacity 0.2s;color:var(--red)}
+.icard:hover .del-btn{opacity:0.6}
+.del-btn:hover{opacity:1!important}
+
+/* Add button */
+.add-btn{background:transparent;border:2px dashed var(--brd);border-radius:12px;padding:0.75rem;text-align:center;color:var(--dim);font-family:inherit;font-size:0.85rem;cursor:pointer;width:100%;transition:all 0.2s;margin-bottom:0.75rem}
+.add-btn:hover{border-color:var(--a1);color:var(--a1)}
+
+/* Budget table */
+.btable{width:100%;border-collapse:collapse;font-size:0.85rem}
+.btable td{padding:0.5rem 0.4rem;border-bottom:1px solid var(--brd)}
+.btable .total td{border-top:2px solid var(--a1);font-weight:700;font-size:1rem;padding-top:0.75rem}
+.btable .total .amt{color:var(--a3);font-size:1.15rem}
+
+/* Pack */
+.pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.75rem}
+.pack-cat{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem}
+.pack-cat h3{font-size:0.9rem;margin-bottom:0.5rem}
+.pack-cat ul{list-style:none}
+.pack-cat li{display:flex;align-items:center;gap:0.4rem;padding:0.25rem 0;font-size:0.82rem;color:var(--dim);cursor:pointer}
+.pack-cat li:hover{color:var(--tx)}
+.ck{width:16px;height:16px;border:2px solid var(--brd);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+li.done .ck{background:var(--a4);border-color:var(--a4)}
+li.done .ck::after{content:'\2713';color:var(--bg);font-size:0.65rem;font-weight:700}
+li.done{text-decoration:line-through;opacity:0.45}
+
+/* Notes */
+.notes{width:100%;min-height:200px;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:0.75rem;color:var(--tx);font-family:inherit;font-size:0.88rem;resize:vertical}
+.notes:focus{outline:none;border-color:var(--a1)}
+
+/* Flights */
+.flights{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.fl-card{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:0.75rem 1rem;flex:1;min-width:240px}
+.fl-card .lbl{font-size:0.65rem;color:var(--a1);text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+
+/* Responsive */
+@media(max-width:900px){
+  .main{flex-direction:column-reverse}
+  .sidebar{width:100%;min-width:unset;position:relative;top:auto;height:350px;border-left:none;border-top:1px solid var(--brd)}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Bali 2026</h1>
+  <div class="topbar-actions">
+    <span id="saveStatus" style="font-size:0.7rem;color:var(--a4);opacity:0.7;margin-right:0.5rem"></span>
+    <button class="tbtn" onclick="exportJSON()" title="Last ned backup som JSON">📥 Eksport</button>
+    <button class="tbtn" onclick="document.getElementById('importInput').click()" title="Importer fra JSON-fil">📤 Import</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
+    <button class="tbtn danger" onclick="if(confirm('Nullstill alt til standard?')){initDefaultData();render();autoSave();}">🗑 Nullstill</button>
+  </div>
+</div>
+
+<nav class="nav" id="nav"></nav>
+
+<div class="main">
+  <div class="content">
+    <div class="page on" id="p-reiserute"></div>
+    <div class="page" id="p-hotell"></div>
+    <div class="page" id="p-aktiviteter"></div>
+    <div class="page" id="p-budsjett"></div>
+    <div class="page" id="p-pakkeliste"></div>
+    <div class="page" id="p-notater"></div>
+  </div>
+  <div class="sidebar">
+    <div id="map"></div>
+    <div class="sidebar-info" id="sidebarInfo">
+      <h4>Klikk på et element for å se det på kartet</h4>
+      <p>Alle reisestopp, hotell og aktiviteter kan klikkes for å vise plasseringen.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== GLOBALS =====
+let DATA = {};
+let activeTab = 'reiserute';
+let activeMapItem = null;
+let map, markers = [], polyline;
+
+// ===== DEFAULT DATA =====
+function initDefaultData() {
+  DATA = {
+    flights: {
+      out: { label:'Utreise', route:'Oslo (OSL) → Denpasar (DPS)', details:'20. aug 17:20 → 21. aug 19:35 • 1 stopp • 20t 15min' },
+      ret: { label:'Hjemreise', route:'Denpasar (DPS) → Oslo (OSL)', details:'15. sep 15:15 → 16. sep 11:05 • 2 stopp • 25t 50min' }
+    },
+    stops: [
+      { id:'s1', name:'Flyplasshotell (ankomst)', dates:'21. aug • 1 natt', desc:'Lander kl. 19:35. Overnatting nær flyplassen før Jl Kesari.', status:'open', tags:['Baby-vennlig'], lat:-8.7467, lng:115.1667, color:'#fbbf24',
+        options:[
+          {name:'Novotel Bali Ngurah Rai Airport', price:'~780 kr/natt ($78)', note:'Direkte koblet til terminalen. Basseng, familierom, kids club.', chosen:false},
+          {name:'Hilton Garden Inn DPS', price:'~650 kr/natt ($65)', note:'I flyplasskomplekset, 24t shuttle.', chosen:false},
+          {name:'Holiday Inn Resort Baruna', price:'~700 kr/natt ($70)', note:'10 min fra DPS, KidSuites med lekehjørne.', chosen:false}
+        ]
+      },
+      { id:'s2', name:'Sanur — 25 Jl Kesari', dates:'22. – 27. aug • 6 netter', desc:'Booket! Nær Sanur Beach. Rolig nabolag, strandpromenade for barnevogn.', status:'booked', tags:['Strand','Baby-vennlig'], lat:-8.6783, lng:115.2631, color:'#38bdf8', options:[] },
+      { id:'s3', name:'Nusa Lembongan — Hai Tide Beach Resort', dates:'28. aug – 4. sep • 7 netter', desc:'Øyparadis på Mushroom Bay. Family Lumbungs. Snorkling, kajakk. Båt fra Sanur ~30 min.', status:'considering', tags:['Strand','Snorkling','Baby-vennlig'], lat:-8.6812, lng:115.4430, color:'#818cf8',
+        options:[
+          {name:'Beachfront Family Lumbung', price:'Fra ~$203/natt (~2 030 kr)', note:'650 sq ft, privat balkong på stranden, havbølger, Mount Agung-utsikt.', chosen:false},
+          {name:'Garden Family Lumbung', price:'Rimeligere enn Beachfront', note:'Tropisk hage, noen steg fra basseng & strand. Mer skjermet.', chosen:false}
+        ]
+      },
+      { id:'s4', name:'Ubud', dates:'5. – 10. sep • 6 netter', desc:'Rismarker, templer, apeskogen, kunstgallerier. Rolig tempo med baby. Spa og mat.', status:'open', tags:['Kultur','Natur','Baby-vennlig'], lat:-8.5069, lng:115.2625, color:'#a78bfa', options:[] },
+      { id:'s5', name:'Sanur (avslutning)', dates:'11. – 14. sep • 4 netter', desc:'Tilbake til Sanur. Strandpromenade for barnevogn. 25 min fra flyplassen.', status:'open', tags:['Strand','Baby-vennlig'], lat:-8.682, lng:115.268, color:'#34d399', options:[] },
+      { id:'s6', name:'Hjemreise', dates:'15. sep', desc:'Avreise DPS kl. 15:15. Nyt en siste strandformiddag!', status:'', tags:[], lat:-8.7467, lng:115.1667, color:'#fbbf24', options:[] }
+    ],
+    hotels: [
+      { id:'h1', name:'Novotel Bali Ngurah Rai Airport', area:'Flyplass', stars:4, price:'~780 kr/natt ($78)', desc:'Direkte koblet til flyplassterminalen. Basseng, familierom.', features:['Direkte terminal','Basseng','Kids club','Familierom'], lat:-8.7467, lng:115.1667 },
+      { id:'h2', name:'Hilton Garden Inn DPS', area:'Flyplass', stars:4, price:'~650 kr/natt ($65)', desc:'I flyplasskomplekset med 24t shuttle.', features:['Shuttle','Basseng','WiFi'], lat:-8.7467, lng:115.1667 },
+      { id:'h3', name:'Hai Tide — Beachfront Family', area:'Nusa Lembongan', stars:4, price:'Fra ~$203/natt', desc:'650 sq ft rett på Mushroom Bay. Privat balkong, havutsikt.', features:['Strandfront','Balkong','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430 },
+      { id:'h4', name:'Hai Tide — Garden Family', area:'Nusa Lembongan', stars:4, price:'Rimeligere enn Beachfront', desc:'Tropisk hage, nær basseng og strand.', features:['Hage','Basseng','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430 },
+      { id:'h5', name:'Hillstone Villas Ubud', area:'Ubud', stars:4, price:'~900 kr/natt ($90)', desc:'Private villaer med basseng omgitt av rismarker.', features:['Privat villa','Privat basseng','Rismarker','Barnevakt'], lat:-8.5069, lng:115.2625 },
+      { id:'h6', name:'Bisma Eight Ubud', area:'Ubud', stars:4, price:'~1 100 kr/natt ($110)', desc:'Boutique-hotell. Infinity-basseng med jungel-utsikt.', features:['Infinity-basseng','Restaurant','Sentralt','Yoga'], lat:-8.51, lng:115.26 },
+      { id:'h7', name:'Klumpu Bali Resort', area:'Sanur', stars:4, price:'~700 kr/natt ($70)', desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631 },
+      { id:'h8', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, price:'~1 300 kr/natt ($130)', desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268 },
+      { id:'h9', name:'Marriott Nusa Dua Gardens', area:'Nusa Dua', stars:5, price:'~1 200 kr/natt ($120)', desc:'Stort familieresort, kids club, strandtilgang.', features:['Familierom','Kids club','Basseng','Strand','Spa'], lat:-8.8005, lng:115.2306 }
+    ],
+    activities: [
+      { id:'a1', name:'Mengiat Beach', area:'Nusa Dua', cat:'strand', desc:'Rolig strand, grunt stille vann.', baby:true, price:'Gratis', lat:-8.804, lng:115.232 },
+      { id:'a2', name:'Turtle Island', area:'Nusa Dua', cat:'natur', desc:'Skilpaddeoppdretts-senter.', baby:true, price:'~100 kr (IDR 100k)', lat:-8.744, lng:115.226 },
+      { id:'a3', name:'Kecak-dans Uluwatu', area:'Uluwatu', cat:'kultur', desc:'Tradisjonell dans ved solnedgang.', baby:true, price:'~150 kr (IDR 150k)', lat:-8.8291, lng:115.0849 },
+      { id:'a4', name:'Tegallalang rismarker', area:'Ubud', cat:'natur', desc:'Ikoniske rismarker. Bæresele for baby.', baby:true, price:'~50-100 kr (IDR 50-100k)', lat:-8.4312, lng:115.2792 },
+      { id:'a5', name:'Monkey Forest', area:'Ubud', cat:'natur', desc:'Hellig apeskogsreservat. Hold babyen tett!', baby:true, price:'~130 kr (IDR 130k)', lat:-8.5185, lng:115.2588 },
+      { id:'a6', name:'Ubud Art Market', area:'Ubud', cat:'kultur', desc:'Håndlaget kunst og suvenirer. Husk å prute!', baby:true, price:'Gratis inngang', lat:-8.5068, lng:115.2636 },
+      { id:'a7', name:'Snorkling med skilpadder', area:'Nusa Lembongan', cat:'natur', desc:'Hai Tide cruise til snorklespots.', baby:true, price:'Inkl. i resort', lat:-8.68, lng:115.45 },
+      { id:'a8', name:'Mushroom Bay strand', area:'Nusa Lembongan', cat:'strand', desc:'Krystallklar bukt, grunt vann, hvit sand.', baby:true, price:'Gratis', lat:-8.6812, lng:115.443 },
+      { id:'a9', name:'Kajakk i mangroven', area:'Nusa Lembongan', cat:'natur', desc:'Padletur gjennom mangroveskogen.', baby:true, price:'Inkl. i resort', lat:-8.688, lng:115.447 },
+      { id:'a10', name:'Spa-dag', area:'Ubud / Sanur', cat:'mat', desc:'Balinesisk spa. Mange har babysitting.', baby:true, price:'~200-400 kr', lat:-8.51, lng:115.26 },
+      { id:'a11', name:'Cooking class', area:'Ubud', cat:'mat', desc:'Lær autentisk balinesisk mat.', baby:true, price:'~350 kr ($35)', lat:-8.505, lng:115.265 },
+      { id:'a12', name:'Tanah Lot-tempelet', area:'Tabanan', cat:'kultur', desc:'Spektakulært havtempel ved solnedgang.', baby:true, price:'~60 kr (IDR 60k)', lat:-8.6211, lng:115.0868 },
+      { id:'a13', name:'Bali Zoo', area:'Gianyar', cat:'natur', desc:'Frokost med orangutanger!', baby:true, price:'~400 kr ($40)', lat:-8.5945, lng:115.2874 },
+      { id:'a14', name:'Waterbom Bali', area:'Kuta', cat:'strand', desc:'Asias beste vannpark, grunne barneområder.', baby:true, price:'~500 kr ($50 voksne)', lat:-8.728, lng:115.17 },
+      { id:'a15', name:'Sanur strandpromenade', area:'Sanur', cat:'strand', desc:'Flat promenade, perfekt for barnevogn.', baby:true, price:'Gratis', lat:-8.678, lng:115.263 },
+      { id:'a16', name:'Mount Batur utsikt', area:'Kintamani', cat:'natur', desc:'Utsikt fra kafeer i Kintamani. Selve turen er tøff med baby.', baby:false, price:'~600 kr ($60)', lat:-8.2417, lng:115.3753 }
+    ],
+    budget: [
+      { id:'b1', icon:'✈️', label:'Fly OSL↔DPS (2 voksne)', amount:4500, note:'Booket. Baby gratis/billig.' },
+      { id:'b2', icon:'🏨', label:'Flyplasshotell (1 natt)', amount:780, note:'Novotel ~$78. Hilton ~$65. Holiday Inn ~$70.' },
+      { id:'b3', icon:'🏠', label:'Uke 1 — Jl Kesari (6 n)', amount:0, note:'Booket — legg inn faktisk pris.' },
+      { id:'b4', icon:'🏝️', label:'Uke 2 — Hai Tide (7 n)', amount:14210, note:'Beachfront: $203/n × 7 = $1421 ≈ 14 210 kr.' },
+      { id:'b5', icon:'🌿', label:'Uke 3-4 — Hotell (10 n)', amount:9000, note:'Ubud ~$90/n + Sanur ~$70/n. Snitt ~$70-90/n.' },
+      { id:'b6', icon:'⛴️', label:'Båt Sanur↔Lembongan', amount:700, note:'$17/vei × 2 pers × tur/retur ≈ $68.' },
+      { id:'b7', icon:'🚗', label:'Transport på Bali', amount:2500, note:'Grab $2-5/tur, privatsjåfør $40-60/dag, transfer $25.' },
+      { id:'b8', icon:'🍜', label:'Mat & drikke (26 dager)', amount:7800, note:'Snitt ~$30/dag for 2 pers. Warung $2-4, restaurant $8-15.' },
+      { id:'b9', icon:'🎯', label:'Aktiviteter & inngang', amount:3000, note:'Monkey Forest 130k IDR, templer 50-100k, Zoo $25, Waterbom $35.' },
+      { id:'b10', icon:'🛒', label:'Diverse & shopping', amount:2000, note:'SIM-kort, suvenirer, bleier, uforutsett.' }
+    ],
+    packing: [
+      { cat:'👶 Baby', items:['Bleier (kjøp lokalt!)','Babyklær (lett bomull)','Solkrem SPF50+ baby','Bæresele/wrap','Sammenleggbar barnevogn','Babymedisin-kit','Favoritt-leke/kosedyr','Amme-/mateutstyr','Myggmiddel baby','Solhatt baby'], checked:[] },
+      { cat:'👕 Klær', items:['Lette t-skjorter','Shorts/lette bukser','Badetøy (2-3 stk)','Lett regnjakke','Sandaler/flip-flops','Sneakers for templer','Sarong (tempelbesøk)','Solhatt','Lett cardigan for AC'], checked:[] },
+      { cat:'💊 Helse', items:['Solkrem SPF50+','Myggspray (DEET)','Førstehjelpssett','Reiseapotek','Imodium / mage-medisin','Hånddesinfeksjon','After-sun lotion','Reiseforsikring-docs'], checked:[] },
+      { cat:'📱 Tech & docs', items:['Pass (6+ mnd gyldighet)','Kopi av pass','Reiseforsikring','Kredittkort (Visa/MC)','Kontanter → IDR','Telefon + lader','Powerbank','Universal adapter','Hodetelefoner'], checked:[] },
+      { cat:'🎒 Diverse', items:['Tøypose for skittentøy','Zip-lock poser','Vannflaske','Snacks til flyturen','Bok/Kindle','GoPro/kamera','Dagssekk'], checked:[] }
+    ],
+    notes: ''
+  };
+}
+
+// ===== STORAGE: Railway Postgres via API =====
+// API_BASE auto-detects: if served from Railway, use relative path; if local file, use full Railway URL.
+// AFTER DEPLOY: replace YOUR_RAILWAY_DOMAIN below with your actual Railway domain!
+const RAILWAY_URL = 'https://bali-production-9a13.up.railway.app';
+const API_BASE = (location.protocol === 'file:' || location.hostname === 'localhost' && location.port !== (window._serverPort||'3000'))
+  ? RAILWAY_URL + '/bali/api'
+  : '/bali/api';
+
+let saveTimer = null;
+
+async function loadFromAPI() {
+  try {
+    const r = await fetch(API_BASE + '/data', { signal: AbortSignal.timeout(5000) });
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.stops) { DATA = data; return true; }
+    }
+  } catch(e) { console.warn('API load failed:', e.message); }
+  return false;
+}
+
+function autoSave() {
+  clearTimeout(saveTimer);
+  const el = document.getElementById('saveStatus');
+  if (el) { el.textContent = 'Lagrer...'; el.style.color = 'var(--a5)'; }
+
+  saveTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(API_BASE + '/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(DATA)
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (el) { el.textContent = 'Lagret ✓'; el.style.color = 'var(--a4)'; }
+    } catch(e) {
+      console.error('Save failed:', e);
+      if (el) { el.textContent = 'Feil ved lagring!'; el.style.color = 'var(--red)'; }
+    }
+  }, 400);
+}
+
+// Export/import JSON backup
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bali-reiseplan-backup.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      DATA = JSON.parse(ev.target.result);
+      render(); autoSave();
+      showSidebar('Importert!', 'Reiseplanen ble lastet fra fil.');
+    } catch(err) { alert('Ugyldig JSON-fil.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ===== MAP =====
+function initMap() {
+  map = L.map('map').setView([-8.55, 115.35], 10);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OSM © CARTO', maxZoom:19
+  }).addTo(map);
+}
+
+function clearMap() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  if (polyline) { map.removeLayer(polyline); polyline = null; }
+}
+
+function drawRoute() {
+  clearMap();
+  DATA.stops.forEach((s, i) => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="width:28px;height:28px;border-radius:50%;background:${s.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#0f172a;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:pointer;">${i+1}</div>`,
+      iconSize:[28,28], iconAnchor:[14,14]
+    });
+    const m = L.marker([s.lat, s.lng], {icon}).addTo(map)
+      .bindPopup(`<b>${s.name}</b><br><small>${s.dates}</small>`);
+    m.on('click', () => focusOnItem(s.name, s.lat, s.lng, s.desc));
+    markers.push(m);
+  });
+  const coords = DATA.stops.map(s => [s.lat, s.lng]);
+  polyline = L.polyline(coords, {color:'#38bdf8', weight:2, opacity:0.4, dashArray:'6,6'}).addTo(map);
+  map.fitBounds(polyline.getBounds().pad(0.15));
+}
+
+function flyTo(lat, lng, name, detail) {
+  map.flyTo([lat, lng], 14, {duration:0.8});
+  clearMap();
+  const m = L.marker([lat, lng]).addTo(map)
+    .bindPopup(`<b>${name}</b>${detail ? '<br><small>'+detail+'</small>' : ''}`).openPopup();
+  markers.push(m);
+  // Also draw route faintly
+  const coords = DATA.stops.map(s => [s.lat, s.lng]);
+  polyline = L.polyline(coords, {color:'#38bdf8', weight:1, opacity:0.2, dashArray:'4,4'}).addTo(map);
+}
+
+function focusOnItem(name, lat, lng, detail) {
+  activeMapItem = name;
+  flyTo(lat, lng, name, detail);
+  showSidebar(name, detail || '');
+  highlightCard(name);
+}
+
+function showSidebar(title, text) {
+  document.getElementById('sidebarInfo').innerHTML = `<h4>${title}</h4><p>${text}</p>`;
+}
+
+function highlightCard(name) {
+  document.querySelectorAll('.icard').forEach(c => c.classList.remove('active'));
+  const el = document.querySelector(`.icard[data-name="${CSS.escape(name)}"]`);
+  if (el) el.classList.add('active');
+}
+
+function showFullRoute() {
+  activeMapItem = null;
+  drawRoute();
+  showSidebar('Hele reiseruten', DATA.stops.map((s,i) => `${i+1}. ${s.name}`).join('<br>'));
+  document.querySelectorAll('.icard').forEach(c => c.classList.remove('active'));
+}
+
+// ===== EDITABLE FIELD =====
+function ef(value, onChange, cls) {
+  const c = cls || '';
+  const escaped = String(value).replace(/"/g, '&quot;');
+  return `<input class="ef ${c}" value="${escaped}" onfocus="this.select()" onchange="${onChange}" style="width:${Math.max(String(value).length * 8 + 20, 60)}px">`;
+}
+
+function efArea(value, onChange) {
+  const escaped = String(value).replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
+  return `<textarea class="ef ef-sm" onchange="${onChange}" style="width:100%;min-height:50px;resize:vertical">${escaped}</textarea>`;
+}
+
+// ===== UPDATE HELPERS (all auto-save) =====
+function updateStop(idx, field, value) { DATA.stops[idx][field] = value; autoSave(); }
+function updateStopOpt(si, oi, field, value) { DATA.stops[si].options[oi][field] = value; autoSave(); }
+function toggleStopOpt(si, oi) {
+  DATA.stops[si].options[oi].chosen = !DATA.stops[si].options[oi].chosen;
+  renderReiserute(); autoSave();
+}
+function updateHotel(idx, field, value) { DATA.hotels[idx][field] = value; autoSave(); }
+function updateActivity(idx, field, value) { DATA.activities[idx][field] = value; autoSave(); }
+function updateBudget(idx, field, value) {
+  if (field === 'amount') value = parseInt(value) || 0;
+  DATA.budget[idx][field] = value;
+  renderBudsjett(); autoSave();
+}
+function updateFlight(key, field, value) { DATA.flights[key][field] = value; autoSave(); }
+function updateNotes(val) { DATA.notes = val; autoSave(); }
+
+// ===== DELETE / ADD =====
+function deleteStop(idx) { if(confirm('Slett stopp?')){ DATA.stops.splice(idx,1); renderReiserute(); drawRoute(); autoSave(); }}
+function addStop() {
+  DATA.stops.splice(DATA.stops.length - 1, 0, {
+    id:'s'+Date.now(), name:'Nytt stopp', dates:'Datoer', desc:'Beskrivelse...', status:'open',
+    tags:[], lat:-8.5, lng:115.3, color:'#94a3b8', options:[]
+  });
+  renderReiserute(); drawRoute(); autoSave();
+}
+function deleteHotel(idx) { if(confirm('Slett hotell?')){ DATA.hotels.splice(idx,1); renderHotell(); autoSave(); }}
+function addHotel() {
+  DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, price:'Pris', desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3 });
+  renderHotell(); autoSave();
+}
+function deleteActivity(idx) { if(confirm('Slett aktivitet?')){ DATA.activities.splice(idx,1); renderAktiviteter(); autoSave(); }}
+function addActivity() {
+  DATA.activities.push({ id:'a'+Date.now(), name:'Ny aktivitet', area:'Område', cat:'natur', desc:'Beskrivelse', baby:true, price:'Pris', lat:-8.5, lng:115.3 });
+  renderAktiviteter(); autoSave();
+}
+function deleteBudget(idx) { DATA.budget.splice(idx,1); renderBudsjett(); autoSave(); }
+function addBudget() {
+  DATA.budget.push({ id:'b'+Date.now(), icon:'📌', label:'Ny post', amount:0, note:'Detaljer...' });
+  renderBudsjett(); autoSave();
+}
+
+// ===== RENDER =====
+function render() {
+  renderNav();
+  renderReiserute();
+  renderHotell();
+  renderAktiviteter();
+  renderBudsjett();
+  renderPakkeliste();
+  renderNotater();
+  drawRoute();
+}
+
+const TABS = [
+  {id:'reiserute',label:'Reiserute'},
+  {id:'hotell',label:'Hotell'},
+  {id:'aktiviteter',label:'Aktiviteter'},
+  {id:'budsjett',label:'Budsjett'},
+  {id:'pakkeliste',label:'Pakkeliste'},
+  {id:'notater',label:'Notater'}
+];
+
+function renderNav() {
+  document.getElementById('nav').innerHTML = TABS.map(t =>
+    `<button class="${activeTab===t.id?'on':''}" onclick="switchTab('${t.id}')">${t.label}</button>`
+  ).join('') + `<button onclick="showFullRoute()" style="margin-left:auto;opacity:0.6">🗺 Vis rute</button>`;
+}
+
+function switchTab(id) {
+  activeTab = id;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  renderNav();
+  if (id === 'reiserute') drawRoute();
+}
+
+// ----- REISERUTE -----
+function renderReiserute() {
+  const el = document.getElementById('p-reiserute');
+  const statusBadge = s => s === 'booked' ? '<span class="badge b-booked">BOOKET</span>' :
+    s === 'considering' ? '<span class="badge b-considering">VURDERES</span>' :
+    s === 'open' ? '<span class="badge b-open">ÅPENT</span>' : '';
+  const tagClass = t => {
+    const l = t.toLowerCase();
+    return l.includes('strand') || l.includes('snorkl') ? 't-s' : l.includes('kultur') || l.includes('mat') ? 't-k' : l.includes('natur') ? 't-n' : 't-b';
+  };
+
+  let html = `<h2>Reiserute</h2><p class="desc">Klikk for å se på kart. Alt kan redigeres — klikk på tekst for å endre.</p>`;
+
+  // Flights
+  html += `<div class="flights">`;
+  for (const [k,f] of Object.entries(DATA.flights)) {
+    html += `<div class="fl-card">
+      <div class="lbl">${ef(f.label, "updateFlight('${k}','label',this.value)")}</div>
+      <div style="font-weight:600">${ef(f.route, "updateFlight('${k}','route',this.value)")}</div>
+      <div style="font-size:0.8rem;color:var(--dim)">${ef(f.details, "updateFlight('${k}','details',this.value)", 'ef-sm')}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Stops
+  DATA.stops.forEach((s, i) => {
+    html += `<div class="icard" data-name="${s.name}" onclick="focusOnItem('${s.name.replace(/'/g,"\\'")}',${s.lat},${s.lng},'${s.desc.replace(/'/g,"\\'")}')" >
+      <span class="map-pin">📍</span>
+      <span class="del-btn" onclick="event.stopPropagation();deleteStop(${i})">✕</span>
+      <div class="dates">${ef(s.dates,"updateStop(${i},'dates',this.value);event.stopPropagation()",'ef-sm')} ${statusBadge(s.status)}
+        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:1px 3px;margin-left:4px" onchange="updateStop(${i},'status',this.value);renderReiserute();event.stopPropagation()">
+          <option value="" ${s.status===''?'selected':''}>—</option>
+          <option value="booked" ${s.status==='booked'?'selected':''}>Booket</option>
+          <option value="considering" ${s.status==='considering'?'selected':''}>Vurderes</option>
+          <option value="open" ${s.status==='open'?'selected':''}>Åpent</option>
+        </select>
+      </div>
+      <h3>${ef(s.name, "updateStop(${i},'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()">${efArea(s.desc, "updateStop(${i},'desc',this.value)")}</div>
+      <div>${s.tags.map(t => `<span class="tag ${tagClass(t)}">${t}</span>`).join('')}
+        <input class="ef ef-sm" placeholder="+ tag" style="width:60px" onkeydown="if(event.key==='Enter'){DATA.stops[${i}].tags.push(this.value);this.value='';renderReiserute();event.stopPropagation()}" onclick="event.stopPropagation()">
+      </div>`;
+
+    // Options (sub-choices)
+    if (s.options.length) {
+      html += `<div style="margin-top:0.6rem;" onclick="event.stopPropagation()">`;
+      s.options.forEach((o, oi) => {
+        html += `<div style="padding:0.5rem;margin-top:0.35rem;background:${o.chosen?'rgba(52,211,153,0.08)':'rgba(255,255,255,0.03)'};border:1px solid ${o.chosen?'var(--a4)':'var(--brd)'};border-radius:8px;cursor:pointer;transition:all 0.15s" onclick="toggleStopOpt(${i},${oi})">
+          <span style="font-size:0.85rem;font-weight:600">${o.chosen?'✅ ':''}</span>
+          ${ef(o.name, "updateStopOpt(${i},${oi},'name',this.value);event.stopPropagation()")}
+          — <span class="ef-price">${ef(o.price, "updateStopOpt(${i},${oi},'price',this.value);event.stopPropagation()", 'ef-price ef-sm')}</span>
+          <div style="font-size:0.78rem;color:var(--dim);margin-top:0.15rem">${ef(o.note, "updateStopOpt(${i},${oi},'note',this.value);event.stopPropagation()", 'ef-sm')}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `<button class="add-btn" onclick="addStop()">+ Legg til stopp</button>`;
+  el.innerHTML = html;
+}
+
+// ----- HOTELL -----
+function renderHotell() {
+  const el = document.getElementById('p-hotell');
+  let html = `<h2>Hotell</h2><p class="desc">Klikk for å se på kart. Rediger priser og info direkte.</p>`;
+  DATA.hotels.forEach((h, i) => {
+    html += `<div class="icard" data-name="${h.name}" onclick="focusOnItem('${h.name.replace(/'/g,"\\'")}',${h.lat},${h.lng},'${h.desc.replace(/'/g,"\\'")}')" >
+      <span class="map-pin">📍</span>
+      <span class="del-btn" onclick="event.stopPropagation();deleteHotel(${i})">✕</span>
+      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(h.area, "updateHotel(${i},'area',this.value);event.stopPropagation()",'ef-sm')} · ${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}</div>
+      <h3>${ef(h.name, "updateHotel(${i},'name',this.value);event.stopPropagation()")}</h3>
+      <div class="ef-price">${ef(h.price, "updateHotel(${i},'price',this.value);event.stopPropagation()",'ef-price')}</div>
+      <div onclick="event.stopPropagation()">${efArea(h.desc, "updateHotel(${i},'desc',this.value)")}</div>
+      <div style="margin-top:0.3rem">${h.features.map(f => `<span class="tag t-s">${f}</span>`).join('')}
+        <input class="ef ef-sm" placeholder="+ feature" style="width:70px" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){DATA.hotels[${i}].features.push(this.value);this.value='';renderHotell()}">
+      </div>
+    </div>`;
+  });
+  html += `<button class="add-btn" onclick="addHotel()">+ Legg til hotell</button>`;
+  el.innerHTML = html;
+}
+
+// ----- AKTIVITETER -----
+function renderAktiviteter() {
+  const el = document.getElementById('p-aktiviteter');
+  let html = `<h2>Aktiviteter</h2><p class="desc">Klikk for å se på kart. Rediger priser og beskrivelser.</p>`;
+  DATA.activities.forEach((a, i) => {
+    html += `<div class="icard" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${a.desc.replace(/'/g,"\\'")}')" >
+      <span class="map-pin">📍</span>
+      <span class="del-btn" onclick="event.stopPropagation();deleteActivity(${i})">✕</span>
+      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(a.area, "updateActivity(${i},'area',this.value);event.stopPropagation()",'ef-sm')}</div>
+      <h3>${ef(a.name, "updateActivity(${i},'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()">${efArea(a.desc, "updateActivity(${i},'desc',this.value)")}</div>
+      <div style="margin-top:0.3rem">
+        <span class="ef-price">${ef(a.price, "updateActivity(${i},'price',this.value);event.stopPropagation()",'ef-price ef-sm')}</span>
+        <span class="tag ${a.baby?'t-b':'t-k'}" style="cursor:pointer" onclick="event.stopPropagation();DATA.activities[${i}].baby=!DATA.activities[${i}].baby;renderAktiviteter()">${a.baby?'👶 Baby-vennlig':'⚠️ Tøft med baby'}</span>
+      </div>
+    </div>`;
+  });
+  html += `<button class="add-btn" onclick="addActivity()">+ Legg til aktivitet</button>`;
+  el.innerHTML = html;
+}
+
+// ----- BUDSJETT -----
+function renderBudsjett() {
+  const el = document.getElementById('p-budsjett');
+  const total = DATA.budget.reduce((s,b) => s + b.amount, 0);
+  let html = `<h2>Budsjett</h2><p class="desc">Klikk på beløp for å endre. 1 USD ≈ 10 NOK.</p>`;
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:1rem">
+    <table class="btable">`;
+  DATA.budget.forEach((b, i) => {
+    html += `<tr>
+      <td style="white-space:nowrap">${ef(b.icon,"updateBudget(${i},'icon',this.value)",'ef-sm')} ${ef(b.label,"updateBudget(${i},'label',this.value)")}</td>
+      <td style="text-align:right;white-space:nowrap"><input class="ef ef-price" type="number" value="${b.amount}" onchange="updateBudget(${i},'amount',this.value)" style="width:90px;text-align:right" onclick="event.stopPropagation();this.select()"> kr
+        <span class="del-btn" style="position:static;opacity:0.4;cursor:pointer;font-size:0.75rem" onclick="deleteBudget(${i})">✕</span>
+      </td>
+    </tr>
+    <tr><td colspan="2" style="padding:0.1rem 0.4rem 0.5rem;font-size:0.75rem;color:var(--dim)">${ef(b.note,"updateBudget(${i},'note',this.value)",'ef-sm')}</td></tr>`;
+  });
+  html += `<tr class="total"><td>TOTALT</td><td class="amt" style="text-align:right">${total.toLocaleString('nb-NO')} kr</td></tr>`;
+  html += `</table></div>`;
+  html += `<button class="add-btn" onclick="addBudget()">+ Legg til budsjettpost</button>`;
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-top:0.5rem">
+    <h3 style="font-size:0.95rem;margin-bottom:0.5rem">Sparetips</h3>
+    <ul style="color:var(--dim);font-size:0.82rem;padding-left:1rem">
+      <li>Warung-mat: 15-25 kr/måltid (IDR 25-40k)</li>
+      <li>Grab-app: halvparten av taxipris</li>
+      <li>Book direkte — billigere enn Booking.com</li>
+      <li>Lokalt SIM-kort: ~30-50 kr for 30 dager</li>
+      <li>Prute på markeder — start på halvparten</li>
+    </ul>
+  </div>`;
+  el.innerHTML = html;
+}
+
+// ----- PAKKELISTE -----
+function renderPakkeliste() {
+  const el = document.getElementById('p-pakkeliste');
+  let html = `<h2>Pakkeliste</h2><p class="desc">Klikk for å huke av. Lagres når dere lagrer fil.</p><div class="pack-grid">`;
+  DATA.packing.forEach((cat, ci) => {
+    html += `<div class="pack-cat"><h3>${cat.cat}</h3><ul>`;
+    cat.items.forEach((item, ii) => {
+      const done = cat.checked.includes(ii);
+      html += `<li class="${done?'done':''}" onclick="togglePack(${ci},${ii})"><span class="ck"></span><span>${item}</span></li>`;
+    });
+    html += `</ul>
+      <input class="ef ef-sm" placeholder="+ nytt element" style="width:100%;margin-top:0.4rem" onkeydown="if(event.key==='Enter'&&this.value){DATA.packing[${ci}].items.push(this.value);this.value='';renderPakkeliste();autoSave()}">
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function togglePack(ci, ii) {
+  const arr = DATA.packing[ci].checked;
+  const idx = arr.indexOf(ii);
+  if (idx > -1) arr.splice(idx, 1); else arr.push(ii);
+  renderPakkeliste(); autoSave();
+}
+
+// ----- NOTATER -----
+function renderNotater() {
+  document.getElementById('p-notater').innerHTML = `
+    <h2>Notater</h2>
+    <p class="desc">Skriv ned tanker, spørsmål og huskeliste. Lagres med "Lagre fil".</p>
+    <textarea class="notes" oninput="updateNotes(this.value)">${DATA.notes}</textarea>`;
+}
+
+// ===== INIT =====
+async function init() {
+  initDefaultData();
+  initMap();
+  const el = document.getElementById('saveStatus');
+  const loaded = await loadFromAPI();
+  if (loaded) {
+    el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
+  } else {
+    el.textContent = 'Ny plan — lagrer standarddata...'; el.style.color = 'var(--a1)';
+    autoSave(); // save defaults to DB
+  }
+  render();
+}
+init();
+</script>
+</body>
+</html>
