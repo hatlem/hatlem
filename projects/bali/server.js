@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 4820;
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-secret-change-in-prod';
 const BALI_PASSWORD = process.env.BALI_PASSWORD || 'matheo2025';
-const SHARE_TOKEN = process.env.SHARE_TOKEN || 'anna-bali-2026';
+const SHARE_TOKEN = process.env.SHARE_TOKEN || 'mari-bali-2026';
 
 app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json({ limit: '5mb' }));
