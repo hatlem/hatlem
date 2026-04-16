@@ -406,11 +406,17 @@ function updateHotelPrice(hi, pi, field, value) {
   }
   p[field] = value;
   if (field === 'perNight') p.checkedAt = new Date().toISOString().slice(0,10);
+  // When user enters totalPaid, compute perNight from it (and nights of the hotel)
+  if (field === 'totalPaid' && value > 0) {
+    const nights = calcNights(DATA.hotels[hi].checkIn, DATA.hotels[hi].checkOut);
+    if (nights > 0) p.perNight = Math.round(value / nights);
+    p.checkedAt = new Date().toISOString().slice(0,10);
+  }
   autoSave();
 }
 function addHotelPrice(hi) {
   if (!DATA.hotels[hi].prices) DATA.hotels[hi].prices = [];
-  DATA.hotels[hi].prices.push({ source:'', perNight:0, currency:'NOK', url:'', checkedAt:new Date().toISOString().slice(0,10), history:[] });
+  DATA.hotels[hi].prices.push({ source:'', perNight:0, totalPaid:0, currency:'NOK', url:'', checkedAt:new Date().toISOString().slice(0,10), history:[], paid:false });
   renderHotell(); autoSave();
 }
 function deleteHotelPrice(hi, pi) {
@@ -574,6 +580,26 @@ function getStopDateBounds(idx, field) {
   }
 }
 
+function migrateActivities() {
+  if (!DATA.activities) return;
+  let changed = false;
+  DATA.activities.forEach(a => {
+    if (a.cost === undefined) {
+      // Try to parse the price string to extract kr amount
+      const priceStr = String(a.price || '').toLowerCase();
+      if (priceStr.includes('gratis') || priceStr.includes('inkl')) {
+        a.cost = 0;
+      } else {
+        const match = priceStr.match(/(\d[\d\s]*)\s*kr/);
+        a.cost = match ? parseInt(match[1].replace(/\s/g, '')) : 0;
+      }
+      changed = true;
+    }
+    if (a.planned === undefined) { a.planned = false; changed = true; }
+  });
+  if (changed) autoSave();
+}
+
 function migrateHotels() {
   if (!DATA.hotels) return;
   let changed = false;
@@ -596,6 +622,8 @@ function migrateHotels() {
     if (h.geocoded === undefined) { h.geocoded = false; changed = true; }
     if (h.prices) h.prices.forEach(p => {
       if (!p.history) { p.history = []; changed = true; }
+      if (p.totalPaid === undefined) { p.totalPaid = 0; changed = true; }
+      if (p.paid === undefined) { p.paid = false; changed = true; }
     });
   });
   if (changed) autoSave();
@@ -909,12 +937,16 @@ function renderHotell() {
           if (diff > 0) return `<span style="color:var(--red);font-size:0.68rem" title="Opp fra ${prev} kr">&#x2191; ${diff} kr</span>`;
           return '';
         })() : '';
+        const displayTotal = p.totalPaid > 0 ? p.totalPaid : total;
         html += `<tr>
           <td class="src">${ef(p.source, "updateHotelPrice("+i+","+pi+",'source',this.value)",'ef-sm')}</td>
           <td class="${isBest?'best-price':''}">
             <input class="ef ef-price" type="number" value="${p.perNight}" onchange="updateHotelPrice(${i},${pi},'perNight',parseInt(this.value)||0);renderHotell()" style="width:70px;text-align:right" onclick="this.select()"> kr/natt ${trend}
           </td>
-          <td style="color:var(--dim);font-size:0.75rem">${total ? total.toLocaleString('nb-NO')+' kr total' : ''}</td>
+          <td style="color:var(--dim);font-size:0.75rem">
+            ${p.totalPaid > 0 ? 'Total betalt: ' : 'Total: '}
+            <input class="ef ef-price" type="number" value="${p.totalPaid || total}" onchange="updateHotelPrice(${i},${pi},'totalPaid',parseFloat(this.value)||0);renderHotell()" style="width:80px;text-align:right" onclick="this.select()"> kr
+          </td>
           <td style="font-size:0.68rem;color:var(--dim)">${p.checkedAt || ''}${hist.length ? ` <span style="cursor:help;opacity:0.5" title="Prishistorikk:\n${hist.map(h=>'  '+h.checkedAt+': '+h.perNight+' kr').join('\n')}">(${hist.length} endring${hist.length>1?'er':''})</span>` : ''}</td>
           <td>
             ${p.url ? `<a href="${p.url}" target="_blank" style="font-size:0.7rem">Lenke</a>` : `<input class="ef ef-sm" placeholder="URL" style="width:60px" onchange="updateHotelPrice(${i},${pi},'url',this.value)">`}
@@ -944,17 +976,22 @@ function renderHotell() {
 // ----- AKTIVITETER -----
 function renderAktiviteter() {
   const el = document.getElementById('p-aktiviteter');
-  let html = `<h2>Aktiviteter</h2><p class="desc">Klikk for å se på kart. Rediger priser og beskrivelser.</p>`;
+  let html = `<h2>Aktiviteter</h2><p class="desc">Merk "Planlagt" for at aktiviteten skal telles i budsjettet. Klikk kart-pin for å se på kart.</p>`;
   DATA.activities.forEach((a, i) => {
-    html += `<div class="icard" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${a.desc.replace(/'/g,"\\'")}')" >
+    const plannedClass = a.planned ? ' card-booked' : '';
+    html += `<div class="icard${plannedClass}" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${a.desc.replace(/'/g,"\\'")}')" >
       <span class="map-pin">📍</span>
       <span class="del-btn" onclick="event.stopPropagation();deleteActivity(${i})">✕</span>
-      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(a.area, "updateActivity(${i},'area',this.value);event.stopPropagation()",'ef-sm')}</div>
-      <h3>${ef(a.name, "updateActivity(${i},'name',this.value);event.stopPropagation()")}</h3>
-      <div onclick="event.stopPropagation()">${efArea(a.desc, "updateActivity(${i},'desc',this.value)")}</div>
-      <div style="margin-top:0.3rem">
-        <span class="ef-price">${ef(a.price, "updateActivity(${i},'price',this.value);event.stopPropagation()",'ef-price ef-sm')}</span>
-        <span class="tag ${a.baby?'t-b':'t-k'}" style="cursor:pointer" onclick="event.stopPropagation();DATA.activities[${i}].baby=!DATA.activities[${i}].baby;renderAktiviteter()">${a.baby?'👶 Baby-vennlig':'⚠️ Tøft med baby'}</span>
+      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(a.area, "updateActivity("+i+",'area',this.value);event.stopPropagation()",'ef-sm')}</div>
+      <h3>${ef(a.name, "updateActivity("+i+",'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()">${efArea(a.desc, "updateActivity("+i+",'desc',this.value)")}</div>
+      <div style="margin-top:0.4rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap" onclick="event.stopPropagation()">
+        <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer;font-size:0.78rem;color:${a.planned?'var(--a4)':'var(--dim)'};font-weight:${a.planned?'600':'400'}">
+          <input type="checkbox" ${a.planned?'checked':''} onchange="updateActivity(${i},'planned',this.checked);renderAktiviteter();renderBudsjett()"> ${a.planned?'✓ Planlagt':'Planlagt?'}
+        </label>
+        <span style="color:var(--dim);font-size:0.78rem">Pris:</span>
+        <input class="ef ef-price" type="number" value="${a.cost||0}" onchange="updateActivity(${i},'cost',parseInt(this.value)||0);renderBudsjett()" style="width:70px;text-align:right"> kr
+        <span class="tag ${a.baby?'t-b':'t-k'}" style="cursor:pointer" onclick="DATA.activities[${i}].baby=!DATA.activities[${i}].baby;renderAktiviteter()">${a.baby?'👶 Baby-vennlig':'⚠️ Tøft med baby'}</span>
       </div>
     </div>`;
   });
@@ -965,22 +1002,102 @@ function renderAktiviteter() {
 // ----- BUDSJETT -----
 function renderBudsjett() {
   const el = document.getElementById('p-budsjett');
-  const total = DATA.budget.reduce((s,b) => s + b.amount, 0);
-  let html = `<h2>Budsjett</h2><p class="desc">Klikk på beløp for å endre. 1 USD ≈ 10 NOK.</p>`;
-  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:1rem">
+
+  // Auto: hotels with status 'booked' or 'favorite' contribute their cost to budget
+  const includedHotels = DATA.hotels.filter(h => h.status === 'booked' || h.status === 'favorite');
+  const hotelRows = includedHotels.map(h => {
+    const best = bestHotelPrice(h);
+    const nights = calcNights(h.checkIn, h.checkOut);
+    // Prefer totalPaid if set (actual booked amount), else perNight × nights
+    const cost = best?.totalPaid > 0 ? best.totalPaid : (best && nights ? best.perNight * nights : 0);
+    return { hotel: h, cost, nights, best };
+  });
+  const hotelTotal = hotelRows.reduce((s, r) => s + r.cost, 0);
+
+  // Auto: activities marked as planned
+  const plannedActivities = (DATA.activities || []).filter(a => a.planned);
+  const activityTotal = plannedActivities.reduce((s, a) => s + (a.cost || 0), 0);
+
+  // Manual: remaining budget items (flights, food, transport, misc)
+  const manualTotal = (DATA.budget || []).reduce((s, b) => s + (b.amount || 0), 0);
+
+  const grandTotal = hotelTotal + activityTotal + manualTotal;
+
+  let html = `<h2>Budsjett</h2><p class="desc">Hotell og aktiviteter summeres automatisk fra dine valg. Legg til flyreise, mat, transport osv. manuelt.</p>`;
+
+  // Auto section: Hotels
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
+    <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
+      🏨 Hotell <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(56,189,248,0.1);border-radius:4px">Auto fra Hotell-fane</span>
+    </h3>`;
+
+  if (hotelRows.length === 0) {
+    html += `<p style="color:var(--dim);font-size:0.82rem">Ingen hotell merket som booket eller favoritt. Gå til <a href="#" onclick="switchTab('hotell');return false" style="color:var(--a1)">Hotell-fanen</a> og velg status.</p>`;
+  } else {
+    html += `<table class="btable">`;
+    hotelRows.forEach(r => {
+      const statusIcon = r.hotel.status === 'booked' ? '✓' : '⭐';
+      html += `<tr>
+        <td>${statusIcon} ${r.hotel.name} <span style="font-size:0.7rem;color:var(--dim)">· ${r.hotel.area}</span></td>
+        <td style="text-align:right;color:var(--dim);font-size:0.78rem">${r.nights} ${r.nights===1?'natt':'netter'} × ${r.best?.perNight?.toLocaleString('nb-NO') || '—'} kr</td>
+        <td style="text-align:right;font-weight:600;white-space:nowrap">${r.cost.toLocaleString('nb-NO')} kr</td>
+      </tr>`;
+    });
+    html += `<tr><td colspan="2" style="color:var(--dim);font-size:0.78rem">Sum hotell</td><td style="text-align:right;font-weight:700;color:var(--a1)">${hotelTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+    html += `</table>`;
+  }
+  html += `</div>`;
+
+  // Auto section: Activities
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
+    <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
+      🎯 Aktiviteter <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(52,211,153,0.1);border-radius:4px">Auto fra Aktivitet-fane</span>
+    </h3>`;
+
+  if (plannedActivities.length === 0) {
+    html += `<p style="color:var(--dim);font-size:0.82rem">Ingen aktiviteter merket som planlagt. Gå til <a href="#" onclick="switchTab('aktiviteter');return false" style="color:var(--a1)">Aktiviteter-fanen</a> og hak av "Planlagt".</p>`;
+  } else {
+    html += `<table class="btable">`;
+    plannedActivities.forEach(a => {
+      html += `<tr>
+        <td>✓ ${a.name} <span style="font-size:0.7rem;color:var(--dim)">· ${a.area}</span></td>
+        <td style="text-align:right;font-weight:600;white-space:nowrap">${(a.cost || 0).toLocaleString('nb-NO')} kr</td>
+      </tr>`;
+    });
+    html += `<tr><td style="color:var(--dim);font-size:0.78rem">Sum aktiviteter</td><td style="text-align:right;font-weight:700;color:var(--a4)">${activityTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+    html += `</table>`;
+  }
+  html += `</div>`;
+
+  // Manual section: other costs (flights, food, transport, misc)
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
+    <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
+      💸 Annet (fly, mat, transport osv.) <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(129,140,248,0.1);border-radius:4px">Manuell</span>
+    </h3>
     <table class="btable">`;
-  DATA.budget.forEach((b, i) => {
+  (DATA.budget || []).forEach((b, i) => {
     html += `<tr>
-      <td style="white-space:nowrap">${ef(b.icon,"updateBudget(${i},'icon',this.value)",'ef-sm')} ${ef(b.label,"updateBudget(${i},'label',this.value)")}</td>
+      <td style="white-space:nowrap">${ef(b.icon,"updateBudget("+i+",'icon',this.value)",'ef-sm')} ${ef(b.label,"updateBudget("+i+",'label',this.value)")}</td>
       <td style="text-align:right;white-space:nowrap"><input class="ef ef-price" type="number" value="${b.amount}" onchange="updateBudget(${i},'amount',this.value)" style="width:90px;text-align:right" onclick="event.stopPropagation();this.select()"> kr
         <span class="del-btn" style="position:static;opacity:0.4;cursor:pointer;font-size:0.75rem" onclick="deleteBudget(${i})">✕</span>
       </td>
     </tr>
-    <tr><td colspan="2" style="padding:0.1rem 0.4rem 0.5rem;font-size:0.75rem;color:var(--dim)">${ef(b.note,"updateBudget(${i},'note',this.value)",'ef-sm')}</td></tr>`;
+    <tr><td colspan="2" style="padding:0.1rem 0.4rem 0.5rem;font-size:0.75rem;color:var(--dim)">${ef(b.note,"updateBudget("+i+",'note',this.value)",'ef-sm')}</td></tr>`;
   });
-  html += `<tr class="total"><td>TOTALT</td><td class="amt" style="text-align:right">${total.toLocaleString('nb-NO')} kr</td></tr>`;
-  html += `</table></div>`;
-  html += `<button class="add-btn" onclick="addBudget()">+ Legg til budsjettpost</button>`;
+  html += `<tr><td colspan="1" style="color:var(--dim);font-size:0.78rem">Sum manuelt</td><td style="text-align:right;font-weight:700;color:var(--a2)">${manualTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+  html += `</table>`;
+  html += `<button class="add-btn" onclick="addBudget()" style="margin-top:0.5rem">+ Legg til post</button>`;
+  html += `</div>`;
+
+  // Grand total
+  html += `<div style="background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(244,114,182,0.08));border:2px solid var(--a1);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:0.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em">Totalt budsjett</div>
+      <div style="font-size:0.72rem;color:var(--dim);margin-top:0.2rem">Hotell ${hotelTotal.toLocaleString('nb-NO')} + Aktivitet ${activityTotal.toLocaleString('nb-NO')} + Annet ${manualTotal.toLocaleString('nb-NO')}</div>
+    </div>
+    <div style="font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--a1),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${grandTotal.toLocaleString('nb-NO')} kr</div>
+  </div>`;
+
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-top:0.5rem">
     <h3 style="font-size:0.95rem;margin-bottom:0.5rem">Sparetips</h3>
     <ul style="color:var(--dim);font-size:0.82rem;padding-left:1rem">
@@ -1037,6 +1154,7 @@ async function init() {
     migrateTripDates(); // ensure trip range exists
     migrateHotels(); // upgrade old hotel format to new price-comparison model
     migrateStops(); // add type/startDate/endDate to stops
+    migrateActivities(); // add cost (numeric) + planned flag to activities
     el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
   } else {
     el.textContent = 'Ny plan — lagrer standarddata...'; el.style.color = 'var(--a1)';
