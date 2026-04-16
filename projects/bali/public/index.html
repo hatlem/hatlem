@@ -1721,10 +1721,12 @@ function renderPakkeliste() {
       </div>
       <ul>`;
     sorted.forEach(item => {
-      html += `<li class="${item.done?'done':''}" style="display:flex;align-items:center;gap:0.4rem">
-        <span class="ck" onclick="togglePack(${ci},${item.origIdx})"></span>
-        <span onclick="togglePack(${ci},${item.origIdx})" style="flex:1;cursor:pointer">${item.text}</span>
-        <span onclick="cyclePackPrio(${ci},${item.origIdx})" style="cursor:pointer;font-size:0.7rem;opacity:0.6" title="${item.priority==='high'?'Viktig':item.priority==='low'?'Kan hoppes over':'Normal'}">${prioIcon[item.priority]||''}</span>
+      const escaped = item.text.replace(/"/g, '&quot;');
+      html += `<li class="${item.done?'done':''}" style="display:flex;align-items:center;gap:0.35rem">
+        <span class="ck" onclick="togglePack(${ci},${item.origIdx})" style="cursor:pointer;flex-shrink:0"></span>
+        <input class="ef ef-sm" value="${escaped}" style="flex:1;min-width:0" onchange="updatePackItem(${ci},${item.origIdx},this.value)" onclick="event.stopPropagation()">
+        <span onclick="cyclePackPrio(${ci},${item.origIdx})" style="cursor:pointer;font-size:0.7rem;opacity:0.6;min-width:14px;text-align:center;flex-shrink:0" title="${item.priority==='high'?'Viktig':item.priority==='low'?'Kan hoppes over':'Normal — klikk for å endre'}">${prioIcon[item.priority]||'·'}</span>
+        <span onclick="deletePackItem(${ci},${item.origIdx})" style="cursor:pointer;color:var(--red);opacity:0.35;font-size:0.72rem;flex-shrink:0" title="Slett">✕</span>
       </li>`;
     });
     html += `</ul>
@@ -1747,6 +1749,20 @@ function cyclePackPrio(ci, ii) {
   const cur = DATA.packing[ci].items[ii].priority || 'med';
   const next = cur === 'high' ? 'med' : cur === 'med' ? 'low' : 'high';
   DATA.packing[ci].items[ii].priority = next;
+  renderPakkeliste(); autoSave();
+}
+
+function updatePackItem(ci, ii, text) {
+  DATA.packing[ci].items[ii].text = text;
+  autoSave();
+}
+
+function deletePackItem(ci, ii) {
+  DATA.packing[ci].items.splice(ii, 1);
+  // Rebuild checked array indices (remove ii, shift higher ones down)
+  DATA.packing[ci].checked = DATA.packing[ci].checked
+    .filter(x => x !== ii)
+    .map(x => x > ii ? x - 1 : x);
   renderPakkeliste(); autoSave();
 }
 
