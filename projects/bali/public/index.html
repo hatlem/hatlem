@@ -197,6 +197,8 @@ let map, markers = [], polyline;
 // ===== DEFAULT DATA =====
 function initEmptyData() {
   DATA = {
+    tripStart: '2026-08-21',
+    tripEnd: '2026-09-15',
     flights: {
       out: { label:'Utreise', route:'', details:'' },
       ret: { label:'Hjemreise', route:'', details:'' }
@@ -415,12 +417,76 @@ function deleteHotelPrice(hi, pi) {
   DATA.hotels[hi].prices.splice(pi, 1);
   renderHotell(); autoSave();
 }
+const NO_MONTHS = {
+  'jan':1,'januar':1,'feb':2,'februar':2,'mar':3,'mars':3,'apr':4,'april':4,
+  'mai':5,'jun':6,'juni':6,'jul':7,'juli':7,'aug':8,'august':8,
+  'sep':9,'september':9,'okt':10,'oktober':10,'nov':11,'november':11,'des':12,'desember':12
+};
+
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+function parseNoDateRange(text, year = 2026) {
+  if (!text) return null;
+  // Get nights count if present (for single-date entries with N natt)
+  const nightsMatch = text.match(/(\d+)\s*(?:natt|netter)/i);
+  const nights = nightsMatch ? parseInt(nightsMatch[1]) : 0;
+  // Remove everything after "•" or bullet
+  const clean = text.split('•')[0].trim();
+
+  // Range: "22. – 27. aug" or "28. aug – 4. sep" (both en-dash and em-dash)
+  const rangeMatch = clean.match(/(\d+)\.\s*(?:(\w+)\s*)?[–\-]\s*(\d+)\.\s*(\w+)/);
+  if (rangeMatch) {
+    const [, d1, m1, d2, m2] = rangeMatch;
+    const month1 = NO_MONTHS[(m1 || m2).toLowerCase()];
+    const month2 = NO_MONTHS[m2.toLowerCase()];
+    if (month1 && month2) {
+      const start = new Date(year, month1 - 1, parseInt(d1));
+      // "22. – 27. aug • 6 netter" means last night is Aug 27, checkout is Aug 28
+      const end = new Date(year, month2 - 1, parseInt(d2) + 1);
+      return { startDate: toISODate(start), endDate: toISODate(end) };
+    }
+  }
+
+  // Single date: "21. aug" or "15. sep"
+  const singleMatch = clean.match(/(\d+)\.\s*(\w+)/);
+  if (singleMatch) {
+    const [, d, m] = singleMatch;
+    const month = NO_MONTHS[m.toLowerCase()];
+    if (month) {
+      const start = new Date(year, month - 1, parseInt(d));
+      // If "1 natt" or similar, endDate = start + nights; else = start (transport)
+      const end = nights ? new Date(year, month - 1, parseInt(d) + nights) : start;
+      return { startDate: toISODate(start), endDate: toISODate(end) };
+    }
+  }
+
+  return null;
+}
+
+function migrateTripDates() {
+  let changed = false;
+  if (!DATA.tripStart) { DATA.tripStart = '2026-08-21'; changed = true; }
+  if (!DATA.tripEnd) { DATA.tripEnd = '2026-09-15'; changed = true; }
+  if (changed) autoSave();
+}
+
+function updateTripDate(field, value) {
+  DATA[field] = value;
+  autoSave();
+  renderReiserute();
+  renderHotell();
+}
+
 function migrateStops() {
   if (!DATA.stops) return;
   let changed = false;
   DATA.stops.forEach(s => {
     if (s.type === undefined) {
-      // Infer type from existing data: if it's "Hjemreise" or similar, it's transport
       const n = (s.name || '').toLowerCase();
       if (n.includes('fly') || n.includes('hjemreise') || n.includes('ankomst') || n.includes('transport')) {
         s.type = 'transport';
@@ -431,6 +497,16 @@ function migrateStops() {
     }
     if (s.startDate === undefined) { s.startDate = ''; changed = true; }
     if (s.endDate === undefined) { s.endDate = ''; changed = true; }
+
+    // Parse existing `dates` text into proper date fields if empty
+    if ((!s.startDate || !s.endDate) && s.dates) {
+      const parsed = parseNoDateRange(s.dates);
+      if (parsed) {
+        if (!s.startDate) s.startDate = parsed.startDate;
+        if (!s.endDate) s.endDate = parsed.endDate;
+        changed = true;
+      }
+    }
   });
   if (changed) autoSave();
 }
@@ -457,15 +533,45 @@ function insertStop(idx) {
 
 function updateStopDates(idx, field, value) {
   DATA.stops[idx][field] = value;
-  // Update the human-readable dates string from startDate/endDate
-  const s = DATA.stops[idx];
-  if (s.startDate && s.endDate) {
-    const d1 = new Date(s.startDate), d2 = new Date(s.endDate);
-    const nights = Math.max(0, Math.round((d2 - d1) / 86400000));
-    const fmt = d => d.toLocaleDateString('nb-NO', { day:'numeric', month:'short' });
-    s.dates = `${fmt(d1)} – ${fmt(d2)}${nights ? ' • ' + nights + ' netter' : ''}`;
+  // Chain: when endDate changes, auto-update next stop's startDate
+  if (field === 'endDate' && DATA.stops[idx + 1] && value) {
+    DATA.stops[idx + 1].startDate = value;
   }
+  // Chain: when startDate changes, auto-update prev stop's endDate
+  if (field === 'startDate' && DATA.stops[idx - 1] && value) {
+    DATA.stops[idx - 1].endDate = value;
+  }
+  // Update all formatted `dates` strings
+  DATA.stops.forEach(s => {
+    if (s.startDate && s.endDate) {
+      const d1 = new Date(s.startDate), d2 = new Date(s.endDate);
+      const nights = Math.max(0, Math.round((d2 - d1) / 86400000));
+      const fmt = d => d.toLocaleDateString('nb-NO', { day:'numeric', month:'short' });
+      s.dates = `${fmt(d1)} – ${fmt(d2)}${nights ? ' • ' + nights + ' netter' : ''}`;
+    } else if (s.startDate) {
+      s.dates = new Date(s.startDate).toLocaleDateString('nb-NO', { day:'numeric', month:'short' });
+    }
+  });
   autoSave();
+}
+
+// Compute min/max date for a stop's date picker based on adjacent stops and trip range
+function getStopDateBounds(idx, field) {
+  const tripStart = DATA.tripStart || '2026-08-21';
+  const tripEnd = DATA.tripEnd || '2026-09-15';
+  if (field === 'startDate') {
+    const prev = DATA.stops[idx - 1];
+    return {
+      min: prev?.endDate || prev?.startDate || tripStart,
+      max: DATA.stops[idx].endDate || tripEnd
+    };
+  } else {
+    const next = DATA.stops[idx + 1];
+    return {
+      min: DATA.stops[idx].startDate || tripStart,
+      max: next?.startDate || tripEnd
+    };
+  }
 }
 
 function migrateHotels() {
@@ -568,6 +674,16 @@ function renderReiserute() {
 
   let html = `<h2>Reiserute</h2><p class="desc">Klikk for å se på kart. Alt kan redigeres — klikk på tekst for å endre.</p>`;
 
+  // Trip range editor
+  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;font-size:0.85rem">
+    <span style="color:var(--dim);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">Turens datoer</span>
+    <span>Fra:</span>
+    <input type="date" value="${DATA.tripStart||''}" onchange="updateTripDate('tripStart',this.value)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);font-family:inherit;padding:0.25rem 0.5rem;border-radius:4px">
+    <span>Til:</span>
+    <input type="date" value="${DATA.tripEnd||''}" onchange="updateTripDate('tripEnd',this.value)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);font-family:inherit;padding:0.25rem 0.5rem;border-radius:4px">
+    ${DATA.tripStart && DATA.tripEnd ? `<span style="color:var(--a1);font-weight:600">${Math.round((new Date(DATA.tripEnd) - new Date(DATA.tripStart)) / 86400000)} dager</span>` : ''}
+  </div>`;
+
   // Flights
   html += `<div class="flights">`;
   for (const [k,f] of Object.entries(DATA.flights)) {
@@ -617,15 +733,19 @@ function renderReiserute() {
       <h3>${ef(s.name, "updateStop("+i+",'name',this.value);event.stopPropagation()")}</h3>
       <div onclick="event.stopPropagation()">${efArea(s.desc, "updateStop("+i+",'desc',this.value)")}</div>
 
-      <div class="dates-row" onclick="event.stopPropagation()">
-        <span>${s.type==='transport'?'Dato:':'Innsjekk:'}</span>
-        <input type="date" value="${s.startDate||''}" onchange="updateStopDates(${i},'startDate',this.value);renderReiserute()">
-        ${s.type!=='transport' ? `
-          <span>Utsjekk:</span>
-          <input type="date" value="${s.endDate||''}" onchange="updateStopDates(${i},'endDate',this.value);renderReiserute()">
-        ` : ''}
-        <span style="color:var(--a1);font-weight:600">${calcNightsText(s.startDate, s.endDate)}</span>
-      </div>
+      ${(() => {
+        const startBounds = getStopDateBounds(i, 'startDate');
+        const endBounds = getStopDateBounds(i, 'endDate');
+        return `<div class="dates-row" onclick="event.stopPropagation()">
+          <span>${s.type==='transport'?'Dato:':'Innsjekk:'}</span>
+          <input type="date" value="${s.startDate||''}" min="${startBounds.min}" max="${startBounds.max}" onchange="updateStopDates(${i},'startDate',this.value);renderReiserute();drawRoute()">
+          ${s.type!=='transport' ? `
+            <span>Utsjekk:</span>
+            <input type="date" value="${s.endDate||''}" min="${endBounds.min}" max="${endBounds.max}" onchange="updateStopDates(${i},'endDate',this.value);renderReiserute();drawRoute()">
+          ` : ''}
+          <span style="color:var(--a1);font-weight:600">${calcNightsText(s.startDate, s.endDate)}</span>
+        </div>`;
+      })()}
 
       <div style="margin-top:0.4rem">${(s.tags||[]).map(t => `<span class="tag ${tagClass(t)}">${t}</span>`).join('')}
         <input class="ef ef-sm" placeholder="+ tag" style="width:60px" onkeydown="if(event.key==='Enter'){DATA.stops[${i}].tags.push(this.value);this.value='';renderReiserute();event.stopPropagation()}" onclick="event.stopPropagation()">
@@ -750,9 +870,9 @@ function renderHotell() {
 
       <div class="dates-row" onclick="event.stopPropagation()">
         <span>Innsjekk:</span>
-        <input type="date" value="${h.checkIn||''}" onchange="updateHotel(${i},'checkIn',this.value);renderHotell()">
+        <input type="date" value="${h.checkIn||''}" min="${DATA.tripStart||''}" max="${h.checkOut||DATA.tripEnd||''}" onchange="updateHotel(${i},'checkIn',this.value);renderHotell()">
         <span>Utsjekk:</span>
-        <input type="date" value="${h.checkOut||''}" onchange="updateHotel(${i},'checkOut',this.value);renderHotell()">
+        <input type="date" value="${h.checkOut||''}" min="${h.checkIn||DATA.tripStart||''}" max="${DATA.tripEnd||''}" onchange="updateHotel(${i},'checkOut',this.value);renderHotell()">
         ${nights ? `<span style="color:var(--a1);font-weight:600">${nights} netter</span>` : ''}
       </div>
       <div class="dates-row" onclick="event.stopPropagation()">
@@ -914,6 +1034,7 @@ async function init() {
   const el = document.getElementById('saveStatus');
   const loaded = await loadFromAPI();
   if (loaded) {
+    migrateTripDates(); // ensure trip range exists
     migrateHotels(); // upgrade old hotel format to new price-comparison model
     migrateStops(); // add type/startDate/endDate to stops
     el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
