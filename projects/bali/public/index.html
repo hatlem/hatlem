@@ -1860,7 +1860,10 @@ function renderDagplan() {
     const bg = isToday ? 'rgba(56,189,248,0.08)' : (d % 2 === 0) ? 'rgba(255,255,255,0.01)' : 'transparent';
     const border = isToday ? '1px solid var(--a1)' : '1px solid transparent';
 
-    html += `<div style="display:flex;gap:0.75rem;padding:0.6rem 0.75rem;background:${bg};border:${border};border-radius:8px;margin-bottom:2px;align-items:flex-start">
+    const clickable = stop && stop.lat && stop.lng;
+    const cursor = clickable ? 'cursor:pointer;' : '';
+    const onClickAttr = clickable ? `onclick="focusOnItem('${(stop.name||'').replace(/'/g,"\\'")}',${stop.lat},${stop.lng},'${(stop.desc||'').replace(/'/g,"\\'")}')"` : '';
+    html += `<div ${onClickAttr} style="${cursor}display:flex;gap:0.75rem;padding:0.6rem 0.75rem;background:${bg};border:${border};border-radius:8px;margin-bottom:2px;align-items:flex-start;transition:background 0.15s" ${clickable?'onmouseover="this.style.background=\'rgba(56,189,248,0.12)\'" onmouseout="this.style.background=\''+bg+'\'"':''}>
       <div style="min-width:90px;font-size:0.82rem;font-weight:${isToday?'700':'500'};color:${isToday?'var(--a1)':'var(--tx)'}">${dayName}</div>
       <div style="flex:1;font-size:0.82rem">`;
 
