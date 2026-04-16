@@ -398,6 +398,16 @@ function bestHotelPrice(hotel) {
   if (!hotel.prices || !hotel.prices.length) return null;
   return hotel.prices.filter(p => p.perNight > 0).reduce((min, p) => (!min || p.perNight < min.perNight) ? p : min, null);
 }
+
+// For hotels with paid bookings (possibly split in segments), return the exact paid total
+// Returns { total, perNightAvg, nights, hasBookings } or null
+function hotelBookedCost(hotel) {
+  const paidPrices = (hotel.prices || []).filter(p => p.paid && (p.totalPaid > 0));
+  if (paidPrices.length === 0) return null;
+  const total = paidPrices.reduce((s, p) => s + (p.totalPaid || 0), 0);
+  const nights = paidPrices.reduce((s, p) => s + (p.segmentNights || 0), 0) || calcNights(hotel.checkIn, hotel.checkOut);
+  return { total, nights, perNightAvg: nights ? total / nights : 0, segments: paidPrices };
+}
 function updateHotelPrice(hi, pi, field, value) {
   const p = DATA.hotels[hi].prices[pi];
   if (field === 'perNight' && p.perNight > 0 && p.perNight !== value) {
@@ -779,18 +789,46 @@ function renderReiserute() {
         <input class="ef ef-sm" placeholder="+ tag" style="width:60px" onkeydown="if(event.key==='Enter'){DATA.stops[${i}].tags.push(this.value);this.value='';renderReiserute();event.stopPropagation()}" onclick="event.stopPropagation()">
       </div>`;
 
-    // Options (sub-choices)
-    if (s.options && s.options.length) {
-      html += `<div style="margin-top:0.6rem;" onclick="event.stopPropagation()">`;
-      s.options.forEach((o, oi) => {
-        html += `<div style="padding:0.5rem;margin-top:0.35rem;background:${o.chosen?'rgba(52,211,153,0.08)':'rgba(255,255,255,0.03)'};border:1px solid ${o.chosen?'var(--a4)':'var(--brd)'};border-radius:8px;cursor:pointer;transition:all 0.15s" onclick="toggleStopOpt(${i},${oi})">
-          <span style="font-size:0.85rem;font-weight:600">${o.chosen?'✅ ':''}</span>
-          ${ef(o.name, "updateStopOpt("+i+","+oi+",'name',this.value);event.stopPropagation()")}
-          — <span class="ef-price">${ef(o.price, "updateStopOpt("+i+","+oi+",'price',this.value);event.stopPropagation()", 'ef-price ef-sm')}</span>
-          <div style="font-size:0.78rem;color:var(--dim);margin-top:0.15rem">${ef(o.note, "updateStopOpt("+i+","+oi+",'note',this.value);event.stopPropagation()", 'ef-sm')}</div>
-        </div>`;
+    // Matching hotels from Hotell-fane: show hotels whose dates overlap this stop
+    if (s.type === 'overnatting' && s.startDate && s.endDate) {
+      const matching = (DATA.hotels || []).filter(h => {
+        if (!h.checkIn || !h.checkOut) return false;
+        // Overlap: h.checkIn < s.endDate && h.checkOut > s.startDate
+        return h.checkIn < s.endDate && h.checkOut > s.startDate;
       });
-      html += `</div>`;
+      if (matching.length) {
+        html += `<div style="margin-top:0.6rem;" onclick="event.stopPropagation()">
+          <div style="font-size:0.65rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem">Hotell for denne perioden (fra Hotell-fane)</div>`;
+        matching.forEach(h => {
+          const hi = DATA.hotels.indexOf(h);
+          const booked = hotelBookedCost(h);
+          const best = bestHotelPrice(h);
+          const nights = calcNights(h.checkIn, h.checkOut);
+          const total = booked ? booked.total : (best && nights ? best.perNight * nights : 0);
+          const statusIcon = h.status==='booked' ? '&#x2713;' : h.status==='favorite' ? '&#x2B50;' : '';
+          const bg = h.status==='booked' ? 'rgba(52,211,153,0.08)' : h.status==='favorite' ? 'rgba(251,191,36,0.08)' : h.status==='rejected' ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)';
+          const border = h.status==='booked' ? 'var(--a4)' : h.status==='favorite' ? 'var(--a5)' : h.status==='rejected' ? 'var(--red)' : 'var(--brd)';
+          const opacity = h.status==='rejected' ? 0.5 : 1;
+          html += `<div style="padding:0.5rem 0.7rem;margin-top:0.3rem;background:${bg};border:1px solid ${border};border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;opacity:${opacity}">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.85rem;font-weight:600">${statusIcon} ${h.name}</div>
+              <div style="font-size:0.72rem;color:var(--dim)">${nights} natt · ${total ? total.toLocaleString('nb-NO', {maximumFractionDigits: 2}) + ' kr' : (best ? best.perNight.toLocaleString('nb-NO') + ' kr/natt' : 'ingen pris')}</div>
+            </div>
+            <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.7rem;border-radius:4px;padding:2px 4px" onchange="updateHotel(${hi},'status',this.value);renderReiserute();renderHotell()">
+              <option value="considering" ${h.status==='considering'?'selected':''}>Vurderes</option>
+              <option value="favorite" ${h.status==='favorite'?'selected':''}>Favoritt</option>
+              <option value="booked" ${h.status==='booked'?'selected':''}>Booket</option>
+              <option value="rejected" ${h.status==='rejected'?'selected':''}>Avvist</option>
+            </select>
+          </div>`;
+        });
+        html += `<button class="add-price-btn" style="margin-top:0.4rem" onclick="switchTab('hotell')">Se alle hotell →</button>`;
+        html += `</div>`;
+      } else {
+        html += `<div style="margin-top:0.6rem;padding:0.5rem 0.7rem;background:rgba(251,191,36,0.05);border:1px dashed rgba(251,191,36,0.3);border-radius:8px;font-size:0.78rem;color:var(--a5)" onclick="event.stopPropagation();switchTab('hotell')">
+          &#x26A0;&#xFE0F; Ingen hotell med overlappende datoer. <span style="color:var(--a1);cursor:pointer;text-decoration:underline">Legg til i Hotell-fane</span>
+        </div>`;
+      }
     }
     html += `</div>`;
   });
@@ -1009,11 +1047,14 @@ function renderBudsjett() {
   // Auto: hotels with status 'booked' or 'favorite' contribute their cost to budget
   const includedHotels = DATA.hotels.filter(h => h.status === 'booked' || h.status === 'favorite');
   const hotelRows = includedHotels.map(h => {
+    const booked = hotelBookedCost(h);
+    if (booked) {
+      return { hotel: h, cost: booked.total, nights: booked.nights, best: null, booked };
+    }
     const best = bestHotelPrice(h);
     const nights = calcNights(h.checkIn, h.checkOut);
-    // Prefer totalPaid if set (actual booked amount), else perNight × nights
-    const cost = best?.totalPaid > 0 ? best.totalPaid : (best && nights ? best.perNight * nights : 0);
-    return { hotel: h, cost, nights, best };
+    const cost = best && nights ? best.perNight * nights : 0;
+    return { hotel: h, cost, nights, best, booked: null };
   });
   const hotelTotal = hotelRows.reduce((s, r) => s + r.cost, 0);
 
@@ -1041,12 +1082,21 @@ function renderBudsjett() {
     const fmt = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
     hotelRows.forEach(r => {
       const statusIcon = r.hotel.status === 'booked' ? '✓' : '⭐';
-      const actualPerNight = r.best?.totalPaid > 0 && r.nights > 0 ? (r.best.totalPaid / r.nights) : r.best?.perNight || 0;
       html += `<tr>
         <td>${statusIcon} ${r.hotel.name} <span style="font-size:0.7rem;color:var(--dim)">· ${r.hotel.area}</span></td>
-        <td style="text-align:right;color:var(--dim);font-size:0.78rem">${r.nights} ${r.nights===1?'natt':'netter'} × ${actualPerNight ? fmt(actualPerNight) : '—'} kr</td>
+        <td style="text-align:right;color:var(--dim);font-size:0.78rem">${r.nights} ${r.nights===1?'natt':'netter'}${!r.booked && r.best ? ' × '+fmt(r.best.perNight)+' kr' : ''}</td>
         <td style="text-align:right;font-weight:600;white-space:nowrap">${fmt(r.cost)} kr</td>
       </tr>`;
+      // For multi-segment bookings, show the breakdown
+      if (r.booked && r.booked.segments.length > 1) {
+        r.booked.segments.forEach(seg => {
+          html += `<tr>
+            <td style="padding-left:1.5rem;font-size:0.75rem;color:var(--dim)">↳ ${seg.source || 'Booking'}</td>
+            <td style="text-align:right;color:var(--dim);font-size:0.72rem">${seg.segmentNights || '?'} natt · ${seg.bookingRef ? 'ref ' + seg.bookingRef : ''}</td>
+            <td style="text-align:right;font-size:0.78rem;color:var(--dim)">${fmt(seg.totalPaid)} kr</td>
+          </tr>`;
+        });
+      }
     });
     html += `<tr><td colspan="2" style="color:var(--dim);font-size:0.78rem">Sum hotell</td><td style="text-align:right;font-weight:700;color:var(--a1)">${fmt(hotelTotal)} kr</td></tr>`;
     html += `</table>`;
