@@ -1092,10 +1092,12 @@ function renderKart() {
     const esc = s => (s||'').replace(/'/g, "\\'");
     const meta = `${h.area} · ${'★'.repeat(h.stars||0)}${h.babyFriendly?' · 👶':''}${(h.features||[]).includes('kjokken')?' · 🍳':''}`;
     const heart = `<button onclick="event.stopPropagation();toggleHotelLike(${i})" title="${h.liked?'Fjern hjerte':'Hjerte dette'}" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1;color:${h.liked?'#ef4444':'#475569'}">${h.liked?'❤️':'🤍'}</button>`;
-    const thumb = h.imageUrl || `https://source.unsplash.com/60x60/?${encodeURIComponent(h.name+' bali resort')}`;
+    const thumb = h.imageUrl
+      ? `<img src="${h.imageUrl}" alt="" loading="lazy" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#1e293b" onerror="this.style.display='none'">`
+      : `<div style="width:36px;height:36px;border-radius:4px;background:#1e293b;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#475569;font-size:0.85rem">🏨</div>`;
     if (isList) {
       html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:6px;padding:0.4rem 0.6rem;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-        <img src="${thumb}" alt="" loading="lazy" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#1e293b" onerror="this.style.display='none'">
+        ${thumb}
         ${heart}
         <span style="font-weight:600;color:var(--tx);flex:1;min-width:140px">${h.name}</span>
         <span style="color:var(--dim);font-size:0.7rem;min-width:120px">${meta}</span>
@@ -1105,10 +1107,12 @@ function renderKart() {
         ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
       </div>`;
     } else {
-      const imgSrc = h.imageUrl || `https://source.unsplash.com/240x140/?${encodeURIComponent(h.name+' bali resort')}`;
+      const imgEl = h.imageUrl
+        ? `<img src="${h.imageUrl}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#475569;font-size:1.5rem">🏨</div>`;
       html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:8px;padding:0;cursor:pointer;font-size:0.78rem;position:relative;overflow:hidden">
         <div style="position:relative;height:100px;background:#1e293b">
-          <img src="${imgSrc}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+          ${imgEl}
           <span style="position:absolute;top:0.3rem;right:0.3rem;background:rgba(15,23,42,0.7);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center">${heart}</span>
         </div>
         <div style="padding:0.5rem 0.6rem">
@@ -1407,10 +1411,12 @@ function renderHotell() {
     const best = bestHotelPrice(h);
     const esc = s => s.replace(/'/g, "\\'");
     const cardStatusClass = h.status==='booked' ? ' card-booked' : h.status==='favorite' ? ' card-favorite' : h.status==='rejected' ? ' card-rejected' : '';
-    const imgSrc = h.imageUrl || `https://source.unsplash.com/400x180/?${encodeURIComponent(h.name+' bali resort')}`;
+    const imgEl = h.imageUrl
+      ? `<img src="${h.imageUrl}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#475569;font-size:2rem">🏨</div>`;
     html += `<div class="icard${cardStatusClass}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="${h.liked?'border-color:#ef4444;':''}padding:0;overflow:hidden">
       <div style="position:relative;height:140px;background:#1e293b">
-        <img src="${imgSrc}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+        ${imgEl}
         <span class="map-pin" style="background:rgba(15,23,42,0.7);border-radius:6px;padding:2px 6px">📍</span>
         <button onclick="event.stopPropagation();toggleHotelLike(${i})" title="${h.liked?'Fjern hjerte':'Hjerte dette'}" style="position:absolute;top:0.4rem;right:2.4rem;background:rgba(15,23,42,0.7);border:none;border-radius:50%;cursor:pointer;font-size:1rem;padding:3px 6px;line-height:1;z-index:5">${h.liked?'❤️':'🤍'}</button>
         ${h.status === 'rejected' ? `
