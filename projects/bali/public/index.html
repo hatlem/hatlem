@@ -814,6 +814,7 @@ function migrateActivities() {
       changed = true;
     }
     if (a.planned === undefined) { a.planned = false; changed = true; }
+    if (a.favorited === undefined) { a.favorited = false; changed = true; }
   });
   if (changed) autoSave();
 }
@@ -933,6 +934,7 @@ const KART_FILTER = {
   maxPrice: 0,           // 0 = no limit
   likedOnly: false,      // show only hearted
   viewMode: 'grid',      // grid | list
+  sortBy: 'liked-price', // liked-price | price-asc | price-desc | score-desc | stars-desc | name-asc
 };
 
 function toggleHotelLike(idx) {
@@ -987,18 +989,31 @@ function renderKart() {
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;flex-wrap:wrap;gap:0.5rem">
       <span style="font-size:0.78rem;color:var(--dim)">Viser ${filteredHotels.length} hoteller${f.showStops?', '+DATA.stops.length+' stopp':''}${f.showActivities?', '+DATA.activities.length+' aktiviteter':''}.</span>
-      <div style="display:flex;gap:0.25rem">
+      <div style="display:flex;gap:0.4rem;align-items:center">
+        <label style="font-size:0.7rem;color:var(--dim)">Sorter:</label>
+        <select onchange="setKartFilter('sortBy',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px;font-size:0.72rem">
+          <option value="liked-price" ${f.sortBy==='liked-price'?'selected':''}>❤️ + pris</option>
+          <option value="price-asc" ${f.sortBy==='price-asc'?'selected':''}>Pris ↑</option>
+          <option value="price-desc" ${f.sortBy==='price-desc'?'selected':''}>Pris ↓</option>
+          <option value="score-desc" ${f.sortBy==='score-desc'?'selected':''}>Score ↓</option>
+          <option value="stars-desc" ${f.sortBy==='stars-desc'?'selected':''}>Stjerner ↓</option>
+          <option value="name-asc" ${f.sortBy==='name-asc'?'selected':''}>Navn A–Å</option>
+        </select>
         <button class="filt-btn ${f.viewMode==='grid'?'on':''}" onclick="setKartFilter('viewMode','grid')" title="Grid">▦</button>
         <button class="filt-btn ${f.viewMode==='list'?'on':''}" onclick="setKartFilter('viewMode','list')" title="Liste">≡</button>
       </div>
     </div>`;
 
-  // List of filtered hotels (DRY: simple summary, not full card)
-  const sorted = [...filteredHotels].sort((a,b) => {
-    const pa = bestHotelPrice(a)?.perNight || 99999;
-    const pb = bestHotelPrice(b)?.perNight || 99999;
-    return pa - pb;
-  });
+  // Sort according to filter
+  const sortFns = {
+    'liked-price': (a,b) => (!!b.liked - !!a.liked) || ((bestHotelPrice(a)?.perNight||99999) - (bestHotelPrice(b)?.perNight||99999)),
+    'price-asc':   (a,b) => (bestHotelPrice(a)?.perNight||99999) - (bestHotelPrice(b)?.perNight||99999),
+    'price-desc':  (a,b) => (bestHotelPrice(b)?.perNight||0) - (bestHotelPrice(a)?.perNight||0),
+    'score-desc':  (a,b) => parseFloat((b.bookingRating||'0').toString().replace(',','.')) - parseFloat((a.bookingRating||'0').toString().replace(',','.')),
+    'stars-desc':  (a,b) => (b.stars||0) - (a.stars||0),
+    'name-asc':    (a,b) => (a.name||'').localeCompare(b.name||''),
+  };
+  const sorted = [...filteredHotels].sort(sortFns[f.sortBy] || sortFns['liked-price']);
   const isList = f.viewMode === 'list';
   html += isList
     ? `<div style="display:flex;flex-direction:column;gap:0.25rem">`
@@ -1028,9 +1043,14 @@ function renderKart() {
         ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
       </div>`;
     } else {
-      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:8px;padding:0.5rem 0.6rem;cursor:pointer;font-size:0.78rem;position:relative">
-        <span style="position:absolute;top:0.4rem;right:0.4rem">${heart}</span>
-        <div style="font-weight:600;color:var(--tx);padding-right:1.5rem">${h.name}</div>
+      const imgSrc = h.imageUrl || `https://source.unsplash.com/240x140/?${encodeURIComponent(h.name+' bali resort')}`;
+      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:8px;padding:0;cursor:pointer;font-size:0.78rem;position:relative;overflow:hidden">
+        <div style="position:relative;height:100px;background:#1e293b">
+          <img src="${imgSrc}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+          <span style="position:absolute;top:0.3rem;right:0.3rem;background:rgba(15,23,42,0.7);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center">${heart}</span>
+        </div>
+        <div style="padding:0.5rem 0.6rem">
+        <div style="font-weight:600;color:var(--tx)">${h.name}</div>
         <div style="color:var(--dim);font-size:0.7rem;margin-top:0.15rem">${meta}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
           <span style="color:var(--a4);font-weight:600">${pn?pn.toLocaleString('nb-NO')+' kr/natt':'—'}</span>
@@ -1039,6 +1059,7 @@ function renderKart() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.25rem">
           ${statusBadge}
           ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
+        </div>
         </div>
       </div>`;
     }
@@ -1265,9 +1286,10 @@ function renderHotell() {
   }
   html += `</div>`;
 
-  // Sort: booked > favorite > considering > rejected, then by area, then by price
+  // Sort: liked > booked > favorite > considering > rejected, then by area, then by price
   const statusOrder = { booked:0, favorite:1, considering:2, rejected:3 };
   const sortedHotels = [...DATA.hotels].sort((a,b) => {
+    if (!!b.liked - !!a.liked !== 0) return !!b.liked - !!a.liked;
     const d = (statusOrder[a.status]??2) - (statusOrder[b.status]??2);
     if (d !== 0) return d;
     if (a.area !== b.area) return (a.area||'').localeCompare(b.area||'');
@@ -1316,8 +1338,9 @@ function renderHotell() {
     const best = bestHotelPrice(h);
     const esc = s => s.replace(/'/g, "\\'");
     const cardStatusClass = h.status==='booked' ? ' card-booked' : h.status==='favorite' ? ' card-favorite' : h.status==='rejected' ? ' card-rejected' : '';
-    html += `<div class="icard${cardStatusClass}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" >
+    html += `<div class="icard${cardStatusClass}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="${h.liked?'border-color:#ef4444':''}">
       <span class="map-pin">📍</span>
+      <button onclick="event.stopPropagation();toggleHotelLike(${i})" title="${h.liked?'Fjern hjerte':'Hjerte dette'}" style="position:absolute;top:0.4rem;right:2rem;background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1;z-index:5">${h.liked?'❤️':'🤍'}</button>
       <span class="del-btn" onclick="event.stopPropagation();deleteHotel(${i})">✕</span>
       <div style="font-size:0.72rem;color:var(--a1);font-weight:600">
         ${ef(h.area, "updateHotel("+i+",'area',this.value);event.stopPropagation()",'ef-sm')} · ${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}
