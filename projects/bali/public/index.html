@@ -326,12 +326,12 @@ function showFullRoute() {
 function ef(value, onChange, cls) {
   const c = cls || '';
   const escaped = String(value).replace(/"/g, '&quot;');
-  return `<input class="ef ${c}" value="${escaped}" onfocus="this.select()" onchange="${onChange}" style="width:${Math.max(String(value).length * 8 + 20, 60)}px">`;
+  return `<input class="ef ${c}" value="${escaped}" onclick="event.stopPropagation()" onfocus="this.select()" onchange="${onChange}" style="width:${Math.max(String(value).length * 8 + 20, 60)}px">`;
 }
 
 function efArea(value, onChange) {
   const escaped = String(value).replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
-  return `<textarea class="ef ef-sm" onchange="${onChange}" style="width:100%;min-height:50px;resize:vertical">${escaped}</textarea>`;
+  return `<textarea class="ef ef-sm" onclick="event.stopPropagation()" onchange="${onChange}" style="width:100%;min-height:50px;resize:vertical">${escaped}</textarea>`;
 }
 
 // ===== UPDATE HELPERS (all auto-save) =====
@@ -844,21 +844,24 @@ function renderHotell() {
   let visible = sortedHotels;
   if (window._hotelBabyFilter) visible = visible.filter(h => h.babyFriendly);
   if (visible.length) {
-    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Baby</th><th>Netter</th><th>Beste pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
+    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
     visible.forEach(h => {
       const best = bestHotelPrice(h);
       const nights = calcNights(h.checkIn, h.checkOut);
-      const total = best && nights ? best.perNight * nights : 0;
+      // Prefer totalPaid (exact amount) when set, else compute from perNight × nights
+      const total = best?.totalPaid > 0 ? best.totalPaid : (best && nights ? best.perNight * nights : 0);
+      const perNight = best?.totalPaid > 0 && nights > 0 ? (best.totalPaid / nights) : best?.perNight || 0;
       const esc = s => s.replace(/'/g, "\\'");
       const rowClass = 'row-' + (h.status || 'considering');
       const icon = h.status==='booked' ? '&#x2713; ' : h.status==='favorite' ? '&#x2B50; ' : '';
+      const fmtPrice = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
       html += `<tr class="${rowClass}">
         <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${icon}${h.name}</td>
         <td>${h.area}</td>
         <td style="text-align:center">${h.babyFriendly ? '<span title="'+(h.babyNotes||'')+'">&#x1F476;</span>' : '<span style="opacity:0.3">—</span>'}</td>
         <td>${nights || '—'}</td>
-        <td>${best ? best.perNight.toLocaleString('nb-NO')+' kr' : '—'}<span style="font-size:0.68rem;color:var(--dim);margin-left:0.3rem">${best ? best.source : ''}</span></td>
-        <td style="font-weight:600">${total ? total.toLocaleString('nb-NO')+' kr' : '—'}</td>
+        <td>${perNight ? fmtPrice(perNight)+' kr' : '—'}<span style="font-size:0.68rem;color:var(--dim);margin-left:0.3rem">${best ? best.source : ''}</span></td>
+        <td style="font-weight:600">${total ? fmtPrice(total)+' kr' : '—'}</td>
         <td><span class="h-status ${statusClass(h.status)}">${statusLabel(h.status)}</span></td>
         <td><a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()">Sjekk Google</a></td>
       </tr>`;
@@ -1035,15 +1038,17 @@ function renderBudsjett() {
     html += `<p style="color:var(--dim);font-size:0.82rem">Ingen hotell merket som booket eller favoritt. Gå til <a href="#" onclick="switchTab('hotell');return false" style="color:var(--a1)">Hotell-fanen</a> og velg status.</p>`;
   } else {
     html += `<table class="btable">`;
+    const fmt = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
     hotelRows.forEach(r => {
       const statusIcon = r.hotel.status === 'booked' ? '✓' : '⭐';
+      const actualPerNight = r.best?.totalPaid > 0 && r.nights > 0 ? (r.best.totalPaid / r.nights) : r.best?.perNight || 0;
       html += `<tr>
         <td>${statusIcon} ${r.hotel.name} <span style="font-size:0.7rem;color:var(--dim)">· ${r.hotel.area}</span></td>
-        <td style="text-align:right;color:var(--dim);font-size:0.78rem">${r.nights} ${r.nights===1?'natt':'netter'} × ${r.best?.perNight?.toLocaleString('nb-NO') || '—'} kr</td>
-        <td style="text-align:right;font-weight:600;white-space:nowrap">${r.cost.toLocaleString('nb-NO')} kr</td>
+        <td style="text-align:right;color:var(--dim);font-size:0.78rem">${r.nights} ${r.nights===1?'natt':'netter'} × ${actualPerNight ? fmt(actualPerNight) : '—'} kr</td>
+        <td style="text-align:right;font-weight:600;white-space:nowrap">${fmt(r.cost)} kr</td>
       </tr>`;
     });
-    html += `<tr><td colspan="2" style="color:var(--dim);font-size:0.78rem">Sum hotell</td><td style="text-align:right;font-weight:700;color:var(--a1)">${hotelTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+    html += `<tr><td colspan="2" style="color:var(--dim);font-size:0.78rem">Sum hotell</td><td style="text-align:right;font-weight:700;color:var(--a1)">${fmt(hotelTotal)} kr</td></tr>`;
     html += `</table>`;
   }
   html += `</div>`;
@@ -1093,9 +1098,9 @@ function renderBudsjett() {
   html += `<div style="background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(244,114,182,0.08));border:2px solid var(--a1);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">
     <div>
       <div style="font-size:0.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em">Totalt budsjett</div>
-      <div style="font-size:0.72rem;color:var(--dim);margin-top:0.2rem">Hotell ${hotelTotal.toLocaleString('nb-NO')} + Aktivitet ${activityTotal.toLocaleString('nb-NO')} + Annet ${manualTotal.toLocaleString('nb-NO')}</div>
+      <div style="font-size:0.72rem;color:var(--dim);margin-top:0.2rem">Hotell ${fmt(hotelTotal)} + Aktivitet ${fmt(activityTotal)} + Annet ${fmt(manualTotal)}</div>
     </div>
-    <div style="font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--a1),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${grandTotal.toLocaleString('nb-NO')} kr</div>
+    <div style="font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--a1),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent">${fmt(grandTotal)} kr</div>
   </div>`;
 
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-top:0.5rem">
