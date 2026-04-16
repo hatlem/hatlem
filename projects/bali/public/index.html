@@ -350,6 +350,32 @@ function updateFlight(key, field, value) { DATA.flights[key][field] = value; aut
 function updateNotes(val) { DATA.notes = val; autoSave(); }
 
 // Hotel price helpers
+async function geocodeHotel(idx) {
+  const h = DATA.hotels[idx];
+  const q = h.address || (h.name + ', ' + h.area + ', Bali, Indonesia');
+  const statusEl = document.getElementById('saveStatus');
+  if (statusEl) { statusEl.textContent = 'Søker på kart...'; statusEl.style.color = 'var(--a1)'; }
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1', {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await r.json();
+    if (data.length) {
+      DATA.hotels[idx].lat = parseFloat(data[0].lat);
+      DATA.hotels[idx].lng = parseFloat(data[0].lon);
+      DATA.hotels[idx].geocoded = true;
+      if (!h.address && data[0].display_name) DATA.hotels[idx].address = data[0].display_name;
+      renderHotell();
+      if (statusEl) { statusEl.textContent = 'Fant på kart ✓'; statusEl.style.color = 'var(--a4)'; }
+      autoSave();
+    } else {
+      if (statusEl) { statusEl.textContent = 'Fant ikke adressen — skriv mer spesifikt'; statusEl.style.color = 'var(--red)'; }
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Kart-søk feilet'; statusEl.style.color = 'var(--red)'; }
+  }
+}
+
 function googleHotelUrl(name, checkIn, checkOut) {
   const q = encodeURIComponent(name + ' family friendly, Bali, Indonesia');
   let url = 'https://www.google.com/travel/hotels?q=' + q + '&adults=2&children=1';
@@ -460,6 +486,8 @@ function migrateHotels() {
     if (h.babyNotes === undefined) { h.babyNotes = ''; changed = true; }
     if (h.bookingRef === undefined) { h.bookingRef = ''; changed = true; }
     if (h.roomType === undefined) { h.roomType = ''; changed = true; }
+    if (h.address === undefined) { h.address = ''; changed = true; }
+    if (h.geocoded === undefined) { h.geocoded = false; changed = true; }
     if (h.prices) h.prices.forEach(p => {
       if (!p.history) { p.history = []; changed = true; }
     });
@@ -726,6 +754,12 @@ function renderHotell() {
         <span>Utsjekk:</span>
         <input type="date" value="${h.checkOut||''}" onchange="updateHotel(${i},'checkOut',this.value);renderHotell()">
         ${nights ? `<span style="color:var(--a1);font-weight:600">${nights} netter</span>` : ''}
+      </div>
+      <div class="dates-row" onclick="event.stopPropagation()">
+        <span>${h.geocoded ? '📍' : '📌'} Adresse:</span>
+        <input type="text" value="${(h.address||'').replace(/"/g,'&quot;')}" placeholder="F.eks: Jl. Bandara Ngurah Rai, Tuban, Bali" style="flex:1;min-width:200px;background:var(--card);border:1px solid var(--brd);color:var(--tx);font-family:inherit;font-size:0.78rem;padding:0.2rem 0.4rem;border-radius:4px" onchange="updateHotel(${i},'address',this.value)">
+        <button class="add-price-btn" onclick="geocodeHotel(${i})" title="Søk opp nøyaktige koordinater">Finn på kart</button>
+        ${h.geocoded ? '<span style="color:var(--a4);font-size:0.68rem" title="Nøyaktige koordinater">✓ Presis</span>' : '<span style="color:var(--a5);font-size:0.68rem" title="Omtrentlig lokasjon">~ Omtrentlig</span>'}
       </div>
       ${h.status === 'booked' ? `
         <div onclick="event.stopPropagation()" style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:6px;font-size:0.78rem">
