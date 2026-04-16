@@ -185,9 +185,13 @@ li.done{text-decoration:line-through;opacity:0.45}
   .main{min-height:unset}
   .sidebar{height:240px;top:80px}
 
-  /* Horizontally scrollable comparison tables */
-  .cmp-tbl{display:none}
-  .cmp-tbl th,.cmp-tbl td{padding:0.45rem 0.6rem}
+  /* Mobile-friendly comparison table — hide less important columns, scroll horizontally */
+  .cmp-tbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;font-size:0.75rem;border-radius:10px}
+  .cmp-tbl th,.cmp-tbl td{padding:0.4rem 0.5rem}
+  .cmp-tbl th:nth-child(3),.cmp-tbl td:nth-child(3),
+  .cmp-tbl th:nth-child(4),.cmp-tbl td:nth-child(4),
+  .cmp-tbl th:nth-child(5),.cmp-tbl td:nth-child(5),
+  .cmp-tbl th:nth-child(9),.cmp-tbl td:nth-child(9){display:none}
   .cmp-tbl tr.row-booked td:first-child,.cmp-tbl tr.row-favorite td:first-child{box-shadow:inset 4px 0 0 currentColor}
 
   .price-tbl{font-size:0.75rem}
