@@ -96,6 +96,23 @@ a{color:var(--a1);text-decoration:none}
 .add-price-btn{background:transparent;border:1px dashed var(--brd);color:var(--dim);font-family:inherit;font-size:0.72rem;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer}
 .add-price-btn:hover{border-color:var(--a1);color:var(--a1)}
 
+/* Stop type indicators */
+.stop-type{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-right:0.3rem}
+.type-sleep{background:rgba(56,189,248,0.15);color:var(--a1);border-left:3px solid var(--a1)}
+.type-activity{background:rgba(52,211,153,0.15);color:var(--a4);border-left:3px solid var(--a4)}
+.type-transport{background:rgba(129,140,248,0.15);color:var(--a2);border-left:3px solid var(--a2)}
+.icard.stop-sleep{border-left:3px solid var(--a1)}
+.icard.stop-activity{border-left:3px solid var(--a4)}
+.icard.stop-transport{border-left:3px solid var(--a2)}
+
+/* Insert between stops */
+.insert-slot{position:relative;height:8px;margin:-4px 0;cursor:pointer;transition:all 0.15s}
+.insert-slot:hover{height:36px;margin:0.4rem 0}
+.insert-slot::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;background:transparent;transition:background 0.15s}
+.insert-slot:hover::after{background:rgba(56,189,248,0.3)}
+.insert-slot-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--a1);color:var(--bg);padding:0.25rem 0.75rem;border-radius:6px;font-size:0.72rem;font-weight:600;white-space:nowrap;opacity:0;transition:opacity 0.15s;pointer-events:none}
+.insert-slot:hover .insert-slot-btn{opacity:1}
+
 /* Map pin icon on card */
 .map-pin{position:absolute;top:0.75rem;right:0.75rem;font-size:1rem;opacity:0.4;transition:opacity 0.2s}
 .icard:hover .map-pin,.icard.active .map-pin{opacity:1}
@@ -372,6 +389,59 @@ function deleteHotelPrice(hi, pi) {
   DATA.hotels[hi].prices.splice(pi, 1);
   renderHotell(); autoSave();
 }
+function migrateStops() {
+  if (!DATA.stops) return;
+  let changed = false;
+  DATA.stops.forEach(s => {
+    if (s.type === undefined) {
+      // Infer type from existing data: if it's "Hjemreise" or similar, it's transport
+      const n = (s.name || '').toLowerCase();
+      if (n.includes('fly') || n.includes('hjemreise') || n.includes('ankomst') || n.includes('transport')) {
+        s.type = 'transport';
+      } else {
+        s.type = 'overnatting';
+      }
+      changed = true;
+    }
+    if (s.startDate === undefined) { s.startDate = ''; changed = true; }
+    if (s.endDate === undefined) { s.endDate = ''; changed = true; }
+  });
+  if (changed) autoSave();
+}
+
+function insertStop(idx) {
+  DATA.stops.splice(idx, 0, {
+    id: 's'+Date.now(),
+    name: 'Nytt stopp',
+    type: 'overnatting',
+    startDate: '',
+    endDate: '',
+    dates: '',
+    desc: '',
+    status: 'open',
+    tags: [],
+    lat: -8.55, lng: 115.25,
+    color: '#94a3b8',
+    options: []
+  });
+  renderReiserute();
+  drawRoute();
+  autoSave();
+}
+
+function updateStopDates(idx, field, value) {
+  DATA.stops[idx][field] = value;
+  // Update the human-readable dates string from startDate/endDate
+  const s = DATA.stops[idx];
+  if (s.startDate && s.endDate) {
+    const d1 = new Date(s.startDate), d2 = new Date(s.endDate);
+    const nights = Math.max(0, Math.round((d2 - d1) / 86400000));
+    const fmt = d => d.toLocaleDateString('nb-NO', { day:'numeric', month:'short' });
+    s.dates = `${fmt(d1)} – ${fmt(d2)}${nights ? ' • ' + nights + ' netter' : ''}`;
+  }
+  autoSave();
+}
+
 function migrateHotels() {
   if (!DATA.hotels) return;
   let changed = false;
@@ -388,6 +458,8 @@ function migrateHotels() {
     if (h.checkOut === undefined) { h.checkOut = ''; changed = true; }
     if (h.babyFriendly === undefined) { h.babyFriendly = false; changed = true; }
     if (h.babyNotes === undefined) { h.babyNotes = ''; changed = true; }
+    if (h.bookingRef === undefined) { h.bookingRef = ''; changed = true; }
+    if (h.roomType === undefined) { h.roomType = ''; changed = true; }
     if (h.prices) h.prices.forEach(p => {
       if (!p.history) { p.history = []; changed = true; }
     });
@@ -406,7 +478,7 @@ function addStop() {
 }
 function deleteHotel(idx) { if(confirm('Slett hotell?')){ DATA.hotels.splice(idx,1); renderHotell(); autoSave(); }}
 function addHotel() {
-  DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3, checkIn:'', checkOut:'', status:'considering', babyFriendly:false, babyNotes:'', prices:[] });
+  DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3, checkIn:'', checkOut:'', status:'considering', babyFriendly:false, babyNotes:'', bookingRef:'', roomType:'', prices:[] });
   renderHotell(); autoSave();
 }
 function deleteActivity(idx) { if(confirm('Slett aktivitet?')){ DATA.activities.splice(idx,1); renderAktiviteter(); autoSave(); }}
@@ -479,34 +551,67 @@ function renderReiserute() {
   }
   html += `</div>`;
 
-  // Stops
+  // Type labels/classes
+  const typeLabel = t => ({overnatting:'🏨 Overnatting', utflukt:'🗺️ Utflukt', transport:'✈️ Transport'}[t] || '🏨 Overnatting');
+  const typeClass = t => ({overnatting:'type-sleep', utflukt:'type-activity', transport:'type-transport'}[t] || 'type-sleep');
+  const cardTypeClass = t => ({overnatting:'stop-sleep', utflukt:'stop-activity', transport:'stop-transport'}[t] || 'stop-sleep');
+  const calcNightsText = (sd, ed) => {
+    if (!sd || !ed) return '';
+    const n = Math.max(0, Math.round((new Date(ed) - new Date(sd)) / 86400000));
+    return n ? ` • ${n} ${n===1?'natt':'netter'}` : '';
+  };
+
+  // Stops with insert slots between
   DATA.stops.forEach((s, i) => {
-    html += `<div class="icard" data-name="${s.name}" onclick="focusOnItem('${s.name.replace(/'/g,"\\'")}',${s.lat},${s.lng},'${s.desc.replace(/'/g,"\\'")}')" >
+    // Insert slot above this stop
+    html += `<div class="insert-slot" onclick="insertStop(${i})"><span class="insert-slot-btn">+ Sett inn her</span></div>`;
+
+    html += `<div class="icard ${cardTypeClass(s.type)}" data-name="${s.name}" onclick="focusOnItem('${s.name.replace(/'/g,"\\'")}',${s.lat},${s.lng},'${(s.desc||'').replace(/'/g,"\\'")}')" >
       <span class="map-pin">📍</span>
       <span class="del-btn" onclick="event.stopPropagation();deleteStop(${i})">✕</span>
-      <div class="dates">${ef(s.dates,"updateStop(${i},'dates',this.value);event.stopPropagation()",'ef-sm')} ${statusBadge(s.status)}
-        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:1px 3px;margin-left:4px" onchange="updateStop(${i},'status',this.value);renderReiserute();event.stopPropagation()">
+
+      <div style="display:flex;gap:0.3rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem" onclick="event.stopPropagation()">
+        <span class="stop-type ${typeClass(s.type)}">${typeLabel(s.type)}</span>
+        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:2px 4px" onchange="updateStop(${i},'type',this.value);renderReiserute()">
+          <option value="overnatting" ${s.type==='overnatting'?'selected':''}>🏨 Overnatting</option>
+          <option value="utflukt" ${s.type==='utflukt'?'selected':''}>🗺️ Utflukt</option>
+          <option value="transport" ${s.type==='transport'?'selected':''}>✈️ Transport</option>
+        </select>
+        ${statusBadge(s.status)}
+        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:2px 4px" onchange="updateStop(${i},'status',this.value);renderReiserute()">
           <option value="" ${s.status===''?'selected':''}>—</option>
           <option value="booked" ${s.status==='booked'?'selected':''}>Booket</option>
           <option value="considering" ${s.status==='considering'?'selected':''}>Vurderes</option>
           <option value="open" ${s.status==='open'?'selected':''}>Åpent</option>
         </select>
       </div>
-      <h3>${ef(s.name, "updateStop(${i},'name',this.value);event.stopPropagation()")}</h3>
-      <div onclick="event.stopPropagation()">${efArea(s.desc, "updateStop(${i},'desc',this.value)")}</div>
-      <div>${s.tags.map(t => `<span class="tag ${tagClass(t)}">${t}</span>`).join('')}
+
+      <h3>${ef(s.name, "updateStop("+i+",'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()">${efArea(s.desc, "updateStop("+i+",'desc',this.value)")}</div>
+
+      <div class="dates-row" onclick="event.stopPropagation()">
+        <span>${s.type==='transport'?'Dato:':'Innsjekk:'}</span>
+        <input type="date" value="${s.startDate||''}" onchange="updateStopDates(${i},'startDate',this.value);renderReiserute()">
+        ${s.type!=='transport' ? `
+          <span>Utsjekk:</span>
+          <input type="date" value="${s.endDate||''}" onchange="updateStopDates(${i},'endDate',this.value);renderReiserute()">
+        ` : ''}
+        <span style="color:var(--a1);font-weight:600">${calcNightsText(s.startDate, s.endDate)}</span>
+      </div>
+
+      <div style="margin-top:0.4rem">${(s.tags||[]).map(t => `<span class="tag ${tagClass(t)}">${t}</span>`).join('')}
         <input class="ef ef-sm" placeholder="+ tag" style="width:60px" onkeydown="if(event.key==='Enter'){DATA.stops[${i}].tags.push(this.value);this.value='';renderReiserute();event.stopPropagation()}" onclick="event.stopPropagation()">
       </div>`;
 
     // Options (sub-choices)
-    if (s.options.length) {
+    if (s.options && s.options.length) {
       html += `<div style="margin-top:0.6rem;" onclick="event.stopPropagation()">`;
       s.options.forEach((o, oi) => {
         html += `<div style="padding:0.5rem;margin-top:0.35rem;background:${o.chosen?'rgba(52,211,153,0.08)':'rgba(255,255,255,0.03)'};border:1px solid ${o.chosen?'var(--a4)':'var(--brd)'};border-radius:8px;cursor:pointer;transition:all 0.15s" onclick="toggleStopOpt(${i},${oi})">
           <span style="font-size:0.85rem;font-weight:600">${o.chosen?'✅ ':''}</span>
-          ${ef(o.name, "updateStopOpt(${i},${oi},'name',this.value);event.stopPropagation()")}
-          — <span class="ef-price">${ef(o.price, "updateStopOpt(${i},${oi},'price',this.value);event.stopPropagation()", 'ef-price ef-sm')}</span>
-          <div style="font-size:0.78rem;color:var(--dim);margin-top:0.15rem">${ef(o.note, "updateStopOpt(${i},${oi},'note',this.value);event.stopPropagation()", 'ef-sm')}</div>
+          ${ef(o.name, "updateStopOpt("+i+","+oi+",'name',this.value);event.stopPropagation()")}
+          — <span class="ef-price">${ef(o.price, "updateStopOpt("+i+","+oi+",'price',this.value);event.stopPropagation()", 'ef-price ef-sm')}</span>
+          <div style="font-size:0.78rem;color:var(--dim);margin-top:0.15rem">${ef(o.note, "updateStopOpt("+i+","+oi+",'note',this.value);event.stopPropagation()", 'ef-sm')}</div>
         </div>`;
       });
       html += `</div>`;
@@ -514,7 +619,9 @@ function renderReiserute() {
     html += `</div>`;
   });
 
-  html += `<button class="add-btn" onclick="addStop()">+ Legg til stopp</button>`;
+  // Final insert slot at the end
+  html += `<div class="insert-slot" onclick="insertStop(${DATA.stops.length})"><span class="insert-slot-btn">+ Sett inn her</span></div>`;
+  html += `<button class="add-btn" onclick="addStop()">+ Legg til stopp (på slutten)</button>`;
   el.innerHTML = html;
 }
 
@@ -619,7 +726,20 @@ function renderHotell() {
         <span>Utsjekk:</span>
         <input type="date" value="${h.checkOut||''}" onchange="updateHotel(${i},'checkOut',this.value);renderHotell()">
         ${nights ? `<span style="color:var(--a1);font-weight:600">${nights} netter</span>` : ''}
-      </div>`;
+      </div>
+      ${h.status === 'booked' ? `
+        <div onclick="event.stopPropagation()" style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:6px;font-size:0.78rem">
+          <div style="color:var(--a4);font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">&#x2713; Bestilt</div>
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
+            <span style="color:var(--dim);font-size:0.72rem">Bestillingsref:</span>
+            ${ef(h.bookingRef || '', "updateHotel("+i+",'bookingRef',this.value)", 'ef-sm')}
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;margin-top:0.2rem">
+            <span style="color:var(--dim);font-size:0.72rem">Romtype:</span>
+            ${ef(h.roomType || '', "updateHotel("+i+",'roomType',this.value)", 'ef-sm')}
+          </div>
+        </div>
+      ` : ''}`;
 
     // Price comparison table
     if (h.prices && h.prices.length) {
@@ -761,6 +881,7 @@ async function init() {
   const loaded = await loadFromAPI();
   if (loaded) {
     migrateHotels(); // upgrade old hotel format to new price-comparison model
+    migrateStops(); // add type/startDate/endDate to stops
     el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
   } else {
     el.textContent = 'Ny plan — lagrer standarddata...'; el.style.color = 'var(--a1)';

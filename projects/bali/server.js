@@ -1,9 +1,27 @@
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 4820;
+
+const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-secret-change-in-prod';
+const BALI_PASSWORD = process.env.BALI_PASSWORD || 'matheo2025';
+
+app.use(cookieParser(COOKIE_SECRET));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: false }));
+
+// CORS — allow local HTML files and any origin
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 
 // Postgres connection
 const pool = new Pool({
@@ -23,15 +41,38 @@ async function initDB() {
 }
 initDB().catch(console.error);
 
-app.use(express.json({ limit: '5mb' }));
+let passwordHash = null;
+bcrypt.hash(BALI_PASSWORD, 10).then(h => { passwordHash = h; });
 
-// CORS — allow local HTML files and any origin
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
+// Login page — unprotected
+app.get('/bali/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Login handler — unprotected
+app.post('/bali/login', async (req, res) => {
+  const { password } = req.body;
+  if (!passwordHash) {
+    return res.redirect('/bali/login?error=1');
+  }
+  const match = await bcrypt.compare(password || '', passwordHash);
+  if (match) {
+    res.cookie('bali_auth', 'authenticated', {
+      signed: true,
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000 // 90 days
+    });
+    return res.redirect('/bali');
+  }
+  return res.redirect('/bali/login?error=1');
+});
+
+// Auth middleware — protect all /bali/* routes registered after this point
+app.use('/bali', (req, res, next) => {
+  const token = req.signedCookies.bali_auth;
+  if (token === 'authenticated') return next();
+  return res.redirect('/bali/login');
 });
 
 // API: Get data
