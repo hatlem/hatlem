@@ -963,7 +963,7 @@ function renderHotell() {
   let visible = sortedHotels;
   if (window._hotelBabyFilter) visible = visible.filter(h => h.babyFriendly);
   if (visible.length) {
-    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
+    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>★</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th>Rating</th><th>Book</th></tr></thead><tbody>`;
     visible.forEach(h => {
       const booked = hotelBookedCost(h);
       const best = bestHotelPrice(h);
@@ -978,12 +978,18 @@ function renderHotell() {
       html += `<tr class="${rowClass}">
         <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${icon}${h.name}</td>
         <td>${h.area}</td>
+        <td style="text-align:center;font-size:0.7rem;color:var(--a1)">${h.stars||'—'}</td>
         <td style="text-align:center">${h.babyFriendly ? '<span title="'+(h.babyNotes||'')+'">&#x1F476;</span>' : '<span style="opacity:0.3">—</span>'}</td>
         <td>${nights || '—'}</td>
         <td>${perNight ? fmtPrice(perNight)+' kr' : '—'}<span style="font-size:0.68rem;color:var(--dim);margin-left:0.3rem">${best ? best.source : ''}</span></td>
         <td style="font-weight:600">${total ? fmtPrice(total)+' kr' : '—'}</td>
         <td><span class="h-status ${statusClass(h.status)}">${statusLabel(h.status)}</span></td>
-        <td><a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()">Sjekk Google</a></td>
+        <td style="font-size:0.7rem;color:var(--dim)">${h.reviewSummary||''}</td>
+        <td style="white-space:nowrap">
+          <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px">Google</a>
+          ${h.bookingUrl ? `<a class="goog-btn" href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px;background:#003580;color:#fff">Booking</a>` : ''}
+          ${h.hotelsUrl ? `<a class="goog-btn" href="${h.hotelsUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px;background:#d32f2f;color:#fff">Hotels</a>` : ''}
+        </td>
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -1082,8 +1088,11 @@ function renderHotell() {
 
     html += `<div onclick="event.stopPropagation()" style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem">
       <button class="add-price-btn" onclick="addHotelPrice(${i})">+ Legg til pris</button>
-      <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank">Sjekk på Google</a>
-    </div>`;
+      <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank">Google Hotels</a>
+      ${h.bookingUrl ? `<a class="goog-btn" href="${h.bookingUrl}" target="_blank" style="background:#003580;color:#fff">Booking.com</a>` : ''}
+      ${h.hotelsUrl ? `<a class="goog-btn" href="${h.hotelsUrl}" target="_blank" style="background:#d32f2f;color:#fff">Hotels.com</a>` : ''}
+    </div>
+    ${h.reviewSummary ? `<div style="font-size:0.7rem;color:var(--dim);margin-top:0.25rem">⭐ ${h.reviewSummary}</div>` : ''}`;
 
     html += `<div style="margin-top:0.3rem">${h.features.map(f => `<span class="tag t-s">${f}</span>`).join('')}
       <input class="ef ef-sm" placeholder="+ feature" style="width:70px" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){DATA.hotels[${i}].features.push(this.value);this.value='';renderHotell()}">
