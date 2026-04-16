@@ -155,9 +155,11 @@ li.done{text-decoration:line-through;opacity:0.45}
 
 /* Responsive — tablet */
 @media(max-width:900px){
-  .main{flex-direction:column-reverse}
-  .sidebar{width:100%;min-width:unset;position:relative;top:auto;height:300px;border-left:none;border-top:1px solid var(--brd)}
+  .main{flex-direction:column}
+  .sidebar{width:100%;min-width:unset;position:relative;top:auto;height:0;overflow:hidden;border-left:none;border-top:1px solid var(--brd);transition:height 0.3s}
+  .sidebar.map-open{height:300px}
   .content{max-width:100%}
+  .map-toggle{display:flex!important}
 }
 
 /* Responsive — phone */
@@ -242,7 +244,10 @@ li.done{text-decoration:line-through;opacity:0.45}
 
 <div class="topbar">
   <h1>Bali 2026</h1>
-  <span id="saveStatus" style="font-size:0.7rem;color:var(--a4);opacity:0.7"></span>
+  <div style="display:flex;align-items:center;gap:0.5rem">
+    <button class="tbtn map-toggle" onclick="toggleMap()" style="display:none">Vis kart</button>
+    <span id="saveStatus" style="font-size:0.65rem;color:var(--red);opacity:0"></span>
+  </div>
 </div>
 
 <nav class="nav" id="nav"></nav>
@@ -314,7 +319,6 @@ async function loadFromAPI() {
 function autoSave() {
   clearTimeout(saveTimer);
   const el = document.getElementById('saveStatus');
-  if (el) { el.textContent = 'Lagrer...'; el.style.color = 'var(--a5)'; }
 
   saveTimer = setTimeout(async () => {
     try {
@@ -324,16 +328,24 @@ function autoSave() {
         body: JSON.stringify(DATA)
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      if (el) { el.textContent = 'Lagret ✓'; el.style.color = 'var(--a4)'; }
+      if (el) { el.style.opacity = '0'; }
     } catch(e) {
       console.error('Save failed:', e);
-      if (el) { el.textContent = 'Feil ved lagring!'; el.style.color = 'var(--red)'; }
+      if (el) { el.textContent = 'Kunne ikke lagre!'; el.style.color = 'var(--red)'; el.style.opacity = '1'; }
     }
   }, 400);
 }
 
 
 // ===== MAP =====
+function toggleMap() {
+  const sidebar = document.querySelector('.sidebar');
+  sidebar.classList.toggle('map-open');
+  const btn = document.querySelector('.map-toggle');
+  btn.textContent = sidebar.classList.contains('map-open') ? 'Skjul kart' : 'Vis kart';
+  if (sidebar.classList.contains('map-open')) setTimeout(() => map.invalidateSize(), 350);
+}
+
 function initMap() {
   map = L.map('map').setView([-8.55, 115.35], 10);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -769,7 +781,7 @@ const TABS = [
 function renderNav() {
   document.getElementById('nav').innerHTML = TABS.map(t =>
     `<button class="${activeTab===t.id?'on':''}" onclick="switchTab('${t.id}')">${t.label}</button>`
-  ).join('') + `<button onclick="showFullRoute()" style="margin-left:auto;opacity:0.6">🗺 Vis rute</button>`;
+  ).join('');
 }
 
 function switchTab(id) {
@@ -791,17 +803,11 @@ function renderReiserute() {
     return l.includes('strand') || l.includes('snorkl') ? 't-s' : l.includes('kultur') || l.includes('mat') ? 't-k' : l.includes('natur') ? 't-n' : 't-b';
   };
 
-  let html = `<h2>Reiserute</h2><p class="desc">Klikk for å se på kart. Alt kan redigeres — klikk på tekst for å endre.</p>`;
-
-  // Trip range editor
-  html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;font-size:0.85rem">
-    <span style="color:var(--dim);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">Turens datoer</span>
-    <span>Fra:</span>
-    <input type="date" value="${DATA.tripStart||''}" onchange="updateTripDate('tripStart',this.value)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);font-family:inherit;padding:0.25rem 0.5rem;border-radius:4px">
-    <span>Til:</span>
-    <input type="date" value="${DATA.tripEnd||''}" onchange="updateTripDate('tripEnd',this.value)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);font-family:inherit;padding:0.25rem 0.5rem;border-radius:4px">
-    ${DATA.tripStart && DATA.tripEnd ? `<span style="color:var(--a1);font-weight:600">${Math.round((new Date(DATA.tripEnd) - new Date(DATA.tripStart)) / 86400000)} dager</span>` : ''}
-  </div>`;
+  const tripDays = DATA.tripStart && DATA.tripEnd ? Math.round((new Date(DATA.tripEnd) - new Date(DATA.tripStart)) / 86400000) : 0;
+  let html = `<h2>Reiserute</h2>
+  <p style="color:var(--dim);font-size:0.85rem;margin-bottom:1rem">
+    ${DATA.tripStart && DATA.tripEnd ? new Date(DATA.tripStart).toLocaleDateString('nb-NO',{day:'numeric',month:'long'}) + ' – ' + new Date(DATA.tripEnd).toLocaleDateString('nb-NO',{day:'numeric',month:'long',year:'numeric'}) + ' · ' + tripDays + ' dager' : 'Datoer ikke satt'}
+  </p>`;
 
   // Flights
   html += `<div class="flights">`;
@@ -824,99 +830,63 @@ function renderReiserute() {
     return n ? ` • ${n} ${n===1?'natt':'netter'}` : '';
   };
 
-  // Stops with insert slots between
+  // Stops — clean cards, no insert slots
   DATA.stops.forEach((s, i) => {
-    // Insert slot above this stop
-    html += `<div class="insert-slot" onclick="insertStop(${i})"><span class="insert-slot-btn">+ Sett inn her</span></div>`;
+    const esc = str => (str||'').replace(/'/g, "\\'");
+    const startBounds = getStopDateBounds(i, 'startDate');
+    const endBounds = getStopDateBounds(i, 'endDate');
+    const nightsStr = calcNightsText(s.startDate, s.endDate);
+    const typeIcon = ({overnatting:'🏨', utflukt:'🗺️', transport:'✈️'})[s.type] || '🏨';
 
-    html += `<div class="icard ${cardTypeClass(s.type)}" data-name="${s.name}" onclick="focusOnItem('${s.name.replace(/'/g,"\\'")}',${s.lat},${s.lng},'${(s.desc||'').replace(/'/g,"\\'")}')" >
-      <span class="map-pin">📍</span>
+    html += `<div class="icard ${cardTypeClass(s.type)}" data-name="${s.name}" onclick="focusOnItem('${esc(s.name)}',${s.lat},${s.lng},'${esc(s.desc)}')" >
       <span class="del-btn" onclick="event.stopPropagation();deleteStop(${i})">✕</span>
 
-      <div style="display:flex;gap:0.3rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem" onclick="event.stopPropagation()">
-        <span class="stop-type ${typeClass(s.type)}">${typeLabel(s.type)}</span>
-        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:2px 4px" onchange="updateStop(${i},'type',this.value);renderReiserute()">
-          <option value="overnatting" ${s.type==='overnatting'?'selected':''}>🏨 Overnatting</option>
-          <option value="utflukt" ${s.type==='utflukt'?'selected':''}>🗺️ Utflukt</option>
-          <option value="transport" ${s.type==='transport'?'selected':''}>✈️ Transport</option>
+      <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem" onclick="event.stopPropagation()">
+        <select style="background:transparent;border:none;color:var(--dim);font-size:0.85rem;cursor:pointer;padding:0" onchange="updateStop(${i},'type',this.value);renderReiserute()">
+          <option value="overnatting" ${s.type==='overnatting'?'selected':''}>🏨</option>
+          <option value="utflukt" ${s.type==='utflukt'?'selected':''}>🗺️</option>
+          <option value="transport" ${s.type==='transport'?'selected':''}>✈️</option>
         </select>
+        <span style="font-size:0.78rem;color:var(--dim)">${s.startDate ? new Date(s.startDate).toLocaleDateString('nb-NO',{day:'numeric',month:'short'}) : ''}${s.endDate && s.endDate !== s.startDate ? ' – ' + new Date(s.endDate).toLocaleDateString('nb-NO',{day:'numeric',month:'short'}) : ''}${nightsStr}</span>
         ${statusBadge(s.status)}
-        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:2px 4px" onchange="updateStop(${i},'status',this.value);renderReiserute()">
-          <option value="" ${s.status===''?'selected':''}>—</option>
-          <option value="booked" ${s.status==='booked'?'selected':''}>Booket</option>
-          <option value="considering" ${s.status==='considering'?'selected':''}>Vurderes</option>
-          <option value="open" ${s.status==='open'?'selected':''}>Åpent</option>
-        </select>
       </div>
 
-      <h3>${ef(s.name, "updateStop("+i+",'name',this.value);event.stopPropagation()")}</h3>
-      <div onclick="event.stopPropagation()">${efArea(s.desc, "updateStop("+i+",'desc',this.value)")}</div>
+      <h3 style="font-size:1.1rem;margin-bottom:0.2rem">${ef(s.name, "updateStop("+i+",'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()" style="margin-bottom:0.4rem">${efArea(s.desc, "updateStop("+i+",'desc',this.value)")}</div>
 
-      ${(() => {
-        const startBounds = getStopDateBounds(i, 'startDate');
-        const endBounds = getStopDateBounds(i, 'endDate');
-        return `<div class="dates-row" onclick="event.stopPropagation()">
-          <span>${s.type==='transport'?'Dato:':'Innsjekk:'}</span>
-          <input type="date" value="${s.startDate||''}" min="${startBounds.min}" max="${startBounds.max}" onchange="updateStopDates(${i},'startDate',this.value);renderReiserute();drawRoute()">
-          ${s.type!=='transport' ? `
-            <span>Utsjekk:</span>
-            <input type="date" value="${s.endDate||''}" min="${endBounds.min}" max="${endBounds.max}" onchange="updateStopDates(${i},'endDate',this.value);renderReiserute();drawRoute()">
-          ` : ''}
-          <span style="color:var(--a1);font-weight:600">${calcNightsText(s.startDate, s.endDate)}</span>
-        </div>`;
-      })()}
-
-      <div style="margin-top:0.4rem">${(s.tags||[]).map(t => `<span class="tag ${tagClass(t)}">${t}</span>`).join('')}
-        <input class="ef ef-sm" placeholder="+ tag" style="width:60px" onkeydown="if(event.key==='Enter'){DATA.stops[${i}].tags.push(this.value);this.value='';renderReiserute();event.stopPropagation()}" onclick="event.stopPropagation()">
+      <div class="dates-row" onclick="event.stopPropagation()">
+        <input type="date" value="${s.startDate||''}" min="${startBounds.min}" max="${startBounds.max}" onchange="updateStopDates(${i},'startDate',this.value);renderReiserute();drawRoute()">
+        ${s.type!=='transport' ? `<span>→</span>
+          <input type="date" value="${s.endDate||''}" min="${endBounds.min}" max="${endBounds.max}" onchange="updateStopDates(${i},'endDate',this.value);renderReiserute();drawRoute()">` : ''}
       </div>`;
 
-    // Matching hotels from Hotell-fane: show hotels whose dates overlap this stop
+    // Show matching hotel — compact, no jargon
     if (s.type === 'overnatting' && s.startDate && s.endDate) {
-      const matching = (DATA.hotels || []).filter(h => {
-        if (!h.checkIn || !h.checkOut) return false;
-        // Overlap: h.checkIn < s.endDate && h.checkOut > s.startDate
-        return h.checkIn < s.endDate && h.checkOut > s.startDate;
-      });
+      const matching = (DATA.hotels || []).filter(h => h.checkIn && h.checkOut && h.checkIn < s.endDate && h.checkOut > s.startDate);
       if (matching.length) {
-        html += `<div style="margin-top:0.6rem;" onclick="event.stopPropagation()">
-          <div style="font-size:0.65rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem">Hotell for denne perioden (fra Hotell-fane)</div>`;
         matching.forEach(h => {
           const hi = DATA.hotels.indexOf(h);
           const booked = hotelBookedCost(h);
           const best = bestHotelPrice(h);
           const nights = calcNights(h.checkIn, h.checkOut);
           const total = booked ? booked.total : (best && nights ? best.perNight * nights : 0);
-          const statusIcon = h.status==='booked' ? '&#x2713;' : h.status==='favorite' ? '&#x2B50;' : '';
-          const bg = h.status==='booked' ? 'rgba(52,211,153,0.08)' : h.status==='favorite' ? 'rgba(251,191,36,0.08)' : h.status==='rejected' ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)';
-          const border = h.status==='booked' ? 'var(--a4)' : h.status==='favorite' ? 'var(--a5)' : h.status==='rejected' ? 'var(--red)' : 'var(--brd)';
-          const opacity = h.status==='rejected' ? 0.5 : 1;
-          html += `<div style="padding:0.5rem 0.7rem;margin-top:0.3rem;background:${bg};border:1px solid ${border};border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;opacity:${opacity}">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:0.85rem;font-weight:600">${statusIcon} ${h.name}</div>
-              <div style="font-size:0.72rem;color:var(--dim)">${nights} natt · ${total ? total.toLocaleString('nb-NO', {maximumFractionDigits: 2}) + ' kr' : (best ? best.perNight.toLocaleString('nb-NO') + ' kr/natt' : 'ingen pris')}</div>
-            </div>
-            <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.7rem;border-radius:4px;padding:2px 4px" onchange="updateHotel(${hi},'status',this.value);renderReiserute();renderHotell()">
-              <option value="considering" ${h.status==='considering'?'selected':''}>Vurderes</option>
-              <option value="favorite" ${h.status==='favorite'?'selected':''}>Favoritt</option>
-              <option value="booked" ${h.status==='booked'?'selected':''}>Booket</option>
-              <option value="rejected" ${h.status==='rejected'?'selected':''}>Avvist</option>
-            </select>
+          const icon = h.status==='booked' ? '✓ ' : h.status==='favorite' ? '⭐ ' : '';
+          const bg = h.status==='booked' ? 'rgba(52,211,153,0.06)' : 'rgba(255,255,255,0.02)';
+          html += `<div style="padding:0.4rem 0.6rem;margin-top:0.4rem;background:${bg};border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:center;gap:0.4rem" onclick="event.stopPropagation()">
+            <span>${icon}${h.name}</span>
+            <span style="color:var(--dim);font-size:0.75rem;white-space:nowrap">${total ? total.toLocaleString('nb-NO',{maximumFractionDigits:0})+' kr' : ''}</span>
           </div>`;
         });
-        html += `<button class="add-price-btn" style="margin-top:0.4rem" onclick="switchTab('hotell')">Se alle hotell →</button>`;
-        html += `</div>`;
       } else {
-        html += `<div style="margin-top:0.6rem;padding:0.5rem 0.7rem;background:rgba(251,191,36,0.05);border:1px dashed rgba(251,191,36,0.3);border-radius:8px;font-size:0.78rem;color:var(--a5)" onclick="event.stopPropagation();switchTab('hotell')">
-          &#x26A0;&#xFE0F; Ingen hotell med overlappende datoer. <span style="color:var(--a1);cursor:pointer;text-decoration:underline">Legg til i Hotell-fane</span>
+        html += `<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;border:1px dashed rgba(251,191,36,0.2);border-radius:6px;font-size:0.78rem;color:var(--a5);cursor:pointer" onclick="event.stopPropagation();switchTab('hotell')">
+          Ikke booket — <span style="color:var(--a1);text-decoration:underline">velg hotell</span>
         </div>`;
       }
     }
     html += `</div>`;
   });
 
-  // Final insert slot at the end
-  html += `<div class="insert-slot" onclick="insertStop(${DATA.stops.length})"><span class="insert-slot-btn">+ Sett inn her</span></div>`;
-  html += `<button class="add-btn" onclick="addStop()">+ Legg til stopp (på slutten)</button>`;
+  html += `<button class="add-btn" onclick="addStop()">+ Legg til stopp</button>`;
   el.innerHTML = html;
 }
 
@@ -926,7 +896,7 @@ function renderHotell() {
   const statusLabel = s => ({considering:'VURDERES', favorite:'FAVORITT', booked:'BOOKET', rejected:'AVVIST'}[s] || '');
   const statusClass = s => ({considering:'hs-cons', favorite:'hs-fav', booked:'hs-book', rejected:'hs-rej'}[s] || '');
 
-  let html = `<h2>Hotell</h2><p class="desc">Familievennlige hotell med tilgjengelighet for dine datoer. Klikk "Sjekk Google" for oppdaterte priser.</p>`;
+  let html = `<h2>Hotell</h2>`;
 
   // Filter toggle
   html += `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
@@ -1108,7 +1078,7 @@ function renderHotell() {
 // ----- AKTIVITETER -----
 function renderAktiviteter() {
   const el = document.getElementById('p-aktiviteter');
-  let html = `<h2>Aktiviteter</h2><p class="desc">Merk "Planlagt" for at aktiviteten skal telles i budsjettet. Klikk kart-pin for å se på kart.</p>`;
+  let html = `<h2>Aktiviteter</h2>`;
   DATA.activities.forEach((a, i) => {
     const plannedClass = a.planned ? ' card-booked' : '';
     html += `<div class="icard${plannedClass}" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${a.desc.replace(/'/g,"\\'")}')" >
@@ -1159,12 +1129,12 @@ function renderBudsjett() {
   const grandTotal = hotelTotal + activityTotal + manualTotal;
   const fmt = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
 
-  let html = `<h2>Budsjett</h2><p class="desc">Hotell og aktiviteter summeres automatisk fra dine valg. Legg til flyreise, mat, transport osv. manuelt.</p>`;
+  let html = `<h2>Budsjett</h2>`;
 
   // Auto section: Hotels
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
     <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
-      🏨 Hotell <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(56,189,248,0.1);border-radius:4px">Auto fra Hotell-fane</span>
+      🏨 Overnatting
     </h3>`;
 
   if (hotelRows.length === 0) {
@@ -1197,7 +1167,7 @@ function renderBudsjett() {
   // Auto section: Activities
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
     <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
-      🎯 Aktiviteter <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(52,211,153,0.1);border-radius:4px">Auto fra Aktivitet-fane</span>
+      🎯 Aktiviteter
     </h3>`;
 
   if (plannedActivities.length === 0) {
@@ -1218,7 +1188,7 @@ function renderBudsjett() {
   // Manual section: other costs (flights, food, transport, misc)
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-bottom:0.75rem">
     <h3 style="font-size:0.9rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem">
-      💸 Annet (fly, mat, transport osv.) <span style="font-size:0.65rem;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;padding:0.1rem 0.4rem;background:rgba(129,140,248,0.1);border-radius:4px">Manuell</span>
+      💸 Annet
     </h3>
     <table class="btable">`;
   (DATA.budget || []).forEach((b, i) => {
@@ -1301,10 +1271,8 @@ async function init() {
     migrateHotels(); // upgrade old hotel format to new price-comparison model
     migrateStops(); // add type/startDate/endDate to stops
     migrateActivities(); // add cost (numeric) + planned flag to activities
-    el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
   } else {
-    el.textContent = 'Ny plan — lagrer standarddata...'; el.style.color = 'var(--a1)';
-    autoSave(); // save defaults to DB
+    autoSave();
   }
   render();
 }
