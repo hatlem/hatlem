@@ -1488,6 +1488,24 @@ function toggleActFav(i) {
   autoSave();
 }
 
+function planActivityForDay(i, iso) {
+  DATA.activities[i].planned = true;
+  DATA.activities[i].plannedDate = iso;
+  renderDagplan();
+  renderAktiviteter();
+  renderBudsjett();
+  autoSave();
+}
+
+function unplanActivity(i) {
+  DATA.activities[i].planned = false;
+  DATA.activities[i].plannedDate = '';
+  renderDagplan();
+  renderAktiviteter();
+  renderBudsjett();
+  autoSave();
+}
+
 // ----- BUDSJETT -----
 function renderBudsjett() {
   const el = document.getElementById('p-budsjett');
@@ -1738,6 +1756,41 @@ function renderDagplan() {
     if (hotel) html += `<div style="color:var(--dim)">🏨 ${hotel.name}</div>`;
     if (stop && !isCheckIn && !flight) html += `<div style="color:var(--dim)">${({overnatting:'🏨',utflukt:'🗺️',transport:'✈️'})[stop.type]||''} ${stop.name}</div>`;
     if (!stop && !flight) html += `<div style="color:var(--dim);opacity:0.5">—</div>`;
+
+    // Planned activities for this day
+    const plannedForDay = (DATA.activities || []).filter(a => a.planned && a.plannedDate === iso);
+    plannedForDay.forEach(a => {
+      const idx = DATA.activities.indexOf(a);
+      html += `<div style="color:var(--a4);font-size:0.78rem;margin-top:0.2rem;display:flex;align-items:center;gap:0.3rem">
+        ✓ ${a.name}${a.cost ? ' · ' + a.cost + ' kr' : ''}
+        <span style="cursor:pointer;opacity:0.4;font-size:0.7rem" onclick="event.stopPropagation();unplanActivity(${idx})" title="Fjern fra denne dagen">✕</span>
+      </div>`;
+    });
+
+    // Suggestions: activities in same area, favorited first
+    if (stop) {
+      const keys = ['sanur','nusa lembongan','nusa dua','ubud','kuta','seminyak','canggu','uluwatu','padangbai','amed','nusa penida','tabanan','gianyar','kintamani','tanjung benoa','echo beach','berawa','keramas','serangan','jimbaran'];
+      const stopKey = (stop.name + ' ' + (stop.desc||'')).toLowerCase();
+      const suggestions = (DATA.activities || []).filter(a => {
+        if (a.planned && a.plannedDate === iso) return false;
+        if (!a.area) return false;
+        const actArea = a.area.toLowerCase();
+        return keys.some(k => stopKey.includes(k) && actArea.includes(k));
+      }).sort((a,b) => (b.favorited?1:0) - (a.favorited?1:0)).slice(0, 6);
+
+      if (suggestions.length) {
+        html += `<div style="margin-top:0.4rem;display:flex;gap:0.3rem;flex-wrap:wrap">`;
+        suggestions.forEach(a => {
+          const origIdx = DATA.activities.indexOf(a);
+          const bg = a.favorited ? 'rgba(244,114,182,0.12)' : 'rgba(255,255,255,0.03)';
+          const border = a.favorited ? 'var(--a3)' : 'var(--brd)';
+          html += `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.55rem;font-size:0.72rem;background:${bg};border:1px solid ${border};border-radius:12px;cursor:pointer" onclick="event.stopPropagation();planActivityForDay(${origIdx},'${iso}')" title="Legg til denne dagen">
+            ${a.favorited?'♥ ':'+ '}${a.name}${a.cost?' · '+a.cost+' kr':''}
+          </span>`;
+        });
+        html += `</div>`;
+      }
+    }
 
     html += `</div></div>`;
   }
