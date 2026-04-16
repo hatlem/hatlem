@@ -896,8 +896,9 @@ function switchTab(id) {
   document.getElementById('p-'+id).classList.add('on');
   renderNav();
   if (id === 'reiserute') drawRoute();
-  if (id === 'kart') { renderKart(); drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
-  else if (id !== 'reiserute') drawRoute();
+  else if (id === 'kart') { renderKart(); drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
+  else if (id === 'hotell') { drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
+  else drawRoute();
 }
 
 function kartStatusClass(s) { return s==='booked'?'s-booked':s==='favorite'?'s-favorite':s==='rejected'?'s-rejected':'s-considering'; }
@@ -914,8 +915,14 @@ const KART_FILTER = {
   minStars: 0,           // 0 = any, 3, 4, 5
   minPrice: 0,           // 0 = no limit
   maxPrice: 0,           // 0 = no limit
+  likedOnly: false,      // show only hearted
   viewMode: 'grid',      // grid | list
 };
+
+function toggleHotelLike(idx) {
+  DATA.hotels[idx].liked = !DATA.hotels[idx].liked;
+  renderKart(); drawMapFiltered(); renderHotell(); autoSave();
+}
 
 function renderKart() {
   const el = document.getElementById('p-kart');
@@ -950,6 +957,7 @@ function renderKart() {
       </select>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.babyOnly?'checked':''} onchange="setKartFilter('babyOnly',this.checked)"> 👶 Babyvennlig</label>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.kitchenOnly?'checked':''} onchange="setKartFilter('kitchenOnly',this.checked)"> 🍳 Kjøkken</label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.likedOnly?'checked':''} onchange="setKartFilter('likedOnly',this.checked)"> ❤️ Bare hjertede (${DATA.hotels.filter(h=>h.liked).length})</label>
       <label style="display:inline-flex;align-items:center;gap:0.25rem">★ minst: <select onchange="setKartFilter('minStars',parseInt(this.value)||0)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px">
         <option value="0" ${f.minStars===0?'selected':''}>Alle</option>
         <option value="3" ${f.minStars===3?'selected':''}>3+</option>
@@ -992,8 +1000,10 @@ function renderKart() {
     const statusBadge = `<span class="h-status ${kartStatusClass(h.status)}" style="font-size:0.6rem">${kartStatusLabel(h.status)}</span>`;
     const esc = s => (s||'').replace(/'/g, "\\'");
     const meta = `${h.area} · ${'★'.repeat(h.stars||0)}${h.babyFriendly?' · 👶':''}${(h.features||[]).includes('kjokken')?' · 🍳':''}`;
+    const heart = `<button onclick="event.stopPropagation();toggleHotelLike(${i})" title="${h.liked?'Fjern hjerte':'Hjerte dette'}" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1;color:${h.liked?'#ef4444':'#475569'}">${h.liked?'❤️':'🤍'}</button>`;
     if (isList) {
-      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid var(--brd);border-radius:6px;padding:0.4rem 0.6rem;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:6px;padding:0.4rem 0.6rem;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+        ${heart}
         <span style="font-weight:600;color:var(--tx);flex:1;min-width:140px">${h.name}</span>
         <span style="color:var(--dim);font-size:0.7rem;min-width:120px">${meta}</span>
         <span style="color:var(--a1);font-size:0.72rem;min-width:50px;text-align:right;cursor:help" title="${scoreTitle}">${sc}</span>
@@ -1002,8 +1012,9 @@ function renderKart() {
         ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
       </div>`;
     } else {
-      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:0.5rem 0.6rem;cursor:pointer;font-size:0.78rem">
-        <div style="font-weight:600;color:var(--tx)">${h.name}</div>
+      html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid ${h.liked?'#ef4444':'var(--brd)'};border-radius:8px;padding:0.5rem 0.6rem;cursor:pointer;font-size:0.78rem;position:relative">
+        <span style="position:absolute;top:0.4rem;right:0.4rem">${heart}</span>
+        <div style="font-weight:600;color:var(--tx);padding-right:1.5rem">${h.name}</div>
         <div style="color:var(--dim);font-size:0.7rem;margin-top:0.15rem">${meta}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
           <span style="color:var(--a4);font-weight:600">${pn?pn.toLocaleString('nb-NO')+' kr/natt':'—'}</span>
@@ -1034,6 +1045,7 @@ function filterHotelsForMap() {
       if (sc < f.minScore) return false;
     }
     if (f.minStars > 0 && (h.stars||0) < f.minStars) return false;
+    if (f.likedOnly && !h.liked) return false;
     const pn = bestHotelPrice(h)?.perNight || 0;
     if (f.maxPrice > 0 && pn > f.maxPrice) return false;
     if (f.minPrice > 0 && pn < f.minPrice) return false;
