@@ -547,15 +547,25 @@ async function geocodeHotel(idx) {
   }
 }
 
-async function geocodeAllHotels() {
+async function geocodeAllHotels(silent) {
   const statusEl = document.getElementById('saveStatus');
-  const toGeocode = DATA.hotels.map((h, i) => ({ h, i })).filter(x => !x.h.geocoded);
+  // Prioritize booked/favorite first, then considering; skip rejected
+  const toGeocode = DATA.hotels.map((h, i) => ({ h, i }))
+    .filter(x => !x.h.geocoded && x.h.status !== 'rejected')
+    .sort((a, b) => {
+      const order = { booked: 0, favorite: 1, considering: 2 };
+      return (order[a.h.status] ?? 3) - (order[b.h.status] ?? 3);
+    });
   if (!toGeocode.length) return;
-  statusEl.style.opacity = '1';
+
+  let failed = 0;
   for (let n = 0; n < toGeocode.length; n++) {
     const { h, i } = toGeocode[n];
-    statusEl.textContent = `Geocoder ${n + 1}/${toGeocode.length}: ${h.name.substring(0, 30)}...`;
-    statusEl.style.color = 'var(--a1)';
+    if (statusEl && !silent) {
+      statusEl.style.opacity = '0.6';
+      statusEl.style.color = 'var(--a1)';
+      statusEl.textContent = `📍 ${n + 1}/${toGeocode.length}`;
+    }
     try {
       const q = h.address || (h.name + ', ' + h.area + ', Bali, Indonesia');
       const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1');
@@ -565,15 +575,29 @@ async function geocodeAllHotels() {
         DATA.hotels[i].lng = parseFloat(data[0].lon);
         DATA.hotels[i].geocoded = true;
         if (!h.address && data[0].display_name) DATA.hotels[i].address = data[0].display_name;
+        // Save every 5 hotels so progress survives page reload
+        if (n > 0 && n % 5 === 0) autoSave();
+      } else {
+        failed++;
       }
-    } catch (e) { /* skip failed */ }
+    } catch (e) { failed++; }
     await new Promise(r => setTimeout(r, 1100)); // Nominatim 1 req/sec rate limit
   }
-  statusEl.textContent = '✓ Ferdig geocodet';
-  statusEl.style.color = 'var(--a4)';
-  setTimeout(() => { statusEl.style.opacity = '0'; }, 3000);
+
+  if (statusEl) {
+    statusEl.textContent = '';
+    statusEl.style.opacity = '0';
+  }
   renderHotell();
   autoSave();
+}
+
+// Auto-geocode in background 3s after page load
+function scheduleAutoGeocode() {
+  setTimeout(() => {
+    const needsGeocoding = (DATA.hotels || []).filter(h => !h.geocoded && h.status !== 'rejected').length;
+    if (needsGeocoding > 0) geocodeAllHotels(false);
+  }, 3000);
 }
 
 function getUnbookedDates() {
@@ -1947,6 +1971,7 @@ async function init() {
   } else {
     autoSave();
   }
+  scheduleAutoGeocode(); // auto-geocode any ungeocoded hotels in background (once per hotel ever)
   render();
 }
 init();
