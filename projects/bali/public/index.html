@@ -6,6 +6,7 @@
 <title>Bali 2026 — Reiseplanlegger</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -250,7 +251,21 @@ li.done{text-decoration:line-through;opacity:0.45}
   <h1>Bali 2026</h1>
   <div style="display:flex;align-items:center;gap:0.5rem">
     <button class="tbtn map-toggle" onclick="toggleMap()" style="display:none">Vis kart</button>
+    <button class="tbtn" onclick="showShare()">Del</button>
     <span id="saveStatus" style="font-size:0.65rem;color:var(--red);opacity:0"></span>
+  </div>
+</div>
+
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1.5rem;max-width:400px;width:100%">
+    <h3 style="margin-bottom:0.5rem">Del med Anna</h3>
+    <p style="color:var(--dim);font-size:0.82rem;margin-bottom:1rem">Send denne linken til kona di. Hun kommer rett inn uten passord.</p>
+    <div id="shareUrlBox" style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:0.6rem;font-size:0.8rem;word-break:break-all;margin-bottom:0.8rem;font-family:monospace"></div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button class="tbtn primary" onclick="copyShareUrl()" style="flex:1">Kopier</button>
+      <button class="tbtn" onclick="document.getElementById('shareModal').style.display='none'">Lukk</button>
+    </div>
+    <div id="shareQr" style="margin-top:1rem;display:flex;justify-content:center"></div>
   </div>
 </div>
 
@@ -259,6 +274,7 @@ li.done{text-decoration:line-through;opacity:0.45}
 <div class="main">
   <div class="content">
     <div class="page on" id="p-reiserute"></div>
+    <div class="page" id="p-dagplan"></div>
     <div class="page" id="p-hotell"></div>
     <div class="page" id="p-aktiviteter"></div>
     <div class="page" id="p-budsjett"></div>
@@ -287,8 +303,8 @@ function initEmptyData() {
     tripStart: '2026-08-21',
     tripEnd: '2026-09-15',
     flights: {
-      out: { label:'Utreise', route:'', details:'' },
-      ret: { label:'Hjemreise', route:'', details:'' }
+      out: { label:'Utreise', route:'', details:'', bookingRef:'', seats:'' },
+      ret: { label:'Hjemreise', route:'', details:'', bookingRef:'', seats:'' }
     },
     stops: [],
     hotels: [],
@@ -342,6 +358,32 @@ function autoSave() {
 
 
 // ===== MAP =====
+async function showShare() {
+  const modal = document.getElementById('shareModal');
+  const urlBox = document.getElementById('shareUrlBox');
+  const qrBox = document.getElementById('shareQr');
+  modal.style.display = 'flex';
+  urlBox.textContent = 'Henter link...';
+  qrBox.innerHTML = '';
+  try {
+    const r = await fetch('/bali/api/share-url');
+    const { url } = await r.json();
+    urlBox.textContent = url;
+    window._shareUrl = url;
+    new QRCode(qrBox, { text: url, width: 180, height: 180, colorDark: '#f1f5f9', colorLight: '#1e293b' });
+  } catch(e) { urlBox.textContent = 'Feil: ' + e.message; }
+}
+
+async function copyShareUrl() {
+  if (window._shareUrl) {
+    await navigator.clipboard.writeText(window._shareUrl);
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Kopiert';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }
+}
+
 function toggleMap() {
   const sidebar = document.querySelector('.sidebar');
   sidebar.classList.toggle('map-open');
@@ -472,6 +514,35 @@ async function geocodeHotel(idx) {
   }
 }
 
+async function geocodeAllHotels() {
+  const statusEl = document.getElementById('saveStatus');
+  const toGeocode = DATA.hotels.map((h, i) => ({ h, i })).filter(x => !x.h.geocoded);
+  if (!toGeocode.length) return;
+  statusEl.style.opacity = '1';
+  for (let n = 0; n < toGeocode.length; n++) {
+    const { h, i } = toGeocode[n];
+    statusEl.textContent = `Geocoder ${n + 1}/${toGeocode.length}: ${h.name.substring(0, 30)}...`;
+    statusEl.style.color = 'var(--a1)';
+    try {
+      const q = h.address || (h.name + ', ' + h.area + ', Bali, Indonesia');
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1');
+      const data = await r.json();
+      if (data.length) {
+        DATA.hotels[i].lat = parseFloat(data[0].lat);
+        DATA.hotels[i].lng = parseFloat(data[0].lon);
+        DATA.hotels[i].geocoded = true;
+        if (!h.address && data[0].display_name) DATA.hotels[i].address = data[0].display_name;
+      }
+    } catch (e) { /* skip failed */ }
+    await new Promise(r => setTimeout(r, 1100)); // Nominatim 1 req/sec rate limit
+  }
+  statusEl.textContent = '✓ Ferdig geocodet';
+  statusEl.style.color = 'var(--a4)';
+  setTimeout(() => { statusEl.style.opacity = '0'; }, 3000);
+  renderHotell();
+  autoSave();
+}
+
 function getUnbookedDates() {
   const openStops = (DATA.stops || []).filter(s => s.type === 'overnatting' && s.status !== 'booked' && s.startDate && s.endDate);
   if (openStops.length) return { checkIn: openStops[0].startDate, checkOut: openStops[openStops.length - 1].endDate };
@@ -588,6 +659,16 @@ function parseNoDateRange(text, year = 2026) {
   }
 
   return null;
+}
+
+function migrateFlights() {
+  if (!DATA.flights) return;
+  let changed = false;
+  Object.values(DATA.flights).forEach(f => {
+    if (f.bookingRef === undefined) { f.bookingRef = ''; changed = true; }
+    if (f.seats === undefined) { f.seats = ''; changed = true; }
+  });
+  if (changed) autoSave();
 }
 
 function migrateTripDates() {
@@ -777,6 +858,7 @@ function addBudget() {
 function render() {
   renderNav();
   renderReiserute();
+  renderDagplan();
   renderHotell();
   renderAktiviteter();
   renderBudsjett();
@@ -787,6 +869,7 @@ function render() {
 
 const TABS = [
   {id:'reiserute',label:'Reiserute'},
+  {id:'dagplan',label:'Dagplan'},
   {id:'hotell',label:'Hotell'},
   {id:'aktiviteter',label:'Aktiviteter'},
   {id:'budsjett',label:'Budsjett'},
@@ -832,6 +915,10 @@ function renderReiserute() {
       <div class="lbl">${ef(f.label, "updateFlight('${k}','label',this.value)")}</div>
       <div style="font-weight:600">${ef(f.route, "updateFlight('${k}','route',this.value)")}</div>
       <div style="font-size:0.8rem;color:var(--dim)">${ef(f.details, "updateFlight('${k}','details',this.value)", 'ef-sm')}</div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.3rem;font-size:0.75rem;color:var(--dim)">
+        <span>Ref: ${ef(f.bookingRef||'', "updateFlight('${k}','bookingRef',this.value)", 'ef-sm')}</span>
+        <span>Seter: ${ef(f.seats||'', "updateFlight('${k}','seats',this.value)", 'ef-sm')}</span>
+      </div>
     </div>`;
   }
   html += `</div>`;
@@ -932,6 +1019,10 @@ function renderHotell() {
     const co = hotelsInArea[0]?.checkOut || '';
     html += `<a class="goog-btn" href="${googleAreaSearchUrl(area, ci, co)}" target="_blank">${area}</a>`;
   });
+  const ungeocoded = DATA.hotels.filter(h => !h.geocoded).length;
+  if (ungeocoded > 0) {
+    html += `<button class="tbtn" onclick="geocodeAllHotels()" style="margin-left:auto">📍 Geocode ${ungeocoded} hotell</button>`;
+  }
   html += `</div>`;
 
   // Sort: booked > favorite > considering > rejected, then by area, then by price
@@ -1227,33 +1318,69 @@ function renderBudsjett() {
   </div>`;
 
   html += `<div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem;margin-top:0.5rem">
-    <h3 style="font-size:0.95rem;margin-bottom:0.5rem">Sparetips</h3>
-    <ul style="color:var(--dim);font-size:0.82rem;padding-left:1rem">
-      <li>Warung-mat: 15-25 kr/måltid (IDR 25-40k)</li>
-      <li>Grab-app: halvparten av taxipris</li>
-      <li>Book direkte — billigere enn Booking.com</li>
-      <li>Lokalt SIM-kort: ~30-50 kr for 30 dager</li>
-      <li>Prute på markeder — start på halvparten</li>
-    </ul>
+    <h3 style="font-size:0.95rem;margin-bottom:0.6rem">💱 Valutakalkulator</h3>
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;font-size:0.9rem">
+      <input id="calcNok" type="number" placeholder="0" oninput="document.getElementById('calcIdr').value = Math.round(this.value * ${IDR_PER_NOK} || 0)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);padding:0.4rem 0.6rem;border-radius:6px;width:110px;font-size:1rem">
+      <span style="color:var(--dim);font-weight:600">kr</span>
+      <span style="color:var(--dim)">=</span>
+      <input id="calcIdr" type="number" placeholder="0" oninput="document.getElementById('calcNok').value = (this.value / ${IDR_PER_NOK}).toFixed(2)" style="background:var(--bg);border:1px solid var(--brd);color:var(--tx);padding:0.4rem 0.6rem;border-radius:6px;width:140px;font-size:1rem">
+      <span style="color:var(--dim);font-weight:600">IDR</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--dim);margin-top:0.5rem">Ca. kurs: 1 NOK ≈ ${IDR_PER_NOK.toLocaleString('nb-NO')} IDR</div>
+    <div style="margin-top:0.8rem;padding-top:0.6rem;border-top:1px solid var(--brd);font-size:0.75rem;color:var(--dim)">
+      Warung-mat 25-40k IDR • Grab-tur 30-50k IDR • SIM-kort 50-80k IDR
+    </div>
   </div>`;
   el.innerHTML = html;
 }
 
 // ----- PAKKELISTE -----
+function migratePacking() {
+  if (!DATA.packing) return;
+  let changed = false;
+  DATA.packing.forEach(cat => {
+    // Convert strings to objects {text, priority}
+    cat.items = cat.items.map(item => {
+      if (typeof item === 'string') { changed = true; return { text: item, priority: 'med' }; }
+      if (!item.priority) { item.priority = 'med'; changed = true; }
+      return item;
+    });
+  });
+  if (changed) autoSave();
+}
+
 function renderPakkeliste() {
   const el = document.getElementById('p-pakkeliste');
-  let html = `<h2>Pakkeliste</h2><p class="desc">Klikk for å huke av. Lagres når dere lagrer fil.</p><div class="pack-grid">`;
+  const prioRank = { high: 0, med: 1, low: 2 };
+  const prioIcon = { high: '🔴', med: '', low: '⚪' };
+  let html = `<h2>Pakkeliste</h2><div class="pack-grid">`;
   DATA.packing.forEach((cat, ci) => {
-    html += `<div class="pack-cat"><h3>${cat.cat}</h3><ul>`;
-    cat.items.forEach((item, ii) => {
-      const done = cat.checked.includes(ii);
-      html += `<li class="${done?'done':''}" onclick="togglePack(${ci},${ii})"><span class="ck"></span><span>${item}</span></li>`;
+    // Sort items: unchecked first (by priority), then checked at bottom
+    const sorted = cat.items.map((item, origIdx) => ({...item, origIdx, done: cat.checked.includes(origIdx)}))
+      .sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return (prioRank[a.priority]||1) - (prioRank[b.priority]||1);
+      });
+
+    html += `<div class="pack-cat">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <h3 style="margin:0">${ef(cat.cat, "DATA.packing["+ci+"].cat=this.value;autoSave()",'ef-sm')}</h3>
+        <span onclick="deletePackCat(${ci})" style="cursor:pointer;color:var(--red);opacity:0.4;font-size:0.8rem">✕</span>
+      </div>
+      <ul>`;
+    sorted.forEach(item => {
+      html += `<li class="${item.done?'done':''}" style="display:flex;align-items:center;gap:0.4rem">
+        <span class="ck" onclick="togglePack(${ci},${item.origIdx})"></span>
+        <span onclick="togglePack(${ci},${item.origIdx})" style="flex:1;cursor:pointer">${item.text}</span>
+        <span onclick="cyclePackPrio(${ci},${item.origIdx})" style="cursor:pointer;font-size:0.7rem;opacity:0.6" title="${item.priority==='high'?'Viktig':item.priority==='low'?'Kan hoppes over':'Normal'}">${prioIcon[item.priority]||''}</span>
+      </li>`;
     });
     html += `</ul>
-      <input class="ef ef-sm" placeholder="+ nytt element" style="width:100%;margin-top:0.4rem" onkeydown="if(event.key==='Enter'&&this.value){DATA.packing[${ci}].items.push(this.value);this.value='';renderPakkeliste();autoSave()}">
+      <input class="ef ef-sm" placeholder="+ nytt element" style="width:100%;margin-top:0.4rem" onkeydown="if(event.key==='Enter'&&this.value){DATA.packing[${ci}].items.push({text:this.value,priority:'med'});this.value='';renderPakkeliste();autoSave()}">
     </div>`;
   });
-  html += `</div>`;
+  html += `</div>
+    <button class="add-btn" style="max-width:300px;margin-top:1rem" onclick="addPackCat()">+ Legg til kategori</button>`;
   el.innerHTML = html;
 }
 
@@ -1264,12 +1391,90 @@ function togglePack(ci, ii) {
   renderPakkeliste(); autoSave();
 }
 
+function cyclePackPrio(ci, ii) {
+  const cur = DATA.packing[ci].items[ii].priority || 'med';
+  const next = cur === 'high' ? 'med' : cur === 'med' ? 'low' : 'high';
+  DATA.packing[ci].items[ii].priority = next;
+  renderPakkeliste(); autoSave();
+}
+
+function addPackCat() {
+  const name = prompt('Kategori-navn (f.eks. 🎽 Sport):');
+  if (name) {
+    DATA.packing.push({ cat: name, items: [], checked: [] });
+    renderPakkeliste(); autoSave();
+  }
+}
+
+function deletePackCat(ci) {
+  if (confirm('Slett hele kategorien?')) {
+    DATA.packing.splice(ci, 1);
+    renderPakkeliste(); autoSave();
+  }
+}
+
 // ----- NOTATER -----
 function renderNotater() {
   document.getElementById('p-notater').innerHTML = `
     <h2>Notater</h2>
-    <p class="desc">Skriv ned tanker, spørsmål og huskeliste. Lagres med "Lagre fil".</p>
     <textarea class="notes" oninput="updateNotes(this.value)">${DATA.notes}</textarea>`;
+}
+
+// ----- DAGPLAN (day-by-day) -----
+function renderDagplan() {
+  const el = document.getElementById('p-dagplan');
+  if (!DATA.tripStart || !DATA.tripEnd) { el.innerHTML = '<h2>Dagplan</h2><p style="color:var(--dim)">Sett turens datoer i Reiserute-fanen.</p>'; return; }
+  const start = new Date(DATA.tripStart), end = new Date(DATA.tripEnd);
+  const days = Math.round((end - start) / 86400000);
+  let html = `<h2>Dagplan</h2>`;
+
+  for (let d = 0; d < days; d++) {
+    const date = new Date(start.getTime() + d * 86400000);
+    const iso = toISODate(date);
+    const dayName = date.toLocaleDateString('nb-NO', { weekday:'short', day:'numeric', month:'short' });
+    const isToday = iso === new Date().toISOString().slice(0,10);
+
+    // Find what happens this day
+    const stop = DATA.stops.find(s => s.startDate && s.endDate && s.startDate <= iso && s.endDate > iso);
+    const hotel = DATA.hotels.find(h => h.checkIn && h.checkOut && h.checkIn <= iso && h.checkOut > iso && (h.status === 'booked' || h.status === 'favorite'));
+    const isCheckIn = stop && stop.startDate === iso;
+    const isCheckOut = DATA.stops.find(s => s.endDate === iso && s.startDate !== iso);
+    const flight = (iso === DATA.tripStart) ? DATA.flights.out : (iso === DATA.tripEnd) ? DATA.flights.ret : null;
+
+    const bg = isToday ? 'rgba(56,189,248,0.08)' : (d % 2 === 0) ? 'rgba(255,255,255,0.01)' : 'transparent';
+    const border = isToday ? '1px solid var(--a1)' : '1px solid transparent';
+
+    html += `<div style="display:flex;gap:0.75rem;padding:0.6rem 0.75rem;background:${bg};border:${border};border-radius:8px;margin-bottom:2px;align-items:flex-start">
+      <div style="min-width:90px;font-size:0.82rem;font-weight:${isToday?'700':'500'};color:${isToday?'var(--a1)':'var(--tx)'}">${dayName}</div>
+      <div style="flex:1;font-size:0.82rem">`;
+
+    if (flight) html += `<div style="color:var(--a2)">✈️ ${flight.route || flight.label}</div>`;
+    if (isCheckIn && stop) html += `<div style="color:var(--a4)">📍 Ankomst: ${stop.name}</div>`;
+    if (isCheckOut) html += `<div style="color:var(--a5)">🧳 Utsjekk: ${isCheckOut.name}</div>`;
+    if (hotel) html += `<div style="color:var(--dim)">🏨 ${hotel.name}</div>`;
+    if (stop && !isCheckIn && !flight) html += `<div style="color:var(--dim)">${({overnatting:'🏨',utflukt:'🗺️',transport:'✈️'})[stop.type]||''} ${stop.name}</div>`;
+    if (!stop && !flight) html += `<div style="color:var(--dim);opacity:0.5">—</div>`;
+
+    html += `</div></div>`;
+  }
+
+  // Final day (departure)
+  const lastDay = new Date(end.getTime());
+  const lastIso = toISODate(lastDay);
+  const lastName = lastDay.toLocaleDateString('nb-NO', { weekday:'short', day:'numeric', month:'short' });
+  html += `<div style="display:flex;gap:0.75rem;padding:0.6rem 0.75rem;align-items:flex-start">
+    <div style="min-width:90px;font-size:0.82rem;font-weight:500">${lastName}</div>
+    <div style="flex:1;font-size:0.82rem;color:var(--a2)">✈️ ${DATA.flights.ret.route || 'Hjemreise'}</div>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ----- CURRENCY CALCULATOR -----
+const IDR_PER_NOK = 1650;
+function convertCurrency(val, from) {
+  if (from === 'NOK') return { nok: val, idr: Math.round(val * IDR_PER_NOK) };
+  return { nok: Math.round(val / IDR_PER_NOK), idr: val };
 }
 
 // ===== INIT =====
@@ -1279,7 +1484,9 @@ async function init() {
   const el = document.getElementById('saveStatus');
   const loaded = await loadFromAPI();
   if (loaded) {
-    migrateTripDates(); // ensure trip range exists
+    migrateFlights();
+    migratePacking();
+    migrateTripDates();
     migrateHotels(); // upgrade old hotel format to new price-comparison model
     migrateStops(); // add type/startDate/endDate to stops
     migrateActivities(); // add cost (numeric) + planned flag to activities

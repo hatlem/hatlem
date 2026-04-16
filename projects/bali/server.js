@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 4820;
 
 const COOKIE_SECRET = process.env.COOKIE_SECRET || 'dev-secret-change-in-prod';
 const BALI_PASSWORD = process.env.BALI_PASSWORD || 'matheo2025';
+const SHARE_TOKEN = process.env.SHARE_TOKEN || 'anna-bali-2026';
 
 app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json({ limit: '5mb' }));
@@ -68,11 +69,32 @@ app.post('/bali/login', async (req, res) => {
   return res.redirect('/bali/login?error=1');
 });
 
+// Share token endpoint — set cookie from query param so link works
+app.get('/bali/share/:token', (req, res) => {
+  if (req.params.token === SHARE_TOKEN) {
+    res.cookie('bali_auth', 'authenticated', {
+      signed: true,
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60 * 1000
+    });
+    return res.redirect('/bali');
+  }
+  return res.redirect('/bali/login');
+});
+
 // Auth middleware — protect all /bali/* routes registered after this point
 app.use('/bali', (req, res, next) => {
   const token = req.signedCookies.bali_auth;
   if (token === 'authenticated') return next();
   return res.redirect('/bali/login');
+});
+
+// Get share URL
+app.get('/bali/api/share-url', (req, res) => {
+  const proto = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  res.json({ url: `${proto}://${host}/bali/share/${SHARE_TOKEN}` });
 });
 
 // API: Get data
