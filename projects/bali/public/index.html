@@ -470,8 +470,10 @@ async function geocodeHotel(idx) {
 
 function googleHotelUrl(name, checkIn, checkOut) {
   const q = encodeURIComponent(name + ' family friendly, Bali, Indonesia');
+  const ci = checkIn || DATA.tripStart || '';
+  const co = checkOut || DATA.tripEnd || '';
   let url = 'https://www.google.com/travel/hotels?q=' + q + '&adults=2&children=1';
-  if (checkIn && checkOut) url += '&dates=' + checkIn + 'to' + checkOut;
+  if (ci && co) url += '&dates=' + ci + 'to' + co;
   return url;
 }
 function googleAreaSearchUrl(area, checkIn, checkOut) {
