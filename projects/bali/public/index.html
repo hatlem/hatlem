@@ -66,6 +66,29 @@ a{color:var(--a1);text-decoration:none}
 .t-n{background:rgba(52,211,153,0.15);color:var(--a4)}
 .t-b{background:rgba(244,114,182,0.15);color:var(--a3)}
 
+/* Hotel comparison */
+.price-tbl{width:100%;border-collapse:collapse;font-size:0.78rem;margin-top:0.5rem}
+.price-tbl td{padding:0.25rem 0.4rem;border-bottom:1px solid rgba(255,255,255,0.04)}
+.price-tbl .best-price{color:var(--a4);font-weight:700}
+.price-tbl .src{color:var(--dim);font-size:0.72rem}
+.goog-btn{display:inline-flex;align-items:center;gap:0.3rem;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:var(--a1);font-family:inherit;font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;transition:all 0.2s;text-decoration:none}
+.goog-btn:hover{background:rgba(56,189,248,0.18);border-color:var(--a1)}
+.h-status{display:inline-block;font-size:0.6rem;padding:0.12rem 0.45rem;border-radius:8px;font-weight:600;margin-left:0.3rem}
+.hs-fav{background:rgba(251,191,36,0.2);color:var(--a5)}
+.hs-book{background:rgba(52,211,153,0.2);color:var(--a4)}
+.hs-cons{background:rgba(129,140,248,0.2);color:var(--a2)}
+.hs-rej{background:rgba(239,68,68,0.15);color:var(--red)}
+.cmp-tbl{width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:1.25rem;background:var(--card);border:1px solid var(--brd);border-radius:12px;overflow:hidden}
+.cmp-tbl th{text-align:left;padding:0.6rem 0.75rem;border-bottom:2px solid var(--brd);color:var(--dim);font-weight:500;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em}
+.cmp-tbl td{padding:0.55rem 0.75rem;border-bottom:1px solid var(--brd)}
+.cmp-tbl tr:hover td{background:rgba(255,255,255,0.02)}
+.cmp-tbl .best-row td{background:rgba(52,211,153,0.04)}
+.dates-row{display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;font-size:0.78rem;color:var(--dim);flex-wrap:wrap}
+.dates-row input[type="date"]{background:var(--card);border:1px solid var(--brd);color:var(--tx);font-family:inherit;font-size:0.78rem;padding:0.2rem 0.4rem;border-radius:4px}
+.dates-row input[type="date"]:focus{border-color:var(--a1);outline:none}
+.add-price-btn{background:transparent;border:1px dashed var(--brd);color:var(--dim);font-family:inherit;font-size:0.72rem;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer}
+.add-price-btn:hover{border-color:var(--a1);color:var(--a1)}
+
 /* Map pin icon on card */
 .map-pin{position:absolute;top:0.75rem;right:0.75rem;font-size:1rem;opacity:0.4;transition:opacity 0.2s}
 .icard:hover .map-pin,.icard.active .map-pin{opacity:1}
@@ -180,15 +203,15 @@ function initDefaultData() {
       { id:'s6', name:'Hjemreise', dates:'15. sep', desc:'Avreise DPS kl. 15:15. Nyt en siste strandformiddag!', status:'', tags:[], lat:-8.7467, lng:115.1667, color:'#fbbf24', options:[] }
     ],
     hotels: [
-      { id:'h1', name:'Novotel Bali Ngurah Rai Airport', area:'Flyplass', stars:4, price:'~780 kr/natt ($78)', desc:'Direkte koblet til flyplassterminalen. Basseng, familierom.', features:['Direkte terminal','Basseng','Kids club','Familierom'], lat:-8.7467, lng:115.1667 },
-      { id:'h2', name:'Hilton Garden Inn DPS', area:'Flyplass', stars:4, price:'~650 kr/natt ($65)', desc:'I flyplasskomplekset med 24t shuttle.', features:['Shuttle','Basseng','WiFi'], lat:-8.7467, lng:115.1667 },
-      { id:'h3', name:'Hai Tide — Beachfront Family', area:'Nusa Lembongan', stars:4, price:'Fra ~$203/natt', desc:'650 sq ft rett på Mushroom Bay. Privat balkong, havutsikt.', features:['Strandfront','Balkong','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430 },
-      { id:'h4', name:'Hai Tide — Garden Family', area:'Nusa Lembongan', stars:4, price:'Rimeligere enn Beachfront', desc:'Tropisk hage, nær basseng og strand.', features:['Hage','Basseng','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430 },
-      { id:'h5', name:'Hillstone Villas Ubud', area:'Ubud', stars:4, price:'~900 kr/natt ($90)', desc:'Private villaer med basseng omgitt av rismarker.', features:['Privat villa','Privat basseng','Rismarker','Barnevakt'], lat:-8.5069, lng:115.2625 },
-      { id:'h6', name:'Bisma Eight Ubud', area:'Ubud', stars:4, price:'~1 100 kr/natt ($110)', desc:'Boutique-hotell. Infinity-basseng med jungel-utsikt.', features:['Infinity-basseng','Restaurant','Sentralt','Yoga'], lat:-8.51, lng:115.26 },
-      { id:'h7', name:'Klumpu Bali Resort', area:'Sanur', stars:4, price:'~700 kr/natt ($70)', desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631 },
-      { id:'h8', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, price:'~1 300 kr/natt ($130)', desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268 },
-      { id:'h9', name:'Marriott Nusa Dua Gardens', area:'Nusa Dua', stars:5, price:'~1 200 kr/natt ($120)', desc:'Stort familieresort, kids club, strandtilgang.', features:['Familierom','Kids club','Basseng','Strand','Spa'], lat:-8.8005, lng:115.2306 }
+      { id:'h1', name:'Novotel Bali Ngurah Rai Airport', area:'Flyplass', stars:4, desc:'Direkte koblet til flyplassterminalen. Basseng, familierom.', features:['Direkte terminal','Basseng','Kids club','Familierom'], lat:-8.7467, lng:115.1667, checkIn:'2026-08-21', checkOut:'2026-08-22', status:'considering', prices:[{source:'Estimat', perNight:780, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h2', name:'Hilton Garden Inn DPS', area:'Flyplass', stars:4, desc:'I flyplasskomplekset med 24t shuttle.', features:['Shuttle','Basseng','WiFi'], lat:-8.7467, lng:115.1667, checkIn:'2026-08-21', checkOut:'2026-08-22', status:'considering', prices:[{source:'Estimat', perNight:650, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h3', name:'Hai Tide — Beachfront Family', area:'Nusa Lembongan', stars:4, desc:'650 sq ft rett på Mushroom Bay. Privat balkong, havutsikt.', features:['Strandfront','Balkong','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', prices:[{source:'Estimat', perNight:2030, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h4', name:'Hai Tide — Garden Family', area:'Nusa Lembongan', stars:4, desc:'Tropisk hage, nær basseng og strand.', features:['Hage','Basseng','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', prices:[{source:'Estimat', perNight:1500, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h5', name:'Hillstone Villas Ubud', area:'Ubud', stars:4, desc:'Private villaer med basseng omgitt av rismarker.', features:['Privat villa','Privat basseng','Rismarker','Barnevakt'], lat:-8.5069, lng:115.2625, checkIn:'2026-09-05', checkOut:'2026-09-11', status:'considering', prices:[{source:'Estimat', perNight:900, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h6', name:'Bisma Eight Ubud', area:'Ubud', stars:4, desc:'Boutique-hotell. Infinity-basseng med jungel-utsikt.', features:['Infinity-basseng','Restaurant','Sentralt','Yoga'], lat:-8.51, lng:115.26, checkIn:'2026-09-05', checkOut:'2026-09-11', status:'considering', prices:[{source:'Estimat', perNight:1100, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h7', name:'Klumpu Bali Resort', area:'Sanur', stars:4, desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631, checkIn:'2026-09-11', checkOut:'2026-09-15', status:'considering', prices:[{source:'Estimat', perNight:700, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h8', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268, checkIn:'2026-09-11', checkOut:'2026-09-15', status:'considering', prices:[{source:'Estimat', perNight:1300, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h9', name:'Marriott Nusa Dua Gardens', area:'Nusa Dua', stars:5, desc:'Stort familieresort, kids club, strandtilgang.', features:['Familierom','Kids club','Basseng','Strand','Spa'], lat:-8.8005, lng:115.2306, checkIn:'', checkOut:'', status:'considering', prices:[{source:'Estimat', perNight:1200, currency:'NOK', url:'', checkedAt:''}] }
     ],
     activities: [
       { id:'a1', name:'Mengiat Beach', area:'Nusa Dua', cat:'strand', desc:'Rolig strand, grunt stille vann.', baby:true, price:'Gratis', lat:-8.804, lng:115.232 },
@@ -393,6 +416,53 @@ function updateBudget(idx, field, value) {
 function updateFlight(key, field, value) { DATA.flights[key][field] = value; autoSave(); }
 function updateNotes(val) { DATA.notes = val; autoSave(); }
 
+// Hotel price helpers
+function googleHotelUrl(name, checkIn, checkOut) {
+  const q = encodeURIComponent(name + ', Bali, Indonesia');
+  let url = 'https://www.google.com/travel/hotels?q=' + q + '&adults=2';
+  if (checkIn && checkOut) url += '&dates=' + checkIn + 'to' + checkOut;
+  return url;
+}
+function calcNights(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return 0;
+  return Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
+}
+function bestHotelPrice(hotel) {
+  if (!hotel.prices || !hotel.prices.length) return null;
+  return hotel.prices.filter(p => p.perNight > 0).reduce((min, p) => (!min || p.perNight < min.perNight) ? p : min, null);
+}
+function updateHotelPrice(hi, pi, field, value) {
+  DATA.hotels[hi].prices[pi][field] = value;
+  if (field === 'perNight') DATA.hotels[hi].prices[pi].checkedAt = new Date().toISOString().slice(0,10);
+  autoSave();
+}
+function addHotelPrice(hi) {
+  if (!DATA.hotels[hi].prices) DATA.hotels[hi].prices = [];
+  DATA.hotels[hi].prices.push({ source:'', perNight:0, currency:'NOK', url:'', checkedAt:new Date().toISOString().slice(0,10) });
+  renderHotell(); autoSave();
+}
+function deleteHotelPrice(hi, pi) {
+  DATA.hotels[hi].prices.splice(pi, 1);
+  renderHotell(); autoSave();
+}
+function migrateHotels() {
+  if (!DATA.hotels) return;
+  let changed = false;
+  DATA.hotels.forEach(h => {
+    if (h.price && !h.prices) {
+      const num = parseInt(String(h.price).replace(/[^0-9]/g, '')) || 0;
+      h.prices = [{ source:'Estimat', perNight:num, currency:'NOK', url:'', checkedAt:'' }];
+      delete h.price;
+      changed = true;
+    }
+    if (!h.prices) { h.prices = []; changed = true; }
+    if (!h.status) { h.status = 'considering'; changed = true; }
+    if (h.checkIn === undefined) { h.checkIn = ''; changed = true; }
+    if (h.checkOut === undefined) { h.checkOut = ''; changed = true; }
+  });
+  if (changed) autoSave();
+}
+
 // ===== DELETE / ADD =====
 function deleteStop(idx) { if(confirm('Slett stopp?')){ DATA.stops.splice(idx,1); renderReiserute(); drawRoute(); autoSave(); }}
 function addStop() {
@@ -404,7 +474,7 @@ function addStop() {
 }
 function deleteHotel(idx) { if(confirm('Slett hotell?')){ DATA.hotels.splice(idx,1); renderHotell(); autoSave(); }}
 function addHotel() {
-  DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, price:'Pris', desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3 });
+  DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3, checkIn:'', checkOut:'', status:'considering', prices:[] });
   renderHotell(); autoSave();
 }
 function deleteActivity(idx) { if(confirm('Slett aktivitet?')){ DATA.activities.splice(idx,1); renderAktiviteter(); autoSave(); }}
@@ -519,20 +589,97 @@ function renderReiserute() {
 // ----- HOTELL -----
 function renderHotell() {
   const el = document.getElementById('p-hotell');
-  let html = `<h2>Hotell</h2><p class="desc">Klikk for å se på kart. Rediger priser og info direkte.</p>`;
+  const statusLabel = s => ({considering:'VURDERES', favorite:'FAVORITT', booked:'BOOKET', rejected:'AVVIST'}[s] || '');
+  const statusClass = s => ({considering:'hs-cons', favorite:'hs-fav', booked:'hs-book', rejected:'hs-rej'}[s] || '');
+
+  let html = `<h2>Hotell</h2><p class="desc">Sammenlign priser fra ulike kilder. Klikk "Sjekk Google" for oppdaterte priser fra Booking, Agoda, Hotels.com m.fl.</p>`;
+
+  // Quick comparison table
+  const visible = DATA.hotels.filter(h => h.status !== 'rejected');
+  if (visible.length) {
+    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Netter</th><th>Beste pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
+    visible.forEach(h => {
+      const idx = DATA.hotels.indexOf(h);
+      const best = bestHotelPrice(h);
+      const nights = calcNights(h.checkIn, h.checkOut);
+      const total = best && nights ? best.perNight * nights : 0;
+      const esc = s => s.replace(/'/g, "\\'");
+      html += `<tr class="${h.status==='favorite'?'best-row':''}">
+        <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${h.name}</td>
+        <td>${h.area}</td>
+        <td>${nights || '—'}</td>
+        <td>${best ? best.perNight.toLocaleString('nb-NO')+' kr' : '—'}<span style="font-size:0.68rem;color:var(--dim);margin-left:0.3rem">${best ? best.source : ''}</span></td>
+        <td style="font-weight:600">${total ? total.toLocaleString('nb-NO')+' kr' : '—'}</td>
+        <td><span class="h-status ${statusClass(h.status)}">${statusLabel(h.status)}</span></td>
+        <td><a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()">Sjekk Google</a></td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  // Detailed cards
   DATA.hotels.forEach((h, i) => {
-    html += `<div class="icard" data-name="${h.name}" onclick="focusOnItem('${h.name.replace(/'/g,"\\'")}',${h.lat},${h.lng},'${h.desc.replace(/'/g,"\\'")}')" >
+    const nights = calcNights(h.checkIn, h.checkOut);
+    const best = bestHotelPrice(h);
+    const esc = s => s.replace(/'/g, "\\'");
+    html += `<div class="icard${h.status==='rejected'?' hs-rej':''}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" >
       <span class="map-pin">📍</span>
       <span class="del-btn" onclick="event.stopPropagation();deleteHotel(${i})">✕</span>
-      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(h.area, "updateHotel(${i},'area',this.value);event.stopPropagation()",'ef-sm')} · ${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}</div>
-      <h3>${ef(h.name, "updateHotel(${i},'name',this.value);event.stopPropagation()")}</h3>
-      <div class="ef-price">${ef(h.price, "updateHotel(${i},'price',this.value);event.stopPropagation()",'ef-price')}</div>
-      <div onclick="event.stopPropagation()">${efArea(h.desc, "updateHotel(${i},'desc',this.value)")}</div>
-      <div style="margin-top:0.3rem">${h.features.map(f => `<span class="tag t-s">${f}</span>`).join('')}
-        <input class="ef ef-sm" placeholder="+ feature" style="width:70px" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){DATA.hotels[${i}].features.push(this.value);this.value='';renderHotell()}">
+      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">
+        ${ef(h.area, "updateHotel("+i+",'area',this.value);event.stopPropagation()",'ef-sm')} · ${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}
+        <select style="background:var(--card);border:1px solid var(--brd);color:var(--dim);font-size:0.65rem;border-radius:4px;padding:1px 3px;margin-left:4px" onchange="updateHotel(${i},'status',this.value);renderHotell();event.stopPropagation()">
+          <option value="considering" ${h.status==='considering'?'selected':''}>Vurderes</option>
+          <option value="favorite" ${h.status==='favorite'?'selected':''}>Favoritt</option>
+          <option value="booked" ${h.status==='booked'?'selected':''}>Booket</option>
+          <option value="rejected" ${h.status==='rejected'?'selected':''}>Avvist</option>
+        </select>
+        <span class="h-status ${statusClass(h.status)}">${statusLabel(h.status)}</span>
       </div>
+      <h3>${ef(h.name, "updateHotel("+i+",'name',this.value);event.stopPropagation()")}</h3>
+      <div onclick="event.stopPropagation()">${efArea(h.desc, "updateHotel("+i+",'desc',this.value)")}</div>
+
+      <div class="dates-row" onclick="event.stopPropagation()">
+        <span>Innsjekk:</span>
+        <input type="date" value="${h.checkIn||''}" onchange="updateHotel(${i},'checkIn',this.value);renderHotell()">
+        <span>Utsjekk:</span>
+        <input type="date" value="${h.checkOut||''}" onchange="updateHotel(${i},'checkOut',this.value);renderHotell()">
+        ${nights ? `<span style="color:var(--a1);font-weight:600">${nights} netter</span>` : ''}
+      </div>`;
+
+    // Price comparison table
+    if (h.prices && h.prices.length) {
+      html += `<table class="price-tbl" onclick="event.stopPropagation()">`;
+      h.prices.forEach((p, pi) => {
+        const isBest = best && p.perNight === best.perNight && p.perNight > 0;
+        const total = nights ? p.perNight * nights : 0;
+        html += `<tr>
+          <td class="src">${ef(p.source, "updateHotelPrice("+i+","+pi+",'source',this.value)",'ef-sm')}</td>
+          <td class="${isBest?'best-price':''}">
+            <input class="ef ef-price" type="number" value="${p.perNight}" onchange="updateHotelPrice(${i},${pi},'perNight',parseInt(this.value)||0);renderHotell()" style="width:70px;text-align:right" onclick="this.select()"> kr/natt
+          </td>
+          <td style="color:var(--dim);font-size:0.75rem">${total ? total.toLocaleString('nb-NO')+' kr total' : ''}</td>
+          <td style="font-size:0.68rem;color:var(--dim)">${p.checkedAt || ''}</td>
+          <td>
+            ${p.url ? `<a href="${p.url}" target="_blank" style="font-size:0.7rem">Lenke</a>` : `<input class="ef ef-sm" placeholder="URL" style="width:60px" onchange="updateHotelPrice(${i},${pi},'url',this.value)">`}
+            <span style="cursor:pointer;color:var(--red);font-size:0.7rem;margin-left:0.3rem" onclick="deleteHotelPrice(${i},${pi})">✕</span>
+          </td>
+        </tr>`;
+      });
+      html += `</table>`;
+    }
+
+    html += `<div onclick="event.stopPropagation()" style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem">
+      <button class="add-price-btn" onclick="addHotelPrice(${i})">+ Legg til pris</button>
+      <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank">Sjekk på Google</a>
     </div>`;
+
+    html += `<div style="margin-top:0.3rem">${h.features.map(f => `<span class="tag t-s">${f}</span>`).join('')}
+      <input class="ef ef-sm" placeholder="+ feature" style="width:70px" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){DATA.hotels[${i}].features.push(this.value);this.value='';renderHotell()}">
+    </div>`;
+
+    html += `</div>`;
   });
+
   html += `<button class="add-btn" onclick="addHotel()">+ Legg til hotell</button>`;
   el.innerHTML = html;
 }
@@ -630,6 +777,7 @@ async function init() {
   const el = document.getElementById('saveStatus');
   const loaded = await loadFromAPI();
   if (loaded) {
+    migrateHotels(); // upgrade old hotel format to new price-comparison model
     el.textContent = 'Lastet fra database ✓'; el.style.color = 'var(--a4)';
   } else {
     el.textContent = 'Ny plan — lagrer standarddata...'; el.style.color = 'var(--a1)';

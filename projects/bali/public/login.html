@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bali 2026 — Logg inn</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:2.5rem;width:100%;max-width:380px;text-align:center}
+h1{font-size:1.5rem;background:linear-gradient(135deg,#38bdf8,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:0.5rem}
+.sub{color:#94a3b8;font-size:0.85rem;margin-bottom:1.5rem}
+input[type="password"]{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:0.75rem 1rem;color:#f1f5f9;font-family:inherit;font-size:1rem;margin-bottom:1rem;outline:none;transition:border-color 0.2s}
+input[type="password"]:focus{border-color:#38bdf8}
+button{width:100%;background:#34d399;color:#0f172a;border:none;border-radius:8px;padding:0.75rem;font-family:inherit;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity 0.2s}
+button:hover{opacity:0.9}
+.error{color:#ef4444;font-size:0.85rem;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<form class="card" method="POST" action="/bali/login">
+  <h1>Bali 2026</h1>
+  <p class="sub">Skriv inn passord for å se reiseplanen</p>
+  <script>if(location.search.includes('error=1'))document.write('<p class="error">Feil passord. Prøv igjen.</p>')</script>
+  <input type="password" name="password" placeholder="Passord" autofocus required>
+  <button type="submit">Logg inn</button>
+</form>
+</body>
+</html>
