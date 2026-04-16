@@ -1025,8 +1025,8 @@ function renderKart() {
     const sc = h.bookingRating ? h.bookingRating+'/10' : (h.googleRating ? 'G'+h.googleRating : '');
     // Build full review tooltip with all sources and review counts
     const ttParts = [];
-    if (h.bookingRating) ttParts.push(`Booking: ${h.bookingRating}/10${h.bookingReviews?' ('+h.bookingReviews+' anmeldelser)':''}`);
-    if (h.googleRating) ttParts.push(`Google: ${h.googleRating}/5${h.googleReviews?' ('+h.googleReviews+' anmeldelser)':''}`);
+    if (h.bookingRating) ttParts.push(`Booking: ${h.bookingRating}/10 (${h.bookingReviews?h.bookingReviews+' anmeldelser':'antall ukjent'})`);
+    if (h.googleRating) ttParts.push(`Google: ${h.googleRating}/5 (${h.googleReviews?h.googleReviews+' anmeldelser':'antall ukjent'})`);
     const scoreTitle = ttParts.join(' · ') || 'Ingen anmeldelser';
     const statusBadge = `<span class="h-status ${kartStatusClass(h.status)}" style="font-size:0.6rem">${kartStatusLabel(h.status)}</span>`;
     const esc = s => (s||'').replace(/'/g, "\\'");
