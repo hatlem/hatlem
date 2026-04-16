@@ -468,18 +468,28 @@ async function geocodeHotel(idx) {
   }
 }
 
+function getUnbookedDates() {
+  const openStops = (DATA.stops || []).filter(s => s.type === 'overnatting' && s.status !== 'booked' && s.startDate && s.endDate);
+  if (openStops.length) return { checkIn: openStops[0].startDate, checkOut: openStops[openStops.length - 1].endDate };
+  return { checkIn: DATA.tripStart || '', checkOut: DATA.tripEnd || '' };
+}
+
 function googleHotelUrl(name, checkIn, checkOut) {
   const q = encodeURIComponent(name + ' family friendly, Bali, Indonesia');
-  const ci = checkIn || DATA.tripStart || '';
-  const co = checkOut || DATA.tripEnd || '';
+  const fallback = getUnbookedDates();
+  const ci = checkIn || fallback.checkIn;
+  const co = checkOut || fallback.checkOut;
   let url = 'https://www.google.com/travel/hotels?q=' + q + '&adults=2&children=1';
   if (ci && co) url += '&dates=' + ci + 'to' + co;
   return url;
 }
 function googleAreaSearchUrl(area, checkIn, checkOut) {
   const q = encodeURIComponent('family friendly hotel with kids club ' + area + ', Bali, Indonesia');
+  const fallback = getUnbookedDates();
+  const ci = checkIn || fallback.checkIn;
+  const co = checkOut || fallback.checkOut;
   let url = 'https://www.google.com/travel/hotels?q=' + q + '&adults=2&children=1';
-  if (checkIn && checkOut) url += '&dates=' + checkIn + 'to' + checkOut;
+  if (ci && co) url += '&dates=' + ci + 'to' + co;
   return url;
 }
 function calcNights(checkIn, checkOut) {
