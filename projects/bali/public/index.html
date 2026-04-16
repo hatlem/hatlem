@@ -73,6 +73,10 @@ a{color:var(--a1);text-decoration:none}
 .goog-btn{display:inline-flex;align-items:center;gap:0.3rem;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:var(--a1);font-family:inherit;font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;transition:all 0.2s;text-decoration:none}
 .goog-btn:hover{background:rgba(56,189,248,0.18);border-color:var(--a1)}
 .h-status{display:inline-block;font-size:0.6rem;padding:0.12rem 0.45rem;border-radius:8px;font-weight:600;margin-left:0.3rem}
+.filt-btn{background:var(--card);color:var(--dim);border:1px solid var(--brd);padding:0.35rem 0.7rem;border-radius:18px;cursor:pointer;font-size:0.75rem;font-family:inherit;font-weight:500;transition:all 0.15s}
+.filt-btn:hover{border-color:var(--a1);color:var(--tx)}
+.filt-btn.on{background:var(--a1);color:#0f172a;border-color:var(--a1)}
+.kart-card:hover{border-color:var(--a1)!important;transform:translateY(-1px);transition:all 0.15s}
 .hs-fav{background:rgba(251,191,36,0.2);color:var(--a5)}
 .hs-book{background:rgba(52,211,153,0.2);color:var(--a4)}
 .hs-cons{background:rgba(129,140,248,0.2);color:var(--a2)}
@@ -275,6 +279,7 @@ li.done{text-decoration:line-through;opacity:0.45}
   <div class="content">
     <div class="page on" id="p-reiserute"></div>
     <div class="page" id="p-dagplan"></div>
+    <div class="page" id="p-kart"></div>
     <div class="page" id="p-hotell"></div>
     <div class="page" id="p-aktiviteter"></div>
     <div class="page" id="p-budsjett"></div>
@@ -859,6 +864,7 @@ function render() {
   renderNav();
   renderReiserute();
   renderDagplan();
+  renderKart();
   renderHotell();
   renderAktiviteter();
   renderBudsjett();
@@ -870,6 +876,7 @@ function render() {
 const TABS = [
   {id:'reiserute',label:'Reiserute'},
   {id:'dagplan',label:'Dagplan'},
+  {id:'kart',label:'Kart'},
   {id:'hotell',label:'Hotell'},
   {id:'aktiviteter',label:'Aktiviteter'},
   {id:'budsjett',label:'Budsjett'},
@@ -889,6 +896,173 @@ function switchTab(id) {
   document.getElementById('p-'+id).classList.add('on');
   renderNav();
   if (id === 'reiserute') drawRoute();
+  if (id === 'kart') { renderKart(); drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
+  else if (id !== 'reiserute') drawRoute();
+}
+
+// ===== KART (filtered map view, reusing existing map + data) =====
+const KART_FILTER = {
+  showStops: true, showHotels: true, showActivities: true,
+  area: 'all',           // all | Sanur | Nusa Dua | Nusa Lembongan | Tanjung Benoa | Jimbaran
+  status: 'all',         // all | considering | favorite | booked | rejected
+  babyOnly: false,
+  kitchenOnly: false,
+  minScore: 0,
+  maxPrice: 0,           // 0 = no limit
+};
+
+function renderKart() {
+  const el = document.getElementById('p-kart');
+  if (!el) return;
+  const f = KART_FILTER;
+
+  // Get unique areas from all hotels
+  const areas = [...new Set(DATA.hotels.map(h => h.area).filter(Boolean))].sort();
+  const areaOptions = ['<option value="all">Alle områder</option>']
+    .concat(areas.map(a => `<option value="${a}" ${f.area===a?'selected':''}>${a}</option>`)).join('');
+
+  // Filter hotels for the list
+  const filteredHotels = filterHotelsForMap();
+
+  let html = `<h2>Kart</h2>
+    <p style="color:var(--dim);font-size:0.85rem;margin-bottom:0.75rem">Filtrer alt på ett sted. Klikk en pin eller et kort for å fokusere kartet.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem">
+      <button class="filt-btn ${f.showStops?'on':''}" onclick="toggleKartFilter('showStops')">📍 Stopp (${DATA.stops.length})</button>
+      <button class="filt-btn ${f.showHotels?'on':''}" onclick="toggleKartFilter('showHotels')">🏨 Hoteller (${DATA.hotels.length})</button>
+      <button class="filt-btn ${f.showActivities?'on':''}" onclick="toggleKartFilter('showActivities')">🎯 Aktiviteter (${DATA.activities.length})</button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;align-items:center;font-size:0.78rem">
+      <select onchange="setKartFilter('area',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">${areaOptions}</select>
+      <select onchange="setKartFilter('status',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">
+        <option value="all" ${f.status==='all'?'selected':''}>Alle status</option>
+        <option value="booked" ${f.status==='booked'?'selected':''}>Booket</option>
+        <option value="favorite" ${f.status==='favorite'?'selected':''}>Favoritt</option>
+        <option value="considering" ${f.status==='considering'?'selected':''}>Vurderes</option>
+        <option value="rejected" ${f.status==='rejected'?'selected':''}>Avvist</option>
+      </select>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.babyOnly?'checked':''} onchange="setKartFilter('babyOnly',this.checked)"> 👶 Babyvennlig</label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.kitchenOnly?'checked':''} onchange="setKartFilter('kitchenOnly',this.checked)"> 🍳 Kjøkken</label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem">Min score: <input type="number" min="0" max="10" step="0.1" value="${f.minScore}" onchange="setKartFilter('minScore',parseFloat(this.value)||0)" style="width:55px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem">Maks /natt: <input type="number" min="0" step="100" value="${f.maxPrice}" placeholder="0=∞" onchange="setKartFilter('maxPrice',parseInt(this.value)||0)" style="width:75px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+      <button class="filt-btn" onclick="resetKartFilter()" style="background:var(--card)">Nullstill</button>
+    </div>
+
+    <div style="font-size:0.78rem;color:var(--dim);margin-bottom:0.4rem">Viser ${filteredHotels.length} hoteller${f.showStops?', '+DATA.stops.length+' stopp':''}${f.showActivities?', '+DATA.activities.length+' aktiviteter':''}.</div>`;
+
+  // List of filtered hotels (DRY: simple summary, not full card)
+  const sorted = [...filteredHotels].sort((a,b) => {
+    const pa = bestHotelPrice(a)?.perNight || 99999;
+    const pb = bestHotelPrice(b)?.perNight || 99999;
+    return pa - pb;
+  });
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem">`;
+  sorted.forEach(h => {
+    const i = DATA.hotels.indexOf(h);
+    const best = bestHotelPrice(h);
+    const pn = best?.perNight || 0;
+    const sc = h.bookingRating ? h.bookingRating+'/10' : (h.googleRating ? 'G'+h.googleRating : '');
+    const statusBadge = `<span class="h-status ${statusClass(h.status)}" style="font-size:0.6rem">${statusLabel(h.status)}</span>`;
+    const esc = s => (s||'').replace(/'/g, "\\'");
+    html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:0.5rem 0.6rem;cursor:pointer;font-size:0.78rem">
+      <div style="font-weight:600;color:var(--tx)">${h.name}</div>
+      <div style="color:var(--dim);font-size:0.7rem;margin-top:0.15rem">${h.area} · ${'★'.repeat(h.stars||0)} ${h.babyFriendly?'· 👶':''} ${(h.features||[]).includes('kjokken')?'· 🍳':''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
+        <span style="color:var(--a4);font-weight:600">${pn?pn.toLocaleString('nb-NO')+' kr/natt':'—'}</span>
+        <span style="color:var(--a1);font-size:0.72rem">${sc}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.25rem">
+        ${statusBadge}
+        ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+function filterHotelsForMap() {
+  const f = KART_FILTER;
+  if (!f.showHotels) return [];
+  return DATA.hotels.filter(h => {
+    if (f.area !== 'all' && h.area !== f.area) return false;
+    if (f.status !== 'all' && (h.status||'considering') !== f.status) return false;
+    if (f.babyOnly && !h.babyFriendly) return false;
+    if (f.kitchenOnly && !(h.features||[]).includes('kjokken')) return false;
+    if (f.minScore > 0) {
+      const sc = parseFloat((h.bookingRating||'0').toString().replace(',','.'));
+      if (sc < f.minScore) return false;
+    }
+    if (f.maxPrice > 0) {
+      const pn = bestHotelPrice(h)?.perNight || 99999;
+      if (pn > f.maxPrice) return false;
+    }
+    return true;
+  });
+}
+
+function toggleKartFilter(key) { KART_FILTER[key] = !KART_FILTER[key]; renderKart(); drawMapFiltered(); }
+function setKartFilter(key, val) { KART_FILTER[key] = val; renderKart(); drawMapFiltered(); }
+function resetKartFilter() {
+  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,maxPrice:0});
+  renderKart(); drawMapFiltered();
+}
+
+function drawMapFiltered() {
+  if (!map) return;
+  clearMap();
+  const f = KART_FILTER;
+  const allCoords = [];
+
+  if (f.showStops) {
+    DATA.stops.forEach((s, i) => {
+      if (!s.lat || !s.lng) return;
+      const icon = L.divIcon({className:'',
+        html:`<div style="width:28px;height:28px;border-radius:50%;background:${s.color||'#38bdf8'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#0f172a;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)">${i+1}</div>`,
+        iconSize:[28,28], iconAnchor:[14,14]});
+      const m = L.marker([s.lat, s.lng], {icon}).addTo(map).bindPopup(`<b>📍 ${s.name}</b><br><small>${s.dates||''}</small>`);
+      m.on('click', () => focusOnItem(s.name, s.lat, s.lng, s.desc));
+      markers.push(m);
+      allCoords.push([s.lat, s.lng]);
+    });
+  }
+
+  const filteredHotels = filterHotelsForMap();
+  filteredHotels.forEach(h => {
+    if (!h.lat || !h.lng) return;
+    const color = h.status==='booked'?'#34d399':h.status==='favorite'?'#fbbf24':h.status==='rejected'?'#9ca3af':'#a78bfa';
+    const icon = L.divIcon({className:'',
+      html:`<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
+      iconSize:[18,18], iconAnchor:[9,9]});
+    const best = bestHotelPrice(h);
+    const pn = best?.perNight || 0;
+    const sc = h.bookingRating || h.googleRating || '';
+    const popup = `<b>🏨 ${h.name}</b><br><small>${h.area} · ${'★'.repeat(h.stars||0)}${sc?' · '+sc:''}${pn?'<br>'+pn.toLocaleString('nb-NO')+' kr/natt':''}</small>${h.bookingUrl?'<br><a href="'+h.bookingUrl+'" target="_blank">Book på Booking</a>':''}`;
+    const m = L.marker([h.lat, h.lng], {icon}).addTo(map).bindPopup(popup);
+    m.on('click', () => focusOnItem(h.name, h.lat, h.lng, h.desc));
+    markers.push(m);
+    allCoords.push([h.lat, h.lng]);
+  });
+
+  if (f.showActivities) {
+    DATA.activities.forEach(a => {
+      if (!a.lat || !a.lng) return;
+      const icon = L.divIcon({className:'',
+        html:`<div style="width:14px;height:14px;background:#f472b6;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);transform:rotate(45deg)"></div>`,
+        iconSize:[14,14], iconAnchor:[7,7]});
+      const m = L.marker([a.lat, a.lng], {icon}).addTo(map).bindPopup(`<b>🎯 ${a.name}</b><br><small>${a.area||''}</small>`);
+      m.on('click', () => focusOnItem(a.name, a.lat, a.lng, a.desc));
+      markers.push(m);
+      allCoords.push([a.lat, a.lng]);
+    });
+  }
+
+  if (allCoords.length) {
+    const bounds = L.latLngBounds(allCoords);
+    map.fitBounds(bounds.pad(0.15));
+  }
 }
 
 // ----- REISERUTE -----
