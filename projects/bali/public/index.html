@@ -80,7 +80,16 @@ a{color:var(--a1);text-decoration:none}
 .cmp-tbl th{text-align:left;padding:0.6rem 0.75rem;border-bottom:2px solid var(--brd);color:var(--dim);font-weight:500;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em}
 .cmp-tbl td{padding:0.55rem 0.75rem;border-bottom:1px solid var(--brd)}
 .cmp-tbl tr:hover td{background:rgba(255,255,255,0.02)}
-.cmp-tbl .best-row td{background:rgba(52,211,153,0.04)}
+.cmp-tbl tr.row-booked td{background:rgba(52,211,153,0.12);border-left:3px solid var(--a4)}
+.cmp-tbl tr.row-booked td:first-child{box-shadow:inset 3px 0 0 var(--a4)}
+.cmp-tbl tr.row-favorite td{background:rgba(251,191,36,0.08)}
+.cmp-tbl tr.row-favorite td:first-child{box-shadow:inset 3px 0 0 var(--a5)}
+.cmp-tbl tr.row-rejected td{opacity:0.45;text-decoration:line-through}
+.cmp-tbl tr.row-rejected td:last-child{text-decoration:none}
+.icard.card-booked{border-color:var(--a4);background:rgba(52,211,153,0.05);box-shadow:0 0 0 1px var(--a4)}
+.icard.card-favorite{border-color:var(--a5);background:rgba(251,191,36,0.04)}
+.icard.card-rejected{opacity:0.5}
+.icard.card-rejected h3{text-decoration:line-through}
 .dates-row{display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem;font-size:0.78rem;color:var(--dim);flex-wrap:wrap}
 .dates-row input[type="date"]{background:var(--card);border:1px solid var(--brd);color:var(--tx);font-family:inherit;font-size:0.78rem;padding:0.2rem 0.4rem;border-radius:4px}
 .dates-row input[type="date"]:focus{border-color:var(--a1);outline:none}
@@ -537,19 +546,31 @@ function renderHotell() {
   });
   html += `</div>`;
 
-  // Quick comparison table
-  let visible = DATA.hotels.filter(h => h.status !== 'rejected');
+  // Sort: booked > favorite > considering > rejected, then by area, then by price
+  const statusOrder = { booked:0, favorite:1, considering:2, rejected:3 };
+  const sortedHotels = [...DATA.hotels].sort((a,b) => {
+    const d = (statusOrder[a.status]??2) - (statusOrder[b.status]??2);
+    if (d !== 0) return d;
+    if (a.area !== b.area) return (a.area||'').localeCompare(b.area||'');
+    const ap = bestHotelPrice(a)?.perNight || Infinity;
+    const bp = bestHotelPrice(b)?.perNight || Infinity;
+    return ap - bp;
+  });
+
+  // Quick comparison table — show ALL hotels, with visual distinction
+  let visible = sortedHotels;
   if (window._hotelBabyFilter) visible = visible.filter(h => h.babyFriendly);
   if (visible.length) {
     html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Baby</th><th>Netter</th><th>Beste pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
     visible.forEach(h => {
-      const idx = DATA.hotels.indexOf(h);
       const best = bestHotelPrice(h);
       const nights = calcNights(h.checkIn, h.checkOut);
       const total = best && nights ? best.perNight * nights : 0;
       const esc = s => s.replace(/'/g, "\\'");
-      html += `<tr class="${h.status==='favorite'?'best-row':''}">
-        <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${h.name}</td>
+      const rowClass = 'row-' + (h.status || 'considering');
+      const icon = h.status==='booked' ? '&#x2713; ' : h.status==='favorite' ? '&#x2B50; ' : '';
+      html += `<tr class="${rowClass}">
+        <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${icon}${h.name}</td>
         <td>${h.area}</td>
         <td style="text-align:center">${h.babyFriendly ? '<span title="'+(h.babyNotes||'')+'">&#x1F476;</span>' : '<span style="opacity:0.3">—</span>'}</td>
         <td>${nights || '—'}</td>
@@ -562,14 +583,15 @@ function renderHotell() {
     html += `</tbody></table>`;
   }
 
-  // Detailed cards
-  const cardsToShow = window._hotelBabyFilter ? DATA.hotels.filter(h => h.babyFriendly) : DATA.hotels;
+  // Detailed cards — same sort order as table, show all
+  const cardsToShow = window._hotelBabyFilter ? sortedHotels.filter(h => h.babyFriendly) : sortedHotels;
   cardsToShow.forEach(h => {
     const i = DATA.hotels.indexOf(h);
     const nights = calcNights(h.checkIn, h.checkOut);
     const best = bestHotelPrice(h);
     const esc = s => s.replace(/'/g, "\\'");
-    html += `<div class="icard${h.status==='rejected'?' hs-rej':''}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" >
+    const cardStatusClass = h.status==='booked' ? ' card-booked' : h.status==='favorite' ? ' card-favorite' : h.status==='rejected' ? ' card-rejected' : '';
+    html += `<div class="icard${cardStatusClass}" data-name="${h.name}" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" >
       <span class="map-pin">📍</span>
       <span class="del-btn" onclick="event.stopPropagation();deleteHotel(${i})">✕</span>
       <div style="font-size:0.72rem;color:var(--a1);font-weight:600">
