@@ -914,7 +914,7 @@ function switchTab(id) {
   renderNav();
   if (id === 'reiserute') drawRoute();
   else if (id === 'kart') { renderKart(); drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
-  else if (id === 'hotell') { drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
+  else if (id === 'hotell' || id === 'aktiviteter') { drawMapFiltered(); setTimeout(() => map && map.invalidateSize(), 100); }
   else drawRoute();
 }
 
@@ -1444,18 +1444,32 @@ function renderHotell() {
 // ----- AKTIVITETER -----
 function renderAktiviteter() {
   const el = document.getElementById('p-aktiviteter');
-  let html = `<h2>Aktiviteter</h2>`;
-  DATA.activities.forEach((a, i) => {
-    const plannedClass = a.planned ? ' card-booked' : '';
-    html += `<div class="icard${plannedClass}" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${a.desc.replace(/'/g,"\\'")}')" >
-      <span class="map-pin">📍</span>
+  // Sort: planned first, then favorited, then rest
+  const sorted = [...DATA.activities].map((a, i) => ({...a, _origIdx: i}))
+    .sort((a, b) => (b.planned?2:0)+(b.favorited?1:0) - ((a.planned?2:0)+(a.favorited?1:0)));
+
+  let html = `<h2>Aktiviteter</h2>
+    <div style="display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap">
+      <button class="tbtn${window._actFilter==='planned'?' primary':''}" onclick="window._actFilter=window._actFilter==='planned'?null:'planned';renderAktiviteter()">✓ Planlagt</button>
+      <button class="tbtn${window._actFilter==='favorited'?' primary':''}" onclick="window._actFilter=window._actFilter==='favorited'?null:'favorited';renderAktiviteter()">♥ Favoritter</button>
+      <button class="tbtn${window._actFilter==='baby'?' primary':''}" onclick="window._actFilter=window._actFilter==='baby'?null:'baby';renderAktiviteter()">👶 Baby-vennlig</button>
+    </div>`;
+  const filtered = window._actFilter === 'planned' ? sorted.filter(a => a.planned) :
+                   window._actFilter === 'favorited' ? sorted.filter(a => a.favorited) :
+                   window._actFilter === 'baby' ? sorted.filter(a => a.baby) : sorted;
+
+  filtered.forEach(a => {
+    const i = a._origIdx;
+    const cardClass = a.planned ? ' card-booked' : a.favorited ? ' card-favorite' : '';
+    html += `<div class="icard${cardClass}" data-name="${a.name}" onclick="focusOnItem('${a.name.replace(/'/g,"\\'")}',${a.lat},${a.lng},'${(a.desc||'').replace(/'/g,"\\'")}')" >
       <span class="del-btn" onclick="event.stopPropagation();deleteActivity(${i})">✕</span>
-      <div style="font-size:0.72rem;color:var(--a1);font-weight:600">${ef(a.area, "updateActivity("+i+",'area',this.value);event.stopPropagation()",'ef-sm')}</div>
+      <span style="position:absolute;top:0.75rem;right:2.2rem;font-size:1.1rem;cursor:pointer;user-select:none" onclick="event.stopPropagation();toggleActFav(${i})" title="${a.favorited?'Fjern fra favoritter':'Legg til favoritter'}">${a.favorited?'♥':'♡'}</span>
+      <div style="font-size:0.72rem;color:var(--a1);font-weight:600;padding-right:3.5rem">${ef(a.area, "updateActivity("+i+",'area',this.value);event.stopPropagation()",'ef-sm')}</div>
       <h3>${ef(a.name, "updateActivity("+i+",'name',this.value);event.stopPropagation()")}</h3>
       <div onclick="event.stopPropagation()">${efArea(a.desc, "updateActivity("+i+",'desc',this.value)")}</div>
       <div style="margin-top:0.4rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap" onclick="event.stopPropagation()">
         <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer;font-size:0.78rem;color:${a.planned?'var(--a4)':'var(--dim)'};font-weight:${a.planned?'600':'400'}">
-          <input type="checkbox" ${a.planned?'checked':''} onchange="updateActivity(${i},'planned',this.checked);renderAktiviteter();renderBudsjett()"> ${a.planned?'✓ Planlagt':'Planlagt?'}
+          <input type="checkbox" ${a.planned?'checked':''} onchange="updateActivity(${i},'planned',this.checked);renderAktiviteter();renderBudsjett();renderDagplan()"> ${a.planned?'✓ Planlagt':'Planlagt?'}
         </label>
         <span style="color:var(--dim);font-size:0.78rem">Pris:</span>
         <input class="ef ef-price" type="number" value="${a.cost||0}" onchange="updateActivity(${i},'cost',parseInt(this.value)||0);renderBudsjett()" style="width:70px;text-align:right"> kr
@@ -1465,6 +1479,13 @@ function renderAktiviteter() {
   });
   html += `<button class="add-btn" onclick="addActivity()">+ Legg til aktivitet</button>`;
   el.innerHTML = html;
+}
+
+function toggleActFav(i) {
+  DATA.activities[i].favorited = !DATA.activities[i].favorited;
+  renderAktiviteter();
+  renderDagplan();
+  autoSave();
 }
 
 // ----- BUDSJETT -----
