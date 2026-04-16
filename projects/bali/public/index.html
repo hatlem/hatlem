@@ -993,9 +993,20 @@ const KART_FILTER = {
   minPrice: 0,           // 0 = no limit
   maxPrice: 0,           // 0 = no limit
   likedOnly: false,      // show only hearted
+  type: 'all',           // all | villa | resort | hotel | homestay | guesthouse
   viewMode: 'grid',      // grid | list
   sortBy: 'liked-price', // liked-price | price-asc | price-desc | score-desc | stars-desc | name-asc
 };
+
+function detectHotelType(h) {
+  const n = (h.name || '').toLowerCase() + ' ' + (h.desc || '').toLowerCase();
+  if (/\bvilla(s)?\b|bungalow/.test(n)) return 'villa';
+  if (/resort|inn\b/.test(n)) return 'resort';
+  if (/homestay|home stay/.test(n)) return 'homestay';
+  if (/guest\s*house|guesthouse|b&b|bed.{0,3}breakfast|cottage/.test(n)) return 'guesthouse';
+  if (/hotel|suite|residence|palace/.test(n)) return 'hotel';
+  return 'other';
+}
 
 function toggleHotelLike(idx) {
   DATA.hotels[idx].liked = !DATA.hotels[idx].liked;
@@ -1036,6 +1047,14 @@ function renderKart() {
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.babyOnly?'checked':''} onchange="setKartFilter('babyOnly',this.checked)"> 👶 Babyvennlig</label>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.kitchenOnly?'checked':''} onchange="setKartFilter('kitchenOnly',this.checked)"> 🍳 Kjøkken</label>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.likedOnly?'checked':''} onchange="setKartFilter('likedOnly',this.checked)"> ❤️ Bare hjertede (${DATA.hotels.filter(h=>h.liked).length})</label>
+      <select onchange="setKartFilter('type',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">
+        <option value="all" ${f.type==='all'?'selected':''}>Alle typer</option>
+        <option value="villa" ${f.type==='villa'?'selected':''}>🏡 Villa (${DATA.hotels.filter(h=>detectHotelType(h)==='villa').length})</option>
+        <option value="resort" ${f.type==='resort'?'selected':''}>🌴 Resort (${DATA.hotels.filter(h=>detectHotelType(h)==='resort').length})</option>
+        <option value="hotel" ${f.type==='hotel'?'selected':''}>🏨 Hotell (${DATA.hotels.filter(h=>detectHotelType(h)==='hotel').length})</option>
+        <option value="homestay" ${f.type==='homestay'?'selected':''}>🏠 Homestay (${DATA.hotels.filter(h=>detectHotelType(h)==='homestay').length})</option>
+        <option value="guesthouse" ${f.type==='guesthouse'?'selected':''}>🛏️ Guesthouse (${DATA.hotels.filter(h=>detectHotelType(h)==='guesthouse').length})</option>
+      </select>
       <label style="display:inline-flex;align-items:center;gap:0.25rem">★ minst: <select onchange="setKartFilter('minStars',parseInt(this.value)||0)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px">
         <option value="0" ${f.minStars===0?'selected':''}>Alle</option>
         <option value="3" ${f.minStars===3?'selected':''}>3+</option>
@@ -1149,6 +1168,7 @@ function filterHotelsForMap() {
     }
     if (f.minStars > 0 && (h.stars||0) < f.minStars) return false;
     if (f.likedOnly && !h.liked) return false;
+    if (f.type !== 'all' && detectHotelType(h) !== f.type) return false;
     const pn = bestHotelPrice(h)?.perNight || 0;
     if (f.maxPrice > 0 && pn > f.maxPrice) return false;
     if (f.minPrice > 0 && pn < f.minPrice) return false;
@@ -1159,7 +1179,7 @@ function filterHotelsForMap() {
 function toggleKartFilter(key) { KART_FILTER[key] = !KART_FILTER[key]; renderKart(); drawMapFiltered(); }
 function setKartFilter(key, val) { KART_FILTER[key] = val; renderKart(); drawMapFiltered(); }
 function resetKartFilter() {
-  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,minStars:0,minPrice:0,maxPrice:0,viewMode:KART_FILTER.viewMode||'grid'});
+  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,minStars:0,minPrice:0,maxPrice:0,type:'all',viewMode:KART_FILTER.viewMode||'grid'});
   renderKart(); drawMapFiltered();
 }
 
