@@ -16,12 +16,10 @@ a{color:var(--a1);text-decoration:none}
 /* Top bar */
 .topbar{background:rgba(15,23,42,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--brd);padding:0.5rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2000;flex-wrap:wrap;gap:0.5rem}
 .topbar h1{font-size:1.1rem;background:linear-gradient(135deg,var(--a1),var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.topbar-actions{display:flex;gap:0.4rem;flex-wrap:wrap}
 .tbtn{background:var(--card);border:1px solid var(--brd);color:var(--tx);font-family:inherit;font-size:0.75rem;padding:0.35rem 0.7rem;border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
 .tbtn:hover{border-color:var(--a1);background:var(--card2)}
 .tbtn.primary{background:var(--a4);color:var(--bg);border-color:var(--a4);font-weight:600}
 .tbtn.primary:hover{opacity:0.9}
-.tbtn.danger{border-color:var(--red);color:var(--red)}
 
 /* Nav */
 .nav{display:flex;gap:0.2rem;padding:0.5rem 1rem;background:var(--bg);border-bottom:1px solid var(--brd);flex-wrap:wrap;position:sticky;top:42px;z-index:1999}
@@ -140,13 +138,7 @@ li.done{text-decoration:line-through;opacity:0.45}
 
 <div class="topbar">
   <h1>Bali 2026</h1>
-  <div class="topbar-actions">
-    <span id="saveStatus" style="font-size:0.7rem;color:var(--a4);opacity:0.7;margin-right:0.5rem"></span>
-    <button class="tbtn" onclick="exportJSON()" title="Last ned backup som JSON">📥 Eksport</button>
-    <button class="tbtn" onclick="document.getElementById('importInput').click()" title="Importer fra JSON-fil">📤 Import</button>
-    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
-    <button class="tbtn danger" onclick="if(confirm('Nullstill alt til standard?')){initDefaultData();render();autoSave();}">🗑 Nullstill</button>
-  </div>
+  <span id="saveStatus" style="font-size:0.7rem;color:var(--a4);opacity:0.7"></span>
 </div>
 
 <nav class="nav" id="nav"></nav>
@@ -177,71 +169,17 @@ let activeMapItem = null;
 let map, markers = [], polyline;
 
 // ===== DEFAULT DATA =====
-function initDefaultData() {
+function initEmptyData() {
   DATA = {
     flights: {
-      out: { label:'Utreise', route:'Oslo (OSL) → Denpasar (DPS)', details:'20. aug 17:20 → 21. aug 19:35 • 1 stopp • 20t 15min' },
-      ret: { label:'Hjemreise', route:'Denpasar (DPS) → Oslo (OSL)', details:'15. sep 15:15 → 16. sep 11:05 • 2 stopp • 25t 50min' }
+      out: { label:'Utreise', route:'', details:'' },
+      ret: { label:'Hjemreise', route:'', details:'' }
     },
-    stops: [
-      { id:'s1', name:'Flyplasshotell (ankomst)', dates:'21. aug • 1 natt', desc:'Lander kl. 19:35. Overnatting nær flyplassen før Jl Kesari.', status:'open', tags:['Baby-vennlig'], lat:-8.7467, lng:115.1667, color:'#fbbf24',
-        options:[
-          {name:'Novotel Bali Ngurah Rai Airport', price:'~780 kr/natt ($78)', note:'Direkte koblet til terminalen. Basseng, familierom, kids club.', chosen:false},
-          {name:'Hilton Garden Inn DPS', price:'~650 kr/natt ($65)', note:'I flyplasskomplekset, 24t shuttle.', chosen:false},
-          {name:'Holiday Inn Resort Baruna', price:'~700 kr/natt ($70)', note:'10 min fra DPS, KidSuites med lekehjørne.', chosen:false}
-        ]
-      },
-      { id:'s2', name:'Sanur — 25 Jl Kesari', dates:'22. – 27. aug • 6 netter', desc:'Booket! Nær Sanur Beach. Rolig nabolag, strandpromenade for barnevogn.', status:'booked', tags:['Strand','Baby-vennlig'], lat:-8.6783, lng:115.2631, color:'#38bdf8', options:[] },
-      { id:'s3', name:'Nusa Lembongan — Hai Tide Beach Resort', dates:'28. aug – 4. sep • 7 netter', desc:'Øyparadis på Mushroom Bay. Family Lumbungs. Snorkling, kajakk. Båt fra Sanur ~30 min.', status:'considering', tags:['Strand','Snorkling','Baby-vennlig'], lat:-8.6812, lng:115.4430, color:'#818cf8',
-        options:[
-          {name:'Beachfront Family Lumbung', price:'Fra ~$203/natt (~2 030 kr)', note:'650 sq ft, privat balkong på stranden, havbølger, Mount Agung-utsikt.', chosen:false},
-          {name:'Garden Family Lumbung', price:'Rimeligere enn Beachfront', note:'Tropisk hage, noen steg fra basseng & strand. Mer skjermet.', chosen:false}
-        ]
-      },
-      { id:'s4', name:'Sanur (avslutning)', dates:'5. – 14. sep • 10 netter', desc:'Tilbake til Sanur. Strandpromenade for barnevogn. 25 min fra flyplassen. Dagstur til Ubud mulig herfra.', status:'open', tags:['Strand','Baby-vennlig'], lat:-8.682, lng:115.268, color:'#34d399', options:[] },
-      { id:'s6', name:'Hjemreise', dates:'15. sep', desc:'Avreise DPS kl. 15:15. Nyt en siste strandformiddag!', status:'', tags:[], lat:-8.7467, lng:115.1667, color:'#fbbf24', options:[] }
-    ],
-    hotels: [
-      { id:'h1', name:'Novotel Bali Ngurah Rai Airport', area:'Flyplass', stars:4, desc:'Direkte koblet til flyplassterminalen. Basseng, familierom.', features:['Direkte terminal','Basseng','Kids club','Familierom'], lat:-8.7467, lng:115.1667, checkIn:'2026-08-21', checkOut:'2026-08-22', status:'considering', babyFriendly:true, babyNotes:'Kids club, familierom, babyseng tilgjengelig', prices:[{source:'Estimat', perNight:780, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h2', name:'Hilton Garden Inn DPS', area:'Flyplass', stars:4, desc:'I flyplasskomplekset med 24t shuttle.', features:['Shuttle','Basseng','WiFi'], lat:-8.7467, lng:115.1667, checkIn:'2026-08-21', checkOut:'2026-08-22', status:'considering', babyFriendly:true, babyNotes:'Babyseng på forespørsel, nær terminal', prices:[{source:'Estimat', perNight:650, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h3', name:'Hai Tide — Beachfront Family', area:'Nusa Lembongan', stars:4, desc:'650 sq ft rett på Mushroom Bay. Privat balkong, havutsikt.', features:['Strandfront','Balkong','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', babyFriendly:true, babyNotes:'Family Lumbung-rom, stor plass, rolig bukt med grunt vann', prices:[{source:'Estimat', perNight:2030, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h4', name:'Hai Tide — Garden Family', area:'Nusa Lembongan', stars:4, desc:'Tropisk hage, nær basseng og strand.', features:['Hage','Basseng','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', babyFriendly:true, babyNotes:'Skjermet hageområde, trygt for småbarn', prices:[{source:'Estimat', perNight:1500, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h5', name:'Klumpu Bali Resort', area:'Sanur', stars:4, desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631, checkIn:'2026-09-05', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Babyseng inkludert, stor hage, flat strandpromenade for barnevogn', prices:[{source:'Estimat', perNight:700, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h6', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268, checkIn:'2026-09-05', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Kids club, barnebasseng, babysitting tilgjengelig', prices:[{source:'Estimat', perNight:1300, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h9', name:'Marriott Nusa Dua Gardens', area:'Nusa Dua', stars:5, desc:'Stort familieresort, kids club, strandtilgang.', features:['Familierom','Kids club','Basseng','Strand','Spa'], lat:-8.8005, lng:115.2306, checkIn:'', checkOut:'', status:'considering', babyFriendly:true, babyNotes:'Kids club, familierom, barnebasseng, babysitting', prices:[{source:'Estimat', perNight:1200, currency:'NOK', url:'', checkedAt:''}] }
-    ],
-    activities: [
-      { id:'a1', name:'Mengiat Beach', area:'Nusa Dua', cat:'strand', desc:'Rolig strand, grunt stille vann.', baby:true, price:'Gratis', lat:-8.804, lng:115.232 },
-      { id:'a2', name:'Turtle Island', area:'Nusa Dua', cat:'natur', desc:'Skilpaddeoppdretts-senter.', baby:true, price:'~100 kr (IDR 100k)', lat:-8.744, lng:115.226 },
-      { id:'a3', name:'Kecak-dans Uluwatu', area:'Uluwatu', cat:'kultur', desc:'Tradisjonell dans ved solnedgang.', baby:true, price:'~150 kr (IDR 150k)', lat:-8.8291, lng:115.0849 },
-      { id:'a7', name:'Snorkling med skilpadder', area:'Nusa Lembongan', cat:'natur', desc:'Hai Tide cruise til snorklespots.', baby:true, price:'Inkl. i resort', lat:-8.68, lng:115.45 },
-      { id:'a8', name:'Mushroom Bay strand', area:'Nusa Lembongan', cat:'strand', desc:'Krystallklar bukt, grunt vann, hvit sand.', baby:true, price:'Gratis', lat:-8.6812, lng:115.443 },
-      { id:'a9', name:'Kajakk i mangroven', area:'Nusa Lembongan', cat:'natur', desc:'Padletur gjennom mangroveskogen.', baby:true, price:'Inkl. i resort', lat:-8.688, lng:115.447 },
-      { id:'a10', name:'Spa-dag', area:'Sanur', cat:'mat', desc:'Balinesisk spa. Mange har babysitting.', baby:true, price:'~200-400 kr', lat:-8.682, lng:115.268 },
-      { id:'a12', name:'Tanah Lot-tempelet', area:'Tabanan', cat:'kultur', desc:'Spektakulært havtempel ved solnedgang.', baby:true, price:'~60 kr (IDR 60k)', lat:-8.6211, lng:115.0868 },
-      { id:'a13', name:'Bali Zoo', area:'Gianyar', cat:'natur', desc:'Frokost med orangutanger!', baby:true, price:'~400 kr ($40)', lat:-8.5945, lng:115.2874 },
-      { id:'a14', name:'Waterbom Bali', area:'Kuta', cat:'strand', desc:'Asias beste vannpark, grunne barneområder.', baby:true, price:'~500 kr ($50 voksne)', lat:-8.728, lng:115.17 },
-      { id:'a14', name:'Sanur strandpromenade', area:'Sanur', cat:'strand', desc:'Flat promenade, perfekt for barnevogn.', baby:true, price:'Gratis', lat:-8.678, lng:115.263 }
-    ],
-    budget: [
-      { id:'b1', icon:'✈️', label:'Fly OSL↔DPS (2 voksne)', amount:4500, note:'Booket. Baby gratis/billig.' },
-      { id:'b2', icon:'🏨', label:'Flyplasshotell (1 natt)', amount:780, note:'Novotel ~$78. Hilton ~$65. Holiday Inn ~$70.' },
-      { id:'b3', icon:'🏠', label:'Uke 1 — Jl Kesari (6 n)', amount:0, note:'Booket — legg inn faktisk pris.' },
-      { id:'b4', icon:'🏝️', label:'Uke 2 — Hai Tide (7 n)', amount:14210, note:'Beachfront: $203/n × 7 = $1421 ≈ 14 210 kr.' },
-      { id:'b5', icon:'🏖️', label:'Uke 3-4 — Sanur hotell (10 n)', amount:7000, note:'Sanur ~$70/n × 10 netter. Sjekk Google for oppdaterte priser.' },
-      { id:'b6', icon:'⛴️', label:'Båt Sanur↔Lembongan', amount:700, note:'$17/vei × 2 pers × tur/retur ≈ $68.' },
-      { id:'b7', icon:'🚗', label:'Transport på Bali', amount:2500, note:'Grab $2-5/tur, privatsjåfør $40-60/dag, transfer $25.' },
-      { id:'b8', icon:'🍜', label:'Mat & drikke (26 dager)', amount:7800, note:'Snitt ~$30/dag for 2 pers. Warung $2-4, restaurant $8-15.' },
-      { id:'b9', icon:'🎯', label:'Aktiviteter & inngang', amount:3000, note:'Monkey Forest 130k IDR, templer 50-100k, Zoo $25, Waterbom $35.' },
-      { id:'b10', icon:'🛒', label:'Diverse & shopping', amount:2000, note:'SIM-kort, suvenirer, bleier, uforutsett.' }
-    ],
-    packing: [
-      { cat:'👶 Baby', items:['Bleier (kjøp lokalt!)','Babyklær (lett bomull)','Solkrem SPF50+ baby','Bæresele/wrap','Sammenleggbar barnevogn','Babymedisin-kit','Favoritt-leke/kosedyr','Amme-/mateutstyr','Myggmiddel baby','Solhatt baby'], checked:[] },
-      { cat:'👕 Klær', items:['Lette t-skjorter','Shorts/lette bukser','Badetøy (2-3 stk)','Lett regnjakke','Sandaler/flip-flops','Sneakers for templer','Sarong (tempelbesøk)','Solhatt','Lett cardigan for AC'], checked:[] },
-      { cat:'💊 Helse', items:['Solkrem SPF50+','Myggspray (DEET)','Førstehjelpssett','Reiseapotek','Imodium / mage-medisin','Hånddesinfeksjon','After-sun lotion','Reiseforsikring-docs'], checked:[] },
-      { cat:'📱 Tech & docs', items:['Pass (6+ mnd gyldighet)','Kopi av pass','Reiseforsikring','Kredittkort (Visa/MC)','Kontanter → IDR','Telefon + lader','Powerbank','Universal adapter','Hodetelefoner'], checked:[] },
-      { cat:'🎒 Diverse', items:['Tøypose for skittentøy','Zip-lock poser','Vannflaske','Snacks til flyturen','Bok/Kindle','GoPro/kamera','Dagssekk'], checked:[] }
-    ],
+    stops: [],
+    hotels: [],
+    activities: [],
+    budget: [],
+    packing: [],
     notes: ''
   };
 }
@@ -288,29 +226,6 @@ function autoSave() {
   }, 400);
 }
 
-// Export/import JSON backup
-function exportJSON() {
-  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'bali-reiseplan-backup.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-function importJSON(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      DATA = JSON.parse(ev.target.result);
-      render(); autoSave();
-      showSidebar('Importert!', 'Reiseplanen ble lastet fra fil.');
-    } catch(err) { alert('Ugyldig JSON-fil.'); }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-}
 
 // ===== MAP =====
 function initMap() {
@@ -818,7 +733,7 @@ function renderNotater() {
 
 // ===== INIT =====
 async function init() {
-  initDefaultData();
+  initEmptyData();
   initMap();
   const el = document.getElementById('saveStatus');
   const loaded = await loadFromAPI();
