@@ -494,10 +494,10 @@ function updateHotelPrice(hi, pi, field, value) {
   }
   p[field] = value;
   if (field === 'perNight') p.checkedAt = new Date().toISOString().slice(0,10);
-  // When user enters totalPaid, compute perNight from it (and nights of the hotel)
+  // When user enters totalPaid, compute perNight from segment nights (if set) else hotel nights
   if (field === 'totalPaid' && value > 0) {
-    const nights = calcNights(DATA.hotels[hi].checkIn, DATA.hotels[hi].checkOut);
-    if (nights > 0) p.perNight = Math.round(value / nights);
+    const nights = p.segmentNights || calcNights(DATA.hotels[hi].checkIn, DATA.hotels[hi].checkOut);
+    if (nights > 0) p.perNight = Math.round((value / nights) * 100) / 100;
     p.checkedAt = new Date().toISOString().slice(0,10);
   }
   autoSave();
@@ -693,7 +693,10 @@ function migrateHotels() {
   let changed = false;
   DATA.hotels.forEach(h => {
     if (h.price && !h.prices) {
-      const num = parseInt(String(h.price).replace(/[^0-9]/g, '')) || 0;
+      // Extract first number before "kr" only (not ALL digits joined together)
+      const priceStr = String(h.price);
+      const krMatch = priceStr.match(/(\d[\d\s]*)\s*kr/);
+      const num = krMatch ? parseInt(krMatch[1].replace(/\s/g, '')) || 0 : 0;
       h.prices = [{ source:'Estimat', perNight:num, currency:'NOK', url:'', checkedAt:'' }];
       delete h.price;
       changed = true;
@@ -962,11 +965,12 @@ function renderHotell() {
   if (visible.length) {
     html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>`;
     visible.forEach(h => {
+      const booked = hotelBookedCost(h);
       const best = bestHotelPrice(h);
-      const nights = calcNights(h.checkIn, h.checkOut);
-      // Prefer totalPaid (exact amount) when set, else compute from perNight × nights
-      const total = best?.totalPaid > 0 ? best.totalPaid : (best && nights ? best.perNight * nights : 0);
-      const perNight = best?.totalPaid > 0 && nights > 0 ? (best.totalPaid / nights) : best?.perNight || 0;
+      const nights = booked ? booked.nights : calcNights(h.checkIn, h.checkOut);
+      // Prefer booked sum (exact multi-segment paid), else best quote × nights
+      const total = booked ? booked.total : (best && nights ? best.perNight * nights : 0);
+      const perNight = booked ? booked.perNightAvg : (best?.perNight || 0);
       const esc = s => s.replace(/'/g, "\\'");
       const rowClass = 'row-' + (h.status || 'considering');
       const icon = h.status==='booked' ? '&#x2713; ' : h.status==='favorite' ? '&#x2B50; ' : '';
