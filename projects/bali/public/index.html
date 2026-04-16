@@ -287,7 +287,10 @@ li.done{text-decoration:line-through;opacity:0.45}
     <div class="page" id="p-notater"></div>
   </div>
   <div class="sidebar">
-    <div id="map"></div>
+    <div style="position:relative">
+      <div id="map"></div>
+      <button onclick="showAllOnMap()" title="Vis alle på kartet" style="position:absolute;top:8px;right:8px;z-index:1000;background:#1e293b;color:#fff;border:1px solid #475569;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:inherit">⤢ Vis alt</button>
+    </div>
     <div class="sidebar-info" id="sidebarInfo">
       <h4>Klikk på et element for å se det på kartet</h4>
       <p>Alle reisestopp, hotell og aktiviteter kan klikkes for å vise plasseringen.</p>
@@ -430,13 +433,26 @@ function drawRoute() {
 
 function flyTo(lat, lng, name, detail) {
   map.flyTo([lat, lng], 14, {duration:0.8});
-  clearMap();
-  const m = L.marker([lat, lng]).addTo(map)
-    .bindPopup(`<b>${name}</b>${detail ? '<br><small>'+detail+'</small>' : ''}`).openPopup();
-  markers.push(m);
-  // Also draw route faintly
-  const coords = DATA.stops.map(s => [s.lat, s.lng]);
-  polyline = L.polyline(coords, {color:'#38bdf8', weight:1, opacity:0.2, dashArray:'4,4'}).addTo(map);
+  // Find existing marker at this location and open popup, instead of clearing all
+  const target = markers.find(m => {
+    const ll = m.getLatLng();
+    return Math.abs(ll.lat - lat) < 0.0001 && Math.abs(ll.lng - lng) < 0.0001;
+  });
+  if (target) {
+    target.openPopup();
+  } else {
+    // No existing marker (rare) — add a temporary one without clearing
+    const m = L.marker([lat, lng]).addTo(map)
+      .bindPopup(`<b>${name}</b>${detail ? '<br><small>'+detail+'</small>' : ''}`).openPopup();
+    markers.push(m);
+  }
+}
+
+function showAllOnMap() {
+  // Re-draw based on current tab and zoom to fit everything
+  if (activeTab === 'reiserute') drawRoute();
+  else if (activeTab === 'kart' || activeTab === 'hotell') drawMapFiltered();
+  else drawRoute();
 }
 
 function focusOnItem(name, lat, lng, detail) {
