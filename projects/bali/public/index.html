@@ -1176,11 +1176,57 @@ function filterHotelsForMap() {
   });
 }
 
-function toggleKartFilter(key) { KART_FILTER[key] = !KART_FILTER[key]; renderKart(); drawMapFiltered(); }
-function setKartFilter(key, val) { KART_FILTER[key] = val; renderKart(); drawMapFiltered(); }
+function toggleKartFilter(key) { KART_FILTER[key] = !KART_FILTER[key]; renderKart(); renderHotell(); drawMapFiltered(); }
+function setKartFilter(key, val) { KART_FILTER[key] = val; renderKart(); renderHotell(); drawMapFiltered(); }
 function resetKartFilter() {
-  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,minStars:0,minPrice:0,maxPrice:0,type:'all',viewMode:KART_FILTER.viewMode||'grid'});
-  renderKart(); drawMapFiltered();
+  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,likedOnly:false,minScore:0,minStars:0,minPrice:0,maxPrice:0,type:'all',viewMode:KART_FILTER.viewMode||'grid',sortBy:'liked-price'});
+  renderKart(); renderHotell(); drawMapFiltered();
+}
+
+// Reusable filter bar — shared between Kart and Hotell tabs
+function hotelFilterBarHTML() {
+  const f = KART_FILTER;
+  const areas = [...new Set(DATA.hotels.map(h => h.area).filter(Boolean))].sort();
+  const areaOptions = ['<option value="all">Alle områder</option>']
+    .concat(areas.map(a => `<option value="${a}" ${f.area===a?'selected':''}>${a}</option>`)).join('');
+  return `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem;align-items:center;font-size:0.78rem">
+    <select onchange="setKartFilter('area',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">${areaOptions}</select>
+    <select onchange="setKartFilter('status',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">
+      <option value="all" ${f.status==='all'?'selected':''}>Alle status</option>
+      <option value="booked" ${f.status==='booked'?'selected':''}>Booket</option>
+      <option value="favorite" ${f.status==='favorite'?'selected':''}>Favoritt</option>
+      <option value="considering" ${f.status==='considering'?'selected':''}>Vurderes</option>
+      <option value="rejected" ${f.status==='rejected'?'selected':''}>Avvist</option>
+    </select>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.babyOnly?'checked':''} onchange="setKartFilter('babyOnly',this.checked)"> 👶 Baby</label>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.kitchenOnly?'checked':''} onchange="setKartFilter('kitchenOnly',this.checked)"> 🍳 Kjøkken</label>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.likedOnly?'checked':''} onchange="setKartFilter('likedOnly',this.checked)"> ❤️ Hjertet (${DATA.hotels.filter(h=>h.liked).length})</label>
+    <select onchange="setKartFilter('type',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.3rem 0.5rem;border-radius:6px">
+      <option value="all" ${f.type==='all'?'selected':''}>Alle typer</option>
+      <option value="villa" ${f.type==='villa'?'selected':''}>🏡 Villa</option>
+      <option value="resort" ${f.type==='resort'?'selected':''}>🌴 Resort</option>
+      <option value="hotel" ${f.type==='hotel'?'selected':''}>🏨 Hotell</option>
+      <option value="homestay" ${f.type==='homestay'?'selected':''}>🏠 Homestay</option>
+      <option value="guesthouse" ${f.type==='guesthouse'?'selected':''}>🛏️ Guesthouse</option>
+    </select>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem">★: <select onchange="setKartFilter('minStars',parseInt(this.value)||0)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px">
+      <option value="0" ${f.minStars===0?'selected':''}>Alle</option>
+      <option value="3" ${f.minStars===3?'selected':''}>3+</option>
+      <option value="4" ${f.minStars===4?'selected':''}>4+</option>
+      <option value="5" ${f.minStars===5?'selected':''}>5</option>
+    </select></label>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem">Score ≥ <input type="number" min="0" max="10" step="0.1" value="${f.minScore}" onchange="setKartFilter('minScore',parseFloat(this.value)||0)" style="width:50px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+    <label style="display:inline-flex;align-items:center;gap:0.25rem">Pris: <input type="number" min="0" step="100" value="${f.minPrice||''}" placeholder="min" onchange="setKartFilter('minPrice',parseInt(this.value)||0)" style="width:60px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"> – <input type="number" min="0" step="100" value="${f.maxPrice||''}" placeholder="maks" onchange="setKartFilter('maxPrice',parseInt(this.value)||0)" style="width:60px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+    <select onchange="setKartFilter('sortBy',this.value)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px">
+      <option value="liked-price" ${f.sortBy==='liked-price'?'selected':''}>❤️+Pris</option>
+      <option value="price-asc" ${f.sortBy==='price-asc'?'selected':''}>Pris ↑</option>
+      <option value="price-desc" ${f.sortBy==='price-desc'?'selected':''}>Pris ↓</option>
+      <option value="score-desc" ${f.sortBy==='score-desc'?'selected':''}>Score ↓</option>
+      <option value="stars-desc" ${f.sortBy==='stars-desc'?'selected':''}>Stjerner ↓</option>
+      <option value="name-asc" ${f.sortBy==='name-asc'?'selected':''}>Navn A–Å</option>
+    </select>
+    <button class="filt-btn" onclick="resetKartFilter()" style="background:var(--card);border:1px solid var(--brd);color:var(--tx);padding:0.3rem 0.6rem;border-radius:6px;cursor:pointer">Nullstill filter</button>
+  </div>`;
 }
 
 function drawMapFiltered() {
@@ -1348,17 +1394,8 @@ function renderHotell() {
 
   let html = `<h2>Hotell</h2>`;
 
-  // Filter toggles
-  const rejectedCount = DATA.hotels.filter(h => h.status === 'rejected').length;
-  html += `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
-    <button class="tbtn${window._hotelBabyFilter?' primary':''}" onclick="window._hotelBabyFilter=!window._hotelBabyFilter;renderHotell()">
-      ${window._hotelBabyFilter?'✓ Kun baby-vennlige':'Baby-vennlige'}
-    </button>
-    <button class="tbtn${window._hotelShowRejected?' primary':''}" onclick="window._hotelShowRejected=!window._hotelShowRejected;renderHotell()">
-      ${window._hotelShowRejected?'✓ Viser avviste':'Avviste'} ${rejectedCount ? '('+rejectedCount+')' : ''}
-    </button>
-    <span style="font-size:0.75rem;color:var(--dim)">2 voksne + 1 barn, filtrert på dine datoer</span>
-  </div>`;
+  // Rich filter bar (shared with Kart tab via KART_FILTER)
+  html += hotelFilterBarHTML();
 
   // Area search buttons
   const areas = [...new Set(DATA.hotels.map(h => h.area))];
@@ -1370,30 +1407,39 @@ function renderHotell() {
     const co = hotelsInArea[0]?.checkOut || '';
     html += `<a class="goog-btn" href="${googleAreaSearchUrl(area, ci, co)}" target="_blank">${area}</a>`;
   });
-  const ungeocoded = DATA.hotels.filter(h => !h.geocoded).length;
+  const ungeocoded = DATA.hotels.filter(h => !h.geocoded && h.status !== 'rejected').length;
   if (ungeocoded > 0) {
-    html += `<button class="tbtn" onclick="geocodeAllHotels()" style="margin-left:auto">📍 Geocode ${ungeocoded} hotell</button>`;
+    html += `<button class="tbtn" onclick="geocodeAllHotels()" style="margin-left:auto">📍 Geocode ${ungeocoded}</button>`;
   }
   html += `</div>`;
 
-  // Sort: liked > booked > favorite > considering > rejected, then by area, then by price
+  // Apply shared filter
+  const f = KART_FILTER;
+  let filtered = filterHotelsForMap();
+  // Status filter: if rejected is not explicitly selected, hide rejected
+  if (f.status === 'all') filtered = filtered.filter(h => h.status !== 'rejected');
+
+  // Apply sort from KART_FILTER
+  const sortFns = {
+    'liked-price': (a,b) => (!!b.liked - !!a.liked) || ((bestHotelPrice(a)?.perNight||99999) - (bestHotelPrice(b)?.perNight||99999)),
+    'price-asc':   (a,b) => (bestHotelPrice(a)?.perNight||99999) - (bestHotelPrice(b)?.perNight||99999),
+    'price-desc':  (a,b) => (bestHotelPrice(b)?.perNight||0) - (bestHotelPrice(a)?.perNight||0),
+    'score-desc':  (a,b) => parseFloat((b.bookingRating||'0').toString().replace(',','.')) - parseFloat((a.bookingRating||'0').toString().replace(',','.')),
+    'stars-desc':  (a,b) => (b.stars||0) - (a.stars||0),
+    'name-asc':    (a,b) => (a.name||'').localeCompare(b.name||''),
+  };
+  // Always prioritize booked/favorite first regardless of sort
   const statusOrder = { booked:0, favorite:1, considering:2, rejected:3 };
-  const sortedHotels = [...DATA.hotels].sort((a,b) => {
-    if (!!b.liked - !!a.liked !== 0) return !!b.liked - !!a.liked;
+  const sortedHotels = [...filtered].sort((a,b) => {
     const d = (statusOrder[a.status]??2) - (statusOrder[b.status]??2);
     if (d !== 0) return d;
-    if (a.area !== b.area) return (a.area||'').localeCompare(b.area||'');
-    const ap = bestHotelPrice(a)?.perNight || Infinity;
-    const bp = bestHotelPrice(b)?.perNight || Infinity;
-    return ap - bp;
+    return (sortFns[f.sortBy] || sortFns['liked-price'])(a, b);
   });
 
-  // Quick comparison table — show ALL hotels, with visual distinction
   let visible = sortedHotels;
-  if (!window._hotelShowRejected) visible = visible.filter(h => h.status !== 'rejected');
-  if (window._hotelBabyFilter) visible = visible.filter(h => h.babyFriendly);
+  html += `<div style="font-size:0.78rem;color:var(--dim);margin-bottom:0.5rem">Viser ${visible.length} av ${DATA.hotels.length} hoteller</div>`;
   if (visible.length) {
-    html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>★</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th>Rating</th><th>Book</th></tr></thead><tbody>`;
+    html += `<table class="cmp-tbl"><thead><tr><th></th><th>Hotell</th><th>Område</th><th>★</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th>Rating</th><th>Book</th></tr></thead><tbody>`;
     visible.forEach(h => {
       const booked = hotelBookedCost(h);
       const best = bestHotelPrice(h);
@@ -1405,7 +1451,11 @@ function renderHotell() {
       const rowClass = 'row-' + (h.status || 'considering');
       const icon = h.status==='booked' ? '&#x2713; ' : h.status==='favorite' ? '&#x2B50; ' : '';
       const fmtPrice = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
+      const thumb = h.imageUrl
+        ? `<img src="${h.imageUrl}" alt="" loading="lazy" style="width:48px;height:36px;border-radius:4px;object-fit:cover;background:#1e293b" onerror="this.outerHTML='<div style=&quot;width:48px;height:36px;border-radius:4px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:0.85rem&quot;>🏨</div>'">`
+        : `<div style="width:48px;height:36px;border-radius:4px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:0.85rem">🏨</div>`;
       html += `<tr class="${rowClass}">
+        <td style="padding:4px 6px">${thumb}</td>
         <td style="font-weight:600;cursor:pointer" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')">${icon}${h.name}</td>
         <td>${h.area}</td>
         <td style="text-align:center;font-size:0.7rem;color:var(--a1)">${h.stars||'—'}</td>
