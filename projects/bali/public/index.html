@@ -1148,6 +1148,7 @@ function renderBudsjett() {
   const manualTotal = (DATA.budget || []).reduce((s, b) => s + (b.amount || 0), 0);
 
   const grandTotal = hotelTotal + activityTotal + manualTotal;
+  const fmt = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
 
   let html = `<h2>Budsjett</h2><p class="desc">Hotell og aktiviteter summeres automatisk fra dine valg. Legg til flyreise, mat, transport osv. manuelt.</p>`;
 
@@ -1161,7 +1162,6 @@ function renderBudsjett() {
     html += `<p style="color:var(--dim);font-size:0.82rem">Ingen hotell merket som booket eller favoritt. Gå til <a href="#" onclick="switchTab('hotell');return false" style="color:var(--a1)">Hotell-fanen</a> og velg status.</p>`;
   } else {
     html += `<table class="btable">`;
-    const fmt = n => n.toLocaleString('nb-NO', {maximumFractionDigits: 2});
     hotelRows.forEach(r => {
       const statusIcon = r.hotel.status === 'booked' ? '✓' : '⭐';
       html += `<tr>
@@ -1198,10 +1198,10 @@ function renderBudsjett() {
     plannedActivities.forEach(a => {
       html += `<tr>
         <td>✓ ${a.name} <span style="font-size:0.7rem;color:var(--dim)">· ${a.area}</span></td>
-        <td style="text-align:right;font-weight:600;white-space:nowrap">${(a.cost || 0).toLocaleString('nb-NO')} kr</td>
+        <td style="text-align:right;font-weight:600;white-space:nowrap">${fmt(a.cost || 0)} kr</td>
       </tr>`;
     });
-    html += `<tr><td style="color:var(--dim);font-size:0.78rem">Sum aktiviteter</td><td style="text-align:right;font-weight:700;color:var(--a4)">${activityTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+    html += `<tr><td style="color:var(--dim);font-size:0.78rem">Sum aktiviteter</td><td style="text-align:right;font-weight:700;color:var(--a4)">${fmt(activityTotal)} kr</td></tr>`;
     html += `</table>`;
   }
   html += `</div>`;
@@ -1221,7 +1221,7 @@ function renderBudsjett() {
     </tr>
     <tr><td colspan="2" style="padding:0.1rem 0.4rem 0.5rem;font-size:0.75rem;color:var(--dim)">${ef(b.note,"updateBudget("+i+",'note',this.value)",'ef-sm')}</td></tr>`;
   });
-  html += `<tr><td colspan="1" style="color:var(--dim);font-size:0.78rem">Sum manuelt</td><td style="text-align:right;font-weight:700;color:var(--a2)">${manualTotal.toLocaleString('nb-NO')} kr</td></tr>`;
+  html += `<tr><td colspan="1" style="color:var(--dim);font-size:0.78rem">Sum manuelt</td><td style="text-align:right;font-weight:700;color:var(--a2)">${fmt(manualTotal)} kr</td></tr>`;
   html += `</table>`;
   html += `<button class="add-btn" onclick="addBudget()" style="margin-top:0.5rem">+ Legg til post</button>`;
   html += `</div>`;
