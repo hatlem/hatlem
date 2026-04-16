@@ -153,10 +153,88 @@ li.done{text-decoration:line-through;opacity:0.45}
 .fl-card{background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:0.75rem 1rem;flex:1;min-width:240px}
 .fl-card .lbl{font-size:0.65rem;color:var(--a1);text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
 
-/* Responsive */
+/* Responsive — tablet */
 @media(max-width:900px){
   .main{flex-direction:column-reverse}
-  .sidebar{width:100%;min-width:unset;position:relative;top:auto;height:350px;border-left:none;border-top:1px solid var(--brd)}
+  .sidebar{width:100%;min-width:unset;position:relative;top:auto;height:300px;border-left:none;border-top:1px solid var(--brd)}
+  .content{max-width:100%}
+}
+
+/* Responsive — phone */
+@media(max-width:640px){
+  /* Prevent iOS zoom on focused inputs — needs 16px minimum */
+  input,textarea,select{font-size:16px!important}
+  .ef{font-size:16px!important}
+  .ef-sm{font-size:16px!important}
+  input[type="date"]{font-size:16px!important}
+
+  .topbar{padding:0.5rem 0.75rem;gap:0.4rem}
+  .topbar h1{font-size:1rem}
+  #saveStatus{font-size:0.65rem!important}
+
+  .nav{padding:0.4rem 0.5rem;gap:0.1rem;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;top:38px}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex-shrink:0;padding:0.4rem 0.7rem;font-size:0.75rem}
+
+  .content{padding:1rem 0.75rem}
+  .page h2{font-size:1.2rem;margin-bottom:0.15rem}
+  .page .desc{font-size:0.78rem;margin-bottom:1rem}
+
+  .main{min-height:unset}
+  .sidebar{height:240px;top:80px}
+
+  /* Horizontally scrollable comparison tables */
+  .cmp-tbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;font-size:0.75rem;border-radius:10px}
+  .cmp-tbl th,.cmp-tbl td{padding:0.45rem 0.6rem}
+  .cmp-tbl tr.row-booked td:first-child,.cmp-tbl tr.row-favorite td:first-child{box-shadow:inset 4px 0 0 currentColor}
+
+  .price-tbl{font-size:0.75rem}
+  .price-tbl td{padding:0.35rem 0.3rem}
+
+  .btable{font-size:0.8rem}
+  .btable td{padding:0.4rem 0.3rem}
+
+  /* Cards — less padding */
+  .icard{padding:0.85rem;margin-bottom:0.6rem}
+  .icard h3{font-size:1rem}
+  .icard p{font-size:0.8rem}
+
+  /* Always-visible delete + map pin (no hover on touch devices) */
+  .del-btn{opacity:0.5!important;font-size:1rem;padding:0.25rem}
+  .map-pin{opacity:0.6!important}
+
+  /* Bigger touch targets for insert slot */
+  .insert-slot{height:28px;margin:0.1rem 0;opacity:0.3}
+  .insert-slot::after{background:rgba(56,189,248,0.2)}
+  .insert-slot .insert-slot-btn{opacity:0.7;font-size:0.7rem;padding:0.2rem 0.6rem}
+
+  /* Flight cards stack vertically */
+  .flights{flex-direction:column;gap:0.5rem}
+  .fl-card{min-width:0;width:100%;padding:0.65rem 0.85rem}
+
+  /* Packing list single column */
+  .pack-grid{grid-template-columns:1fr;gap:0.5rem}
+  .pack-cat{padding:0.85rem}
+
+  /* Dates row wraps cleanly */
+  .dates-row{gap:0.3rem 0.4rem;font-size:0.8rem}
+  .dates-row input[type="date"]{font-size:16px!important;padding:0.3rem 0.4rem;flex:1;min-width:130px}
+
+  /* Goog button */
+  .goog-btn{padding:0.4rem 0.7rem;font-size:0.75rem}
+
+  /* Stop type selector row */
+  .stop-type{font-size:0.65rem;padding:0.2rem 0.5rem}
+
+  /* Status badges */
+  .badge,.h-status{font-size:0.6rem}
+
+  /* Buttons */
+  .tbtn,.add-price-btn{padding:0.45rem 0.7rem;font-size:0.78rem;min-height:36px}
+  .add-btn{padding:0.85rem;font-size:0.85rem}
+
+  /* Notes textarea */
+  .notes{font-size:16px!important;min-height:160px}
 }
 </style>
 </head>
