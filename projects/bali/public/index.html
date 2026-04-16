@@ -198,8 +198,7 @@ function initDefaultData() {
           {name:'Garden Family Lumbung', price:'Rimeligere enn Beachfront', note:'Tropisk hage, noen steg fra basseng & strand. Mer skjermet.', chosen:false}
         ]
       },
-      { id:'s4', name:'Ubud', dates:'5. – 10. sep • 6 netter', desc:'Rismarker, templer, apeskogen, kunstgallerier. Rolig tempo med baby. Spa og mat.', status:'open', tags:['Kultur','Natur','Baby-vennlig'], lat:-8.5069, lng:115.2625, color:'#a78bfa', options:[] },
-      { id:'s5', name:'Sanur (avslutning)', dates:'11. – 14. sep • 4 netter', desc:'Tilbake til Sanur. Strandpromenade for barnevogn. 25 min fra flyplassen.', status:'open', tags:['Strand','Baby-vennlig'], lat:-8.682, lng:115.268, color:'#34d399', options:[] },
+      { id:'s4', name:'Sanur (avslutning)', dates:'5. – 14. sep • 10 netter', desc:'Tilbake til Sanur. Strandpromenade for barnevogn. 25 min fra flyplassen. Dagstur til Ubud mulig herfra.', status:'open', tags:['Strand','Baby-vennlig'], lat:-8.682, lng:115.268, color:'#34d399', options:[] },
       { id:'s6', name:'Hjemreise', dates:'15. sep', desc:'Avreise DPS kl. 15:15. Nyt en siste strandformiddag!', status:'', tags:[], lat:-8.7467, lng:115.1667, color:'#fbbf24', options:[] }
     ],
     hotels: [
@@ -207,36 +206,29 @@ function initDefaultData() {
       { id:'h2', name:'Hilton Garden Inn DPS', area:'Flyplass', stars:4, desc:'I flyplasskomplekset med 24t shuttle.', features:['Shuttle','Basseng','WiFi'], lat:-8.7467, lng:115.1667, checkIn:'2026-08-21', checkOut:'2026-08-22', status:'considering', babyFriendly:true, babyNotes:'Babyseng på forespørsel, nær terminal', prices:[{source:'Estimat', perNight:650, currency:'NOK', url:'', checkedAt:''}] },
       { id:'h3', name:'Hai Tide — Beachfront Family', area:'Nusa Lembongan', stars:4, desc:'650 sq ft rett på Mushroom Bay. Privat balkong, havutsikt.', features:['Strandfront','Balkong','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', babyFriendly:true, babyNotes:'Family Lumbung-rom, stor plass, rolig bukt med grunt vann', prices:[{source:'Estimat', perNight:2030, currency:'NOK', url:'', checkedAt:''}] },
       { id:'h4', name:'Hai Tide — Garden Family', area:'Nusa Lembongan', stars:4, desc:'Tropisk hage, nær basseng og strand.', features:['Hage','Basseng','Beach Club','Kajakk','Snorkling'], lat:-8.6812, lng:115.4430, checkIn:'2026-08-28', checkOut:'2026-09-04', status:'considering', babyFriendly:true, babyNotes:'Skjermet hageområde, trygt for småbarn', prices:[{source:'Estimat', perNight:1500, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h5', name:'Hillstone Villas Ubud', area:'Ubud', stars:4, desc:'Private villaer med basseng omgitt av rismarker.', features:['Privat villa','Privat basseng','Rismarker','Barnevakt'], lat:-8.5069, lng:115.2625, checkIn:'2026-09-05', checkOut:'2026-09-11', status:'considering', babyFriendly:true, babyNotes:'Barnevakt tilgjengelig, privat villa gir ro og plass', prices:[{source:'Estimat', perNight:900, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h6', name:'Bisma Eight Ubud', area:'Ubud', stars:4, desc:'Boutique-hotell. Infinity-basseng med jungel-utsikt.', features:['Infinity-basseng','Restaurant','Sentralt','Yoga'], lat:-8.51, lng:115.26, checkIn:'2026-09-05', checkOut:'2026-09-11', status:'considering', babyFriendly:false, babyNotes:'Boutique-hotell, ikke spesielt tilrettelagt for barn', prices:[{source:'Estimat', perNight:1100, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h7', name:'Klumpu Bali Resort', area:'Sanur', stars:4, desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631, checkIn:'2026-09-11', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Babyseng inkludert, stor hage, flat strandpromenade for barnevogn', prices:[{source:'Estimat', perNight:700, currency:'NOK', url:'', checkedAt:''}] },
-      { id:'h8', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268, checkIn:'2026-09-11', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Kids club, barnebasseng, babysitting tilgjengelig', prices:[{source:'Estimat', perNight:1300, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h5', name:'Klumpu Bali Resort', area:'Sanur', stars:4, desc:'Familievennlig, stor hage, nær strandpromenaden.', features:['Familierom','Basseng','Hage','Strandnært','Babyseng'], lat:-8.6783, lng:115.2631, checkIn:'2026-09-05', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Babyseng inkludert, stor hage, flat strandpromenade for barnevogn', prices:[{source:'Estimat', perNight:700, currency:'NOK', url:'', checkedAt:''}] },
+      { id:'h6', name:'Prama Sanur Beach Hotel', area:'Sanur', stars:5, desc:'Klassisk strandresort, tropisk hage, flere bassenger.', features:['Strand','Kids club','Flere bassenger','Spa'], lat:-8.682, lng:115.268, checkIn:'2026-09-05', checkOut:'2026-09-15', status:'considering', babyFriendly:true, babyNotes:'Kids club, barnebasseng, babysitting tilgjengelig', prices:[{source:'Estimat', perNight:1300, currency:'NOK', url:'', checkedAt:''}] },
       { id:'h9', name:'Marriott Nusa Dua Gardens', area:'Nusa Dua', stars:5, desc:'Stort familieresort, kids club, strandtilgang.', features:['Familierom','Kids club','Basseng','Strand','Spa'], lat:-8.8005, lng:115.2306, checkIn:'', checkOut:'', status:'considering', babyFriendly:true, babyNotes:'Kids club, familierom, barnebasseng, babysitting', prices:[{source:'Estimat', perNight:1200, currency:'NOK', url:'', checkedAt:''}] }
     ],
     activities: [
       { id:'a1', name:'Mengiat Beach', area:'Nusa Dua', cat:'strand', desc:'Rolig strand, grunt stille vann.', baby:true, price:'Gratis', lat:-8.804, lng:115.232 },
       { id:'a2', name:'Turtle Island', area:'Nusa Dua', cat:'natur', desc:'Skilpaddeoppdretts-senter.', baby:true, price:'~100 kr (IDR 100k)', lat:-8.744, lng:115.226 },
       { id:'a3', name:'Kecak-dans Uluwatu', area:'Uluwatu', cat:'kultur', desc:'Tradisjonell dans ved solnedgang.', baby:true, price:'~150 kr (IDR 150k)', lat:-8.8291, lng:115.0849 },
-      { id:'a4', name:'Tegallalang rismarker', area:'Ubud', cat:'natur', desc:'Ikoniske rismarker. Bæresele for baby.', baby:true, price:'~50-100 kr (IDR 50-100k)', lat:-8.4312, lng:115.2792 },
-      { id:'a5', name:'Monkey Forest', area:'Ubud', cat:'natur', desc:'Hellig apeskogsreservat. Hold babyen tett!', baby:true, price:'~130 kr (IDR 130k)', lat:-8.5185, lng:115.2588 },
-      { id:'a6', name:'Ubud Art Market', area:'Ubud', cat:'kultur', desc:'Håndlaget kunst og suvenirer. Husk å prute!', baby:true, price:'Gratis inngang', lat:-8.5068, lng:115.2636 },
       { id:'a7', name:'Snorkling med skilpadder', area:'Nusa Lembongan', cat:'natur', desc:'Hai Tide cruise til snorklespots.', baby:true, price:'Inkl. i resort', lat:-8.68, lng:115.45 },
       { id:'a8', name:'Mushroom Bay strand', area:'Nusa Lembongan', cat:'strand', desc:'Krystallklar bukt, grunt vann, hvit sand.', baby:true, price:'Gratis', lat:-8.6812, lng:115.443 },
       { id:'a9', name:'Kajakk i mangroven', area:'Nusa Lembongan', cat:'natur', desc:'Padletur gjennom mangroveskogen.', baby:true, price:'Inkl. i resort', lat:-8.688, lng:115.447 },
-      { id:'a10', name:'Spa-dag', area:'Ubud / Sanur', cat:'mat', desc:'Balinesisk spa. Mange har babysitting.', baby:true, price:'~200-400 kr', lat:-8.51, lng:115.26 },
-      { id:'a11', name:'Cooking class', area:'Ubud', cat:'mat', desc:'Lær autentisk balinesisk mat.', baby:true, price:'~350 kr ($35)', lat:-8.505, lng:115.265 },
+      { id:'a10', name:'Spa-dag', area:'Sanur', cat:'mat', desc:'Balinesisk spa. Mange har babysitting.', baby:true, price:'~200-400 kr', lat:-8.682, lng:115.268 },
       { id:'a12', name:'Tanah Lot-tempelet', area:'Tabanan', cat:'kultur', desc:'Spektakulært havtempel ved solnedgang.', baby:true, price:'~60 kr (IDR 60k)', lat:-8.6211, lng:115.0868 },
       { id:'a13', name:'Bali Zoo', area:'Gianyar', cat:'natur', desc:'Frokost med orangutanger!', baby:true, price:'~400 kr ($40)', lat:-8.5945, lng:115.2874 },
       { id:'a14', name:'Waterbom Bali', area:'Kuta', cat:'strand', desc:'Asias beste vannpark, grunne barneområder.', baby:true, price:'~500 kr ($50 voksne)', lat:-8.728, lng:115.17 },
-      { id:'a15', name:'Sanur strandpromenade', area:'Sanur', cat:'strand', desc:'Flat promenade, perfekt for barnevogn.', baby:true, price:'Gratis', lat:-8.678, lng:115.263 },
-      { id:'a16', name:'Mount Batur utsikt', area:'Kintamani', cat:'natur', desc:'Utsikt fra kafeer i Kintamani. Selve turen er tøff med baby.', baby:false, price:'~600 kr ($60)', lat:-8.2417, lng:115.3753 }
+      { id:'a14', name:'Sanur strandpromenade', area:'Sanur', cat:'strand', desc:'Flat promenade, perfekt for barnevogn.', baby:true, price:'Gratis', lat:-8.678, lng:115.263 }
     ],
     budget: [
       { id:'b1', icon:'✈️', label:'Fly OSL↔DPS (2 voksne)', amount:4500, note:'Booket. Baby gratis/billig.' },
       { id:'b2', icon:'🏨', label:'Flyplasshotell (1 natt)', amount:780, note:'Novotel ~$78. Hilton ~$65. Holiday Inn ~$70.' },
       { id:'b3', icon:'🏠', label:'Uke 1 — Jl Kesari (6 n)', amount:0, note:'Booket — legg inn faktisk pris.' },
       { id:'b4', icon:'🏝️', label:'Uke 2 — Hai Tide (7 n)', amount:14210, note:'Beachfront: $203/n × 7 = $1421 ≈ 14 210 kr.' },
-      { id:'b5', icon:'🌿', label:'Uke 3-4 — Hotell (10 n)', amount:9000, note:'Ubud ~$90/n + Sanur ~$70/n. Snitt ~$70-90/n.' },
+      { id:'b5', icon:'🏖️', label:'Uke 3-4 — Sanur hotell (10 n)', amount:7000, note:'Sanur ~$70/n × 10 netter. Sjekk Google for oppdaterte priser.' },
       { id:'b6', icon:'⛴️', label:'Båt Sanur↔Lembongan', amount:700, note:'$17/vei × 2 pers × tur/retur ≈ $68.' },
       { id:'b7', icon:'🚗', label:'Transport på Bali', amount:2500, note:'Grab $2-5/tur, privatsjåfør $40-60/dag, transfer $25.' },
       { id:'b8', icon:'🍜', label:'Mat & drikke (26 dager)', amount:7800, note:'Snitt ~$30/dag for 2 pers. Warung $2-4, restaurant $8-15.' },
