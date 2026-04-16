@@ -186,7 +186,7 @@ li.done{text-decoration:line-through;opacity:0.45}
   .sidebar{height:240px;top:80px}
 
   /* Horizontally scrollable comparison tables */
-  .cmp-tbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;font-size:0.75rem;border-radius:10px}
+  .cmp-tbl{display:none}
   .cmp-tbl th,.cmp-tbl td{padding:0.45rem 0.6rem}
   .cmp-tbl tr.row-booked td:first-child,.cmp-tbl tr.row-favorite td:first-child{box-shadow:inset 4px 0 0 currentColor}
 
@@ -954,12 +954,8 @@ function renderHotell() {
         <td>${perNight ? fmtPrice(perNight)+' kr' : '—'}<span style="font-size:0.68rem;color:var(--dim);margin-left:0.3rem">${best ? best.source : ''}</span></td>
         <td style="font-weight:600">${total ? fmtPrice(total)+' kr' : '—'}</td>
         <td><span class="h-status ${statusClass(h.status)}">${statusLabel(h.status)}</span></td>
-        <td style="font-size:0.7rem;color:var(--dim)">${h.reviewSummary||''}</td>
-        <td style="white-space:nowrap">
-          <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px">Google</a>
-          ${h.bookingUrl ? `<a class="goog-btn" href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px;background:#003580;color:#fff">Booking</a>` : ''}
-          ${h.hotelsUrl ? `<a class="goog-btn" href="${h.hotelsUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px;background:#d32f2f;color:#fff">Hotels</a>` : ''}
-        </td>
+        <td style="font-size:0.68rem;color:var(--dim);max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${h.reviewSummary||''}">${h.bookingRating ? h.bookingRating+'/10' : h.googleRating ? 'G'+h.googleRating : '—'}</td>
+        <td><a class="goog-btn" href="${h.bookingUrl||googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank" onclick="event.stopPropagation()" style="font-size:0.65rem;padding:2px 6px">Book</a></td>
       </tr>`;
     });
     html += `</tbody></table>`;
@@ -1059,8 +1055,8 @@ function renderHotell() {
     html += `<div onclick="event.stopPropagation()" style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem">
       <button class="add-price-btn" onclick="addHotelPrice(${i})">+ Legg til pris</button>
       <a class="goog-btn" href="${googleHotelUrl(h.name, h.checkIn, h.checkOut)}" target="_blank">Google Hotels</a>
-      ${h.bookingUrl ? `<a class="goog-btn" href="${h.bookingUrl}" target="_blank" style="background:#003580;color:#fff">Booking.com</a>` : ''}
-      ${h.hotelsUrl ? `<a class="goog-btn" href="${h.hotelsUrl}" target="_blank" style="background:#d32f2f;color:#fff">Hotels.com</a>` : ''}
+      ${h.bookingUrl ? `<a class="goog-btn" href="${h.bookingUrl}" target="_blank" style="background:#003580;color:#fff;font-size:0.72rem;padding:3px 8px">Booking</a>` : ''}
+      ${h.hotelsUrl ? `<a class="goog-btn" href="${h.hotelsUrl}" target="_blank" style="background:#d32f2f;color:#fff;font-size:0.72rem;padding:3px 8px">Hotels</a>` : ''}
     </div>
     ${h.reviewSummary ? `<div style="font-size:0.7rem;color:var(--dim);margin-top:0.25rem">⭐ ${h.reviewSummary}</div>` : ''}`;
 
