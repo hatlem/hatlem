@@ -900,6 +900,9 @@ function switchTab(id) {
   else if (id !== 'reiserute') drawRoute();
 }
 
+function kartStatusClass(s) { return s==='booked'?'s-booked':s==='favorite'?'s-favorite':s==='rejected'?'s-rejected':'s-considering'; }
+function kartStatusLabel(s) { return s==='booked'?'Booket':s==='favorite'?'Favoritt':s==='rejected'?'Avvist':'Vurderes'; }
+
 // ===== KART (filtered map view, reusing existing map + data) =====
 const KART_FILTER = {
   showStops: true, showHotels: true, showActivities: true,
@@ -963,7 +966,7 @@ function renderKart() {
     const best = bestHotelPrice(h);
     const pn = best?.perNight || 0;
     const sc = h.bookingRating ? h.bookingRating+'/10' : (h.googleRating ? 'G'+h.googleRating : '');
-    const statusBadge = `<span class="h-status ${statusClass(h.status)}" style="font-size:0.6rem">${statusLabel(h.status)}</span>`;
+    const statusBadge = `<span class="h-status ${kartStatusClass(h.status)}" style="font-size:0.6rem">${kartStatusLabel(h.status)}</span>`;
     const esc = s => (s||'').replace(/'/g, "\\'");
     html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:0.5rem 0.6rem;cursor:pointer;font-size:0.78rem">
       <div style="font-weight:600;color:var(--tx)">${h.name}</div>
