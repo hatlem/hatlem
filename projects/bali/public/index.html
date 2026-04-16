@@ -32,8 +32,9 @@ a{color:var(--a1);text-decoration:none}
 .main{display:flex;min-height:calc(100vh - 90px)}
 .content{flex:1;padding:1.5rem;max-width:900px;overflow-y:auto}
 .sidebar{width:560px;min-width:480px;border-left:1px solid var(--brd);position:sticky;top:90px;height:calc(100vh - 90px);display:flex;flex-direction:column}
-#map{flex:1;min-height:400px}
-.sidebar-info{padding:0.75rem;background:var(--card);border-top:1px solid var(--brd);font-size:0.82rem;color:var(--dim);max-height:180px;overflow-y:auto}
+.sidebar > div:first-child{flex:1 1 auto;min-height:0;position:relative;display:flex}
+#map{flex:1 1 auto;min-height:0;width:100%;height:100%}
+.sidebar-info{flex:0 0 auto;padding:0.5rem 0.75rem;background:var(--card);border-top:1px solid var(--brd);font-size:0.78rem;color:var(--dim);max-height:100px;overflow-y:auto}
 .sidebar-info h4{color:var(--tx);margin-bottom:0.3rem}
 
 .page{display:none}
@@ -415,20 +416,31 @@ function clearMap() {
 
 function drawRoute() {
   clearMap();
-  DATA.stops.forEach((s, i) => {
+  // Only show stops with valid dates + coordinates
+  const validStops = (DATA.stops || []).filter(s => s.startDate && s.endDate && s.lat && s.lng && s.lat !== 0);
+  if (validStops.length === 0) return;
+
+  validStops.forEach((s, i) => {
+    const color = s.type === 'transport' ? '#a78bfa' : s.type === 'utflukt' ? '#34d399' : (s.color || '#38bdf8');
     const icon = L.divIcon({
       className:'',
-      html:`<div style="width:28px;height:28px;border-radius:50%;background:${s.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#0f172a;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:pointer;">${i+1}</div>`,
+      html:`<div style="width:28px;height:28px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#0f172a;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:pointer;">${i+1}</div>`,
       iconSize:[28,28], iconAnchor:[14,14]
     });
+    const startFmt = new Date(s.startDate).toLocaleDateString('nb-NO', {day:'numeric', month:'short'});
+    const endFmt = s.endDate !== s.startDate ? ' – ' + new Date(s.endDate).toLocaleDateString('nb-NO', {day:'numeric', month:'short'}) : '';
     const m = L.marker([s.lat, s.lng], {icon}).addTo(map)
-      .bindPopup(`<b>${s.name}</b><br><small>${s.dates}</small>`);
+      .bindPopup(`<b>${s.name}</b><br><small>${startFmt}${endFmt}</small>`);
     m.on('click', () => focusOnItem(s.name, s.lat, s.lng, s.desc));
     markers.push(m);
   });
-  const coords = DATA.stops.map(s => [s.lat, s.lng]);
-  polyline = L.polyline(coords, {color:'#38bdf8', weight:2, opacity:0.4, dashArray:'6,6'}).addTo(map);
-  map.fitBounds(polyline.getBounds().pad(0.15));
+  const coords = validStops.map(s => [s.lat, s.lng]);
+  if (coords.length > 1) {
+    polyline = L.polyline(coords, {color:'#38bdf8', weight:2, opacity:0.4, dashArray:'6,6'}).addTo(map);
+    map.fitBounds(polyline.getBounds().pad(0.15));
+  } else {
+    map.setView(coords[0], 12);
+  }
 }
 
 function flyTo(lat, lng, name, detail) {
