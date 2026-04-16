@@ -911,6 +911,8 @@ const KART_FILTER = {
   babyOnly: false,
   kitchenOnly: false,
   minScore: 0,
+  minStars: 0,           // 0 = any, 3, 4, 5
+  minPrice: 0,           // 0 = no limit
   maxPrice: 0,           // 0 = no limit
   viewMode: 'grid',      // grid | list
 };
@@ -948,8 +950,14 @@ function renderKart() {
       </select>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.babyOnly?'checked':''} onchange="setKartFilter('babyOnly',this.checked)"> 👶 Babyvennlig</label>
       <label style="display:inline-flex;align-items:center;gap:0.25rem;cursor:pointer"><input type="checkbox" ${f.kitchenOnly?'checked':''} onchange="setKartFilter('kitchenOnly',this.checked)"> 🍳 Kjøkken</label>
-      <label style="display:inline-flex;align-items:center;gap:0.25rem">Min score: <input type="number" min="0" max="10" step="0.1" value="${f.minScore}" onchange="setKartFilter('minScore',parseFloat(this.value)||0)" style="width:55px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
-      <label style="display:inline-flex;align-items:center;gap:0.25rem">Maks /natt: <input type="number" min="0" step="100" value="${f.maxPrice}" placeholder="0=∞" onchange="setKartFilter('maxPrice',parseInt(this.value)||0)" style="width:75px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem">★ minst: <select onchange="setKartFilter('minStars',parseInt(this.value)||0)" style="background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px">
+        <option value="0" ${f.minStars===0?'selected':''}>Alle</option>
+        <option value="3" ${f.minStars===3?'selected':''}>3+</option>
+        <option value="4" ${f.minStars===4?'selected':''}>4+</option>
+        <option value="5" ${f.minStars===5?'selected':''}>5</option>
+      </select></label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem">Score ≥ <input type="number" min="0" max="10" step="0.1" value="${f.minScore}" onchange="setKartFilter('minScore',parseFloat(this.value)||0)" style="width:55px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
+      <label style="display:inline-flex;align-items:center;gap:0.25rem">Pris/natt: <input type="number" min="0" step="100" value="${f.minPrice}" placeholder="min" onchange="setKartFilter('minPrice',parseInt(this.value)||0)" style="width:65px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"> – <input type="number" min="0" step="100" value="${f.maxPrice}" placeholder="maks" onchange="setKartFilter('maxPrice',parseInt(this.value)||0)" style="width:65px;background:var(--card);color:var(--tx);border:1px solid var(--brd);padding:0.2rem 0.3rem;border-radius:4px"></label>
       <button class="filt-btn" onclick="resetKartFilter()" style="background:var(--card)">Nullstill</button>
     </div>
 
@@ -976,6 +984,11 @@ function renderKart() {
     const best = bestHotelPrice(h);
     const pn = best?.perNight || 0;
     const sc = h.bookingRating ? h.bookingRating+'/10' : (h.googleRating ? 'G'+h.googleRating : '');
+    // Build full review tooltip with all sources and review counts
+    const ttParts = [];
+    if (h.bookingRating) ttParts.push(`Booking: ${h.bookingRating}/10${h.bookingReviews?' ('+h.bookingReviews+' anmeldelser)':''}`);
+    if (h.googleRating) ttParts.push(`Google: ${h.googleRating}/5${h.googleReviews?' ('+h.googleReviews+' anmeldelser)':''}`);
+    const scoreTitle = ttParts.join(' · ') || 'Ingen anmeldelser';
     const statusBadge = `<span class="h-status ${kartStatusClass(h.status)}" style="font-size:0.6rem">${kartStatusLabel(h.status)}</span>`;
     const esc = s => (s||'').replace(/'/g, "\\'");
     const meta = `${h.area} · ${'★'.repeat(h.stars||0)}${h.babyFriendly?' · 👶':''}${(h.features||[]).includes('kjokken')?' · 🍳':''}`;
@@ -983,7 +996,7 @@ function renderKart() {
       html += `<div class="kart-card" onclick="focusOnItem('${esc(h.name)}',${h.lat},${h.lng},'${esc(h.desc)}')" style="background:var(--card);border:1px solid var(--brd);border-radius:6px;padding:0.4rem 0.6rem;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
         <span style="font-weight:600;color:var(--tx);flex:1;min-width:140px">${h.name}</span>
         <span style="color:var(--dim);font-size:0.7rem;min-width:120px">${meta}</span>
-        <span style="color:var(--a1);font-size:0.72rem;min-width:50px;text-align:right">${sc}</span>
+        <span style="color:var(--a1);font-size:0.72rem;min-width:50px;text-align:right;cursor:help" title="${scoreTitle}">${sc}</span>
         <span style="color:var(--a4);font-weight:600;min-width:90px;text-align:right">${pn?pn.toLocaleString('nb-NO')+' kr/n':'—'}</span>
         ${statusBadge}
         ${h.bookingUrl?`<a href="${h.bookingUrl}" target="_blank" onclick="event.stopPropagation()" style="background:#003580;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;text-decoration:none">Book</a>`:''}
@@ -994,7 +1007,7 @@ function renderKart() {
         <div style="color:var(--dim);font-size:0.7rem;margin-top:0.15rem">${meta}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
           <span style="color:var(--a4);font-weight:600">${pn?pn.toLocaleString('nb-NO')+' kr/natt':'—'}</span>
-          <span style="color:var(--a1);font-size:0.72rem">${sc}</span>
+          <span style="color:var(--a1);font-size:0.72rem;cursor:help" title="${scoreTitle}">${sc}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.25rem">
           ${statusBadge}
@@ -1020,10 +1033,10 @@ function filterHotelsForMap() {
       const sc = parseFloat((h.bookingRating||'0').toString().replace(',','.'));
       if (sc < f.minScore) return false;
     }
-    if (f.maxPrice > 0) {
-      const pn = bestHotelPrice(h)?.perNight || 99999;
-      if (pn > f.maxPrice) return false;
-    }
+    if (f.minStars > 0 && (h.stars||0) < f.minStars) return false;
+    const pn = bestHotelPrice(h)?.perNight || 0;
+    if (f.maxPrice > 0 && pn > f.maxPrice) return false;
+    if (f.minPrice > 0 && pn < f.minPrice) return false;
     return true;
   });
 }
@@ -1031,7 +1044,7 @@ function filterHotelsForMap() {
 function toggleKartFilter(key) { KART_FILTER[key] = !KART_FILTER[key]; renderKart(); drawMapFiltered(); }
 function setKartFilter(key, val) { KART_FILTER[key] = val; renderKart(); drawMapFiltered(); }
 function resetKartFilter() {
-  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,maxPrice:0,viewMode:KART_FILTER.viewMode||'grid'});
+  Object.assign(KART_FILTER, {showStops:true,showHotels:true,showActivities:true,area:'all',status:'all',babyOnly:false,kitchenOnly:false,minScore:0,minStars:0,minPrice:0,maxPrice:0,viewMode:KART_FILTER.viewMode||'grid'});
   renderKart(); drawMapFiltered();
 }
 
