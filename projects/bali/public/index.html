@@ -860,7 +860,31 @@ function addStop() {
   });
   renderReiserute(); drawRoute(); autoSave();
 }
-function deleteHotel(idx) { if(confirm('Slett hotell?')){ DATA.hotels.splice(idx,1); renderHotell(); autoSave(); }}
+function deleteHotel(idx) {
+  if(confirm('Slett hotellet permanent?')){
+    DATA.hotels.splice(idx,1);
+    renderHotell();
+    if (typeof renderKart === 'function') renderKart();
+    if (typeof drawMapFiltered === 'function') drawMapFiltered();
+    autoSave();
+  }
+}
+function rejectHotel(idx) {
+  DATA.hotels[idx].status = 'rejected';
+  renderHotell();
+  if (typeof renderKart === 'function') renderKart();
+  if (typeof drawMapFiltered === 'function') drawMapFiltered();
+  renderBudsjett();
+  autoSave();
+}
+function restoreHotel(idx) {
+  DATA.hotels[idx].status = 'considering';
+  renderHotell();
+  if (typeof renderKart === 'function') renderKart();
+  if (typeof drawMapFiltered === 'function') drawMapFiltered();
+  renderBudsjett();
+  autoSave();
+}
 function addHotel() {
   DATA.hotels.push({ id:'h'+Date.now(), name:'Nytt hotell', area:'Område', stars:3, desc:'Beskrivelse', features:[], lat:-8.5, lng:115.3, checkIn:'', checkOut:'', status:'considering', babyFriendly:false, babyNotes:'', bookingRef:'', roomType:'', prices:[] });
   renderHotell(); autoSave();
@@ -1264,12 +1288,16 @@ function renderHotell() {
 
   let html = `<h2>Hotell</h2>`;
 
-  // Filter toggle
+  // Filter toggles
+  const rejectedCount = DATA.hotels.filter(h => h.status === 'rejected').length;
   html += `<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
     <button class="tbtn${window._hotelBabyFilter?' primary':''}" onclick="window._hotelBabyFilter=!window._hotelBabyFilter;renderHotell()">
-      ${window._hotelBabyFilter?'Viser kun baby-vennlige':'Vis kun baby-vennlige'}
+      ${window._hotelBabyFilter?'✓ Kun baby-vennlige':'Baby-vennlige'}
     </button>
-    <span style="font-size:0.75rem;color:var(--dim)">Alle søk inkluderer 2 voksne + 1 barn, og filtrerer på dine reisedatoer</span>
+    <button class="tbtn${window._hotelShowRejected?' primary':''}" onclick="window._hotelShowRejected=!window._hotelShowRejected;renderHotell()">
+      ${window._hotelShowRejected?'✓ Viser avviste':'Avviste'} ${rejectedCount ? '('+rejectedCount+')' : ''}
+    </button>
+    <span style="font-size:0.75rem;color:var(--dim)">2 voksne + 1 barn, filtrert på dine datoer</span>
   </div>`;
 
   // Area search buttons
@@ -1302,6 +1330,7 @@ function renderHotell() {
 
   // Quick comparison table — show ALL hotels, with visual distinction
   let visible = sortedHotels;
+  if (!window._hotelShowRejected) visible = visible.filter(h => h.status !== 'rejected');
   if (window._hotelBabyFilter) visible = visible.filter(h => h.babyFriendly);
   if (visible.length) {
     html += `<table class="cmp-tbl"><thead><tr><th>Hotell</th><th>Område</th><th>★</th><th>Baby</th><th>Netter</th><th>Pris/natt</th><th>Total</th><th>Status</th><th>Rating</th><th>Book</th></tr></thead><tbody>`;
@@ -1332,8 +1361,10 @@ function renderHotell() {
     html += `</tbody></table>`;
   }
 
-  // Detailed cards — same sort order as table, show all
-  const cardsToShow = window._hotelBabyFilter ? sortedHotels.filter(h => h.babyFriendly) : sortedHotels;
+  // Detailed cards — filter by baby-friendly and rejected state
+  let cardsToShow = sortedHotels;
+  if (!window._hotelShowRejected) cardsToShow = cardsToShow.filter(h => h.status !== 'rejected');
+  if (window._hotelBabyFilter) cardsToShow = cardsToShow.filter(h => h.babyFriendly);
   cardsToShow.forEach(h => {
     const i = DATA.hotels.indexOf(h);
     const nights = calcNights(h.checkIn, h.checkOut);
@@ -1346,7 +1377,12 @@ function renderHotell() {
         <img src="${imgSrc}" alt="${h.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
         <span class="map-pin" style="background:rgba(15,23,42,0.7);border-radius:6px;padding:2px 6px">📍</span>
         <button onclick="event.stopPropagation();toggleHotelLike(${i})" title="${h.liked?'Fjern hjerte':'Hjerte dette'}" style="position:absolute;top:0.4rem;right:2.4rem;background:rgba(15,23,42,0.7);border:none;border-radius:50%;cursor:pointer;font-size:1rem;padding:3px 6px;line-height:1;z-index:5">${h.liked?'❤️':'🤍'}</button>
-        <span class="del-btn" onclick="event.stopPropagation();deleteHotel(${i})" style="background:rgba(15,23,42,0.7);border-radius:50%;padding:3px 7px">✕</span>
+        ${h.status === 'rejected' ? `
+          <button onclick="event.stopPropagation();restoreHotel(${i})" title="Gjenopprett" style="position:absolute;top:0.4rem;right:4.4rem;background:rgba(15,23,42,0.7);border:none;border-radius:50%;cursor:pointer;font-size:0.85rem;padding:4px 8px;line-height:1;z-index:5;color:var(--a4)">↺</button>
+          <button onclick="event.stopPropagation();deleteHotel(${i})" title="Slett permanent" class="del-btn" style="background:rgba(239,68,68,0.3);border-radius:50%;padding:3px 7px;opacity:1">🗑</button>
+        ` : `
+          <button onclick="event.stopPropagation();rejectHotel(${i})" title="Fjern fra listen (kan gjenopprettes)" class="del-btn" style="background:rgba(15,23,42,0.7);border-radius:50%;padding:3px 7px;opacity:0.6">✕</button>
+        `}
       </div>
       <div style="padding:0.75rem 1rem">
       <div style="font-size:0.72rem;color:var(--a1);font-weight:600">
