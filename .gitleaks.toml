@@ -1,0 +1,16 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowed patterns"
+paths = [
+    '''\.env\.example''',
+    '''\.env\..*\.example''',
+    '''\.env\.template''',
+    '''\.env\.sample''',
+    '''package-lock\.json''',
+    '''pnpm-lock\.yaml''',
+    '''yarn\.lock''',
+    '''bun\.lockb''',
+    '''(^|/)node_modules/''',
+]
