@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Bursdagsmoro</title>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="cake" aria-hidden="true">🎂</div>
+    <h1><span class="gradient-text" id="title">Bursdagsmoro</span></h1>
+    <p>Velg hva du vil lage. Resultatet vises på storskjermen!</p>
+  </section>
+
+  <nav class="choices">
+    <a class="choice c-drawing" href="/tegning">
+      <div class="icon" aria-hidden="true">🖍️</div>
+      <div><h2>Tegning blir film</h2><p>Ta bilde av tegningen din, så blir den levende</p></div>
+    </a>
+    <a class="choice c-song" href="/sang">
+      <div class="icon" aria-hidden="true">🎤</div>
+      <div><h2>Lag en sang</h2><p>Din egen låt havner i spillelisten på festen</p></div>
+    </a>
+    <a class="choice c-selfie" href="/selfie">
+      <div class="icon" aria-hidden="true">🤳</div>
+      <div><h2>Selfie med effekt</h2><p>En tiger rundt deg, bli et spøkelse og mer</p></div>
+    </a>
+  </nav>
+</main>
+<script src="/common.js"></script>
+<script>
+  Party.config().then((c) => { document.getElementById('title').textContent = c.partyTitle; document.title = c.partyTitle; });
+</script>
+</body>
+</html>

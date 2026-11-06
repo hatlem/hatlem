@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Selfie med effekt</title>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><a class="back" href="/">‹ Tilbake</a></div>
+  <h1>🤳 Selfie med effekt</h1>
+  <p class="hint">Velg effekt, ta en selfie, og se deg selv på storskjermen!</p>
+
+  <form id="f">
+    <div class="card">
+      <div class="step">1 · Velg effekt</div>
+      <div id="effects"></div>
+    </div>
+
+    <div class="card">
+      <div class="step">2 · Ta selfie</div>
+      <p class="hint" style="margin-top:0">Tips: Ha litt luft rundt deg i bildet, så får tigeren plass 🐯</p>
+      <label class="photo-drop" id="drop">
+        <div><div class="big">🤳</div><strong>Trykk for å ta selfie</strong></div>
+        <input type="file" name="image" accept="image/*" capture="user" required>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="step">3 · Hva heter du?</div>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
+    </div>
+
+    <button class="btn" id="go" type="submit" disabled>✨ Gi meg effekten!</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+</main>
+<script src="/common.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  let file = null;
+  Party.demoBanner('video');
+  Party.rememberName(document.getElementById('name'));
+  Party.config().then((c) => {
+    const pre = new URLSearchParams(location.search).get('effekt');
+    const idx = Math.max(0, c.selfieEffects.findIndex((e) => e.id === pre));
+    Party.chips(document.getElementById('effects'), 'effect', c.selfieEffects, { checked: idx });
+  });
+  Party.photoPicker(document.getElementById('drop'), (f) => { file = f; go.disabled = false; });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!file) return;
+    go.disabled = true; go.textContent = '⏳ Laster opp …';
+    document.getElementById('err').textContent = '';
+    try {
+      const fd = new FormData();
+      fd.append('image', await Party.shrinkImage(file), 'selfie.jpg');
+      fd.append('effect', form.effect.value);
+      fd.append('name', form.name.value);
+      fd.append('deviceId', Party.deviceId());
+      const { id } = await Party.submit('/api/selfie', fd);
+      location.href = '/status/' + id;
+    } catch (err) {
+      document.getElementById('err').textContent = err.message;
+      go.disabled = false; go.textContent = '✨ Gi meg effekten!';
+    }
+  });
+</script>
+</body>
+</html>

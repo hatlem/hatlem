@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/style.css">
+<title>Admin</title>
+<style>
+  .item { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--card); margin-bottom: 10px; }
+  .item.hidden { opacity: .4; }
+  .thumb { width: 72px; height: 72px; border-radius: 12px; background: #000 center/cover; display: grid; place-items: center; font-size: 32px; }
+  .item small { color: var(--muted); display: block; }
+  .acts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .acts button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,.15); color: var(--text); }
+  .s-failed { color: var(--danger); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>🛠️ Admin</h1>
+  <p class="hint">Skjul ting fra storskjermen, eller flytt en sang først i køen.</p>
+  <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
+  <div id="list"></div>
+</main>
+<script src="/common.js"></script>
+<script>
+  const esc = Party.esc;
+  let key = sessionStorage.getItem('bursdag-admin') || '';
+  const api = (url, opts = {}) => fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-key': key } });
+
+  async function load() {
+    const r = await api('/api/admin/jobs');
+    if (!r.ok) { document.getElementById('err').textContent = (await r.json()).error; document.getElementById('login').hidden = false; return; }
+    document.getElementById('login').hidden = true;
+    const { jobs, queue, nowPlaying } = await r.json();
+    document.getElementById('list').innerHTML = jobs.map((j) => {
+      const img = (j.result && (j.result.imageUrl)) || j.inputUrl;
+      const q = queue.indexOf(j.id);
+      return `<div class="item ${j.hidden ? 'hidden' : ''}">
+        <div class="thumb" style="${img ? `background-image:url('${esc(img)}')` : ''}">${img ? '' : esc(j.emoji || '🎵')}</div>
+        <div><strong>${esc(j.emoji || '')} ${esc(j.label)}</strong> · ${esc(j.guest || 'anonym')}
+          <small><span class="s-${esc(j.status)}">${esc(j.status)}</span>${j.error ? ' · ' + esc(j.error) : ''}${j.id === nowPlaying ? ' · 🔊 spilles nå' : q >= 0 ? ' · kø #' + (q + 1) : ''}${j.result && j.result.videoUrl ? ` · <a href="${esc(j.result.videoUrl)}" target="_blank">video</a>` : ''}${j.result && j.result.audioUrl ? ` · <a href="${esc(j.result.audioUrl)}" target="_blank">lyd</a>` : ''}</small>
+          <div class="acts">
+            <button data-id="${esc(j.id)}" data-a="${j.hidden ? 'show' : 'hide'}">${j.hidden ? '👁️ Vis' : '🙈 Skjul'}</button>
+            ${j.type === 'song' && j.status === 'done' ? `<button data-id="${esc(j.id)}" data-a="play-next">⏭️ Spill neste</button>` : ''}
+          </div></div></div>`;
+    }).join('') || '<p class="hint">Ingenting ennå.</p>';
+  }
+  document.getElementById('list').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a]');
+    if (!b) return;
+    await api('/api/admin/jobs/' + b.dataset.id, { method: 'POST', body: JSON.stringify({ action: b.dataset.a }) });
+    load();
+  });
+  document.getElementById('login').addEventListener('submit', (e) => { e.preventDefault(); key = document.getElementById('k').value.trim(); sessionStorage.setItem('bursdag-admin', key); load(); });
+  if (key) load();
+  setInterval(() => { if (key && document.getElementById('login').hidden) load(); }, 10000);
+</script>
+</body>
+</html>
