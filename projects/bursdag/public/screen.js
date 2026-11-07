@@ -229,8 +229,12 @@
       quizState = { key: null };
       pollQuiz();
       quizTimer = setInterval(pollQuiz, 700);
-    } else if (t.mode === 'finale') {
+    } else if (t.mode === 'finale' || t.mode === 'film') {
       renderFinale(el, t);
+    } else if (t.mode === 'stamp') {
+      renderDraw(el, t);
+    } else if (t.mode === 'favorites') {
+      renderFavorites(el, t);
     }
   }
 
@@ -238,7 +242,9 @@
     const f = t.finale;
     if (!f) { el.innerHTML = '<div><div class="huge">🎬</div><h1>Finalen er ikke klar</h1></div>'; return; }
     const title = (f.song && f.song.result && f.song.result.title) || 'Bursdagssangen';
-    el.innerHTML = `<div><div class="huge">🎬</div><h1 class="gradient-text">Verdenspremiere!</h1><p>${esc(birthdayName)} synger «${esc(title)}»${f.song && f.song.guest ? `, laget av ${esc(f.song.guest)}` : ''}</p></div>`;
+    el.innerHTML = f.heading
+      ? `<div><div class="huge">🎞️</div><h1 class="gradient-text">${esc(f.heading.replace(/^\S+\s/, ''))}</h1><p>${esc(f.sub || '')}</p></div>`
+      : `<div><div class="huge">🎬</div><h1 class="gradient-text">Verdenspremiere!</h1><p>${esc(birthdayName)} synger «${esc(title)}»${f.song && f.song.guest ? `, laget av ${esc(f.song.guest)}` : ''}</p></div>`;
     const key = shownTakeover;
     const startAt = t.startAt || Date.now() + 4000;
     const elapsed = () => (Date.now() + serverOffset - startAt) / 1000;
@@ -277,6 +283,53 @@
     };
     const wait = Math.max(0, startAt - (Date.now() + serverOffset));
     setTimeout(begin, wait);
+  }
+
+  // ------------------------------------------------------------------ stempelkort-trekning
+  function renderDraw(el, t) {
+    if (!t.winner) {
+      el.innerHTML = '<div><div class="huge">🎟️</div><h1>Ingen har fullt stempelkort ennå</h1><p>Lag tegning, sang og selfie for å bli med!</p></div>';
+      return;
+    }
+    el.innerHTML = `<div><div class="huge">🎟️</div><h1>Stempelkort-trekningen</h1><div class="spin-name" id="spinName" style="font-size:7vw;font-weight:800;min-height:1.2em"></div><p>${t.count} med i trekningen</p></div>`;
+    const key = shownTakeover;
+    const names = t.names.length ? t.names : [t.winner];
+    let n = 0, delay = 60;
+    const spin = () => {
+      if (shownTakeover !== key) return;
+      const sp = $('spinName');
+      if (!sp) return;
+      sp.textContent = names[n++ % names.length];
+      delay *= 1.12;
+      if (delay < 650) setTimeout(spin, delay);
+      else setTimeout(() => {
+        if (shownTakeover !== key) return;
+        el.innerHTML = `<div><div class="huge">🏆</div><div class="gradient-text" style="font-size:8vw;font-weight:800;animation:pop .8s cubic-bezier(.2,1.6,.4,1)">${esc(t.winner)}</div><p>har vunnet stempelkort-trekningen! 🎉</p></div>`;
+        Party.confetti(220);
+      }, 500);
+    };
+    spin();
+  }
+
+  // ------------------------------------------------------------------ kveldens favoritter (3 → 2 → 1)
+  function renderFavorites(el, t) {
+    const top = (t.top || []).slice(0, 3);
+    if (!top.length) { el.innerHTML = '<div><div class="huge">❤️</div><h1>Ingen hjerter ennå</h1><p>Gi hjerter i galleriet på mobilen!</p></div>'; return; }
+    const key = shownTakeover;
+    const order = top.map((x, i) => ({ ...x, place: i + 1 })).reverse(); // vis nr. 3 først
+    el.innerHTML = `<div><div class="huge">❤️</div><h1 class="gradient-text">Kveldens favoritter</h1><p>Det dere har gitt flest hjerter</p></div>`;
+    let i = 0;
+    const show = () => {
+      if (shownTakeover !== key) return;
+      if (i >= order.length) return;
+      const f = order[i++];
+      const r = f.result || {};
+      const media = r.videoUrl ? `<video src="${esc(r.videoUrl)}" autoplay muted loop playsinline></video>` : `<img src="${esc(r.imageUrl || f.inputUrl)}" alt="">`;
+      el.innerHTML = `<div class="fav"><div class="rank">${['🥇 Nr. 1', '🥈 Nr. 2', '🥉 Nr. 3'][f.place - 1]} · ❤️ ${f.votes}</div>${media}<div class="who">${esc(f.emoji || '')} ${esc(f.label)}<small>${f.type === 'drawing' ? 'Tegnet av' : 'Med'} ${esc(f.guest || 'en hemmelig gjest')}</small></div></div>`;
+      if (f.place === 1) Party.confetti(220);
+      setTimeout(show, 9000);
+    };
+    setTimeout(show, 3000);
   }
 
   // ------------------------------------------------------------------ live-quiz
@@ -367,6 +420,7 @@
     if (player) player.claim();
   });
 
+  Party.reactFloat($('floatLayer'));
   refresh();
   setInterval(refresh, 2000);
 })();

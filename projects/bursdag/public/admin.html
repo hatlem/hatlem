@@ -81,9 +81,12 @@
         <button data-mode="cake">🎂 Kaketid</button>
         <button data-mode="greetings">💌 Les hilsener</button>
         <button data-mode="finale" id="finaleBtn" disabled>🎬 Vis finalen</button>
-        <button data-mode="off">⏹️ Tilbake til vanlig</button>
+        <button data-mode="stamp">🎟️ Trekk stempelkort</button>
+        <button data-mode="favorites">❤️ Kveldens favoritter</button>
+        <button data-mode="film" id="filmBtn" disabled>🎞️ Vis kveldens film</button>
+        <button data-mode="off" style="grid-column:1/-1">⏹️ Tilbake til vanlig</button>
       </div>
-      <p class="hint" style="margin:6px 0 0">Musikken stopper under kake, hilsener og finale, og senkes under quizen.</p>
+      <p class="hint" style="margin:6px 0 0" id="hlInfo">Musikken stopper under kake, hilsener, finale og film, og senkes under quiz, trekning og favoritter.</p>
     </section>
 
     <section class="card">
@@ -108,6 +111,13 @@
       <p></p>
       <button class="btn" id="fGo" type="button">🎬 Lag musikkvideo</button>
       <p class="hint" id="fStatus"></p>
+    </section>
+
+    <section class="card">
+      <div class="step">🎞️ Kveldens film</div>
+      <p class="hint" style="margin-top:0">Syr sammen alle godkjente filmer og selfies (opptil 40 klipp à 5 sek) med gjestesangene under. Tar noen minutter. Kan vises på storskjermen og lastes ned fra galleriet.</p>
+      <button class="btn secondary" id="filmGo" type="button">🎞️ Lag kveldens film</button>
+      <p class="hint" id="filmStatus" style="margin-bottom:0"></p>
     </section>
 
     <section class="card">
@@ -194,6 +204,16 @@
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     renderQuiz(p.kahoot);
     renderHelp(p.help || []);
+    document.getElementById('hlInfo').textContent = `🎟️ ${p.stamps} med fullt stempelkort · ❤️ ${p.topVotes.length ? 'Toppen nå: ' + p.topVotes.slice(0, 3).map((x) => `${x.label} (${x.guest || 'anonym'}) ${x.votes}`).join(', ') : 'ingen hjerter ennå'}`;
+    const fm = p.film;
+    document.getElementById('filmBtn').disabled = !(fm && fm.status === 'done');
+    document.getElementById('filmGo').disabled = !p.filmAvailable || (fm && fm.status === 'working');
+    document.getElementById('filmStatus').innerHTML = !p.filmAvailable ? '⚠️ ffmpeg mangler på serveren (installeres automatisk på Railway via nixpacks.toml).'
+      : !fm ? '' : fm.status === 'working' ? `⏳ Lager filmen … ${Math.round((fm.progress || 0) * 100)} %`
+      : fm.status === 'done' ? `✅ Ferdig: ${fm.clips} klipp, ${Math.round(fm.seconds)} sek · <a href="${esc(fm.url)}" target="_blank">se filmen</a> · trykk «Vis kveldens film» over`
+      : '❌ ' + esc(fm.error || 'Feilet');
+    clearTimeout(filmTimer);
+    if (fm && fm.status === 'working') filmTimer = setTimeout(loadParty, 2000);
     const exName = { drawing: 'Tegnestiler', selfie: 'Selfie-effekter' };
     document.getElementById('exStatus').textContent = p.examples.filter((e) => e.total).map((e) =>
       `${exName[e.kind]}: ${e.done} ferdig${e.working ? `, ${e.working} lages` : ''}${e.failed ? `, ${e.failed} feilet` : ''}`).join(' · ');
@@ -256,6 +276,14 @@
   }
   document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
   document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
+  let filmTimer;
+  document.getElementById('filmGo').addEventListener('click', async () => {
+    if (!confirm('Lage kveldens film nå? Det tar noen minutter, og du kan lage den på nytt senere.')) return;
+    const r = await api('api/admin/film', { method: 'POST', body: '{}' });
+    if (!r.ok) alert((await r.json().catch(() => ({}))).error || 'Feil');
+    loadParty();
+  });
+
   // --- Hjelpeforespørsler fra gjester ---
   const PAGE = { forside: 'forsiden', tegning: 'tegning', sang: 'sang', selfie: 'selfie', quiz: 'quiz', hilsen: 'hilsen', status: 'venter på resultat' };
   let seenHelp = null;

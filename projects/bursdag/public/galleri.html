@@ -24,6 +24,12 @@
   .cell { position: relative; aspect-ratio: 1; overflow: hidden; cursor: pointer; background: var(--card); border: 0; padding: 0; color: var(--text); font: inherit; border-radius: 4px; }
   .cell img, .cell video { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
   .cell:hover img, .cell:hover video { transform: scale(1.04); }
+  .cell .hearts { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,.6); border-radius: 999px; padding: 2px 8px; font-size: 13px; font-weight: 800; }
+  .lb-heart { width: auto !important; padding: 0 14px; border-radius: 999px !important; font-weight: 800; font-size: 17px !important; gap: 6px; display: flex !important; }
+  .lb-heart.on { background: #ff4f7b !important; }
+  .lb-heart.pop { animation: heart-pop .4s ease; }
+  @keyframes heart-pop { 50% { transform: scale(1.25); } }
+  .vote-hint { text-align: center; color: var(--muted); font-size: 14px; margin: 6px 0 0; }
   .cell .badge { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.6); border-radius: 999px; padding: 2px 8px; font-size: 13px; }
   .cell .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; font-size: 13px; font-weight: 700; text-align: left; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
   .cell.greet { display: flex; flex-direction: column; justify-content: center; padding: 12px; text-align: left; background: linear-gradient(135deg, rgba(255,79,163,.35), rgba(62,230,216,.25)); }
@@ -71,6 +77,7 @@
     </div>
     <a class="dl" href="api/gallery/zip" download>⬇️ Last ned alt</a>
   </div>
+  <p class="vote-hint">❤️ Trykk på en film og gi den et hjerte. De mest likte vises som «Kveldens favoritter»!</p>
   <div id="groups"></div>
 </main>
 
@@ -78,6 +85,7 @@
   <div class="lb-top">
     <button class="lb-btn" id="lbClose" aria-label="Lukk">✕</button>
     <div class="info"><b id="lbTitle"></b><small id="lbBy"></small></div>
+    <button class="lb-btn lb-heart" id="lbHeart" aria-label="Gi et hjerte" hidden>🤍 <span>0</span></button>
     <button class="lb-btn" id="lbShare" aria-label="Del" hidden>📤</button>
     <a class="lb-btn" id="lbDl" aria-label="Last ned" download>⬇️</a>
   </div>
@@ -93,6 +101,8 @@
   const esc = Party.esc;
   const $ = (id) => document.getElementById(id);
   let items = [], shown = [], filter = 'all', pos = -1;
+  const mine = new Set();
+  const votable = (j) => j.type === 'drawing' || j.type === 'selfie';
   const time = (t) => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
   const by = (j) => (j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : j.type === 'greeting' ? 'Fra ' : 'Av ') + j.guest : 'Anonym') + ' · ' + time(j.createdAt);
   const mediaUrl = (j) => { const r = j.result || {}; return r.videoUrl || r.audioUrl || r.imageUrl || j.inputUrl || ''; };
@@ -106,7 +116,8 @@
     else if (r.videoUrl) inner = '<video src="' + esc(r.videoUrl) + '#t=0.5" muted playsinline preload="metadata"></video>';
     else inner = '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="" loading="lazy">';
     const badge = j.type === 'song' ? '🎵' : r.videoUrl ? '▶︎' : '';
-    return '<button class="cell ' + (j.type === 'song' ? 'song' : '') + '" data-i="' + i + '">' + inner + (badge ? '<span class="badge">' + badge + '</span>' : '') + '<span class="cap">' + esc(titleOf(j)) + '</span></button>';
+    const hearts = votable(j) && j.votes ? '<span class="hearts">' + (mine.has(j.id) ? '❤️' : '🤍') + ' ' + j.votes + '</span>' : '';
+    return '<button class="cell ' + (j.type === 'song' ? 'song' : '') + '" data-i="' + i + '">' + inner + (badge ? '<span class="badge">' + badge + '</span>' : '') + hearts + '<span class="cap">' + esc(titleOf(j)) + '</span></button>';
   }
 
   function render() {
@@ -135,13 +146,30 @@
     $('lbTitle').textContent = titleOf(j);
     $('lbBy').textContent = by(j);
     $('lbCount').textContent = (pos + 1) + ' av ' + shown.length;
+    renderHeart(j);
     const url = mediaUrl(j);
     $('lbDl').hidden = j.type === 'greeting' || !url;
     $('lbDl').href = url;
     $('lb').hidden = false;
     document.body.style.overflow = 'hidden';
   }
-  function close() { $('lb').hidden = true; $('lbStage').innerHTML = ''; document.body.style.overflow = ''; }
+  function renderHeart(j) {
+    const h = $('lbHeart');
+    h.hidden = !votable(j);
+    h.classList.toggle('on', mine.has(j.id));
+    h.innerHTML = (mine.has(j.id) ? '❤️' : '🤍') + ' <span>' + (j.votes || 0) + '</span>';
+  }
+  $('lbHeart').addEventListener('click', async () => {
+    const j = shown[pos];
+    const r = await fetch('api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: j.id, deviceId: Party.deviceId() }) }).then((x) => x.json()).catch(() => null);
+    if (!r) return;
+    j.votes = r.votes;
+    if (r.mine) mine.add(j.id); else mine.delete(j.id);
+    renderHeart(j);
+    $('lbHeart').classList.remove('pop'); void $('lbHeart').offsetWidth; $('lbHeart').classList.add('pop');
+    if (r.mine && navigator.vibrate) navigator.vibrate(20);
+  });
+  function close() { $('lb').hidden = true; $('lbStage').innerHTML = ''; document.body.style.overflow = ''; render(); }
 
   $('groups').addEventListener('click', (e) => { const c = e.target.closest('.cell'); if (c) open(Number(c.dataset.i)); });
   $('lbClose').addEventListener('click', close);
@@ -188,16 +216,21 @@
     render();
   });
 
-  fetch('api/gallery').then((r) => r.json()).then((d) => {
+  Promise.all([fetch('api/gallery').then((r) => r.json()), fetch('api/votes/mine?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).catch(() => ({ ids: [] }))]).then(([d, v]) => {
+    v.ids.forEach((id) => mine.add(id));
     items = d.items.slice().reverse(); // nyeste først, som i en fotoapp
     $('title').textContent = d.partyTitle;
     document.title = 'Galleri · ' + d.partyTitle;
     const n = (t) => d.items.filter((j) => j.type === t).length;
     const word = (t, one, many) => n(t) && n(t) + ' ' + (n(t) === 1 ? one : many);
     $('sub').textContent = [word('drawing', 'tegning', 'tegninger'), word('selfie', 'selfie', 'selfies'), word('song', 'sang', 'sanger'), word('greeting', 'hilsen', 'hilsener')].filter(Boolean).join(' · ') || 'Alt som ble laget på festen';
+    if (d.film) {
+      $('finale').hidden = false;
+      $('finale').innerHTML = '<h2>🎞️ Kveldens film</h2><video src="' + esc(d.film.url) + '" controls playsinline preload="metadata"></video><p><a class="btn secondary" href="' + esc(d.film.url) + '" download>⬇️ Last ned kveldens film</a></p>';
+    }
     if (d.finale && d.finale.lipsync) {
       $('finale').hidden = false;
-      $('finale').innerHTML = '<h2>🎬 Finalen</h2><video src="' + esc(d.finale.videoUrl) + '" controls playsinline></video>';
+      $('finale').innerHTML += '<h2>🎬 Finalen</h2><video src="' + esc(d.finale.videoUrl) + '" controls playsinline></video>';
     }
     render();
   });

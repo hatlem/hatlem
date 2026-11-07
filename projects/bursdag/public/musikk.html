@@ -79,6 +79,7 @@
 </div>
 <div class="status" id="status"></div>
 <div class="intro" id="intro"></div>
+<div class="float-layer" id="floatLayer"></div>
 <div class="offline" id="offline" hidden>⚠️ Mistet kontakt med serveren, prøver igjen …</div>
 <div class="start" id="start">
   <div>
@@ -90,6 +91,7 @@
 
 <script src="common.js"></script>
 <script src="player.js"></script>
+<script src="reactfloat.js"></script>
 <script>
 (function () {
   const esc = Party.esc;
@@ -126,7 +128,7 @@
   }
   function fromReport() {
     const rep = data && data.playing;
-    if (!rep || !rep.now) return { now: null, finale: data && data.takeover && data.takeover.mode === 'finale' };
+    if (!rep || !rep.now) return { now: null, finale: data && data.takeover && ['finale', 'film'].includes(data.takeover.mode) };
     const pos = rep.position + (rep.paused ? 0 : (Date.now() - fetchedAt) / 1000);
     let lines = [];
     if (lyrics.id === rep.now.id && lyrics.lines.length && rep.duration) {
@@ -234,6 +236,7 @@
   });
   document.body.addEventListener('click', () => { if (player && player.started && !player.active) player.claim(); });
 
+  Party.reactFloat($('floatLayer'));
   refresh();
   setInterval(refresh, 2000);
 })();

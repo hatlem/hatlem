@@ -34,17 +34,45 @@
     </a>
   </nav>
 
+  <section class="stamps" id="stamps" hidden>
+    <h3 id="stampTitle">🎟️ Stempelkort</h3>
+    <div class="stamp-row">
+      <a class="stamp" id="st-drawing" href="tegning" aria-label="Tegning">🖍️</a>
+      <a class="stamp" id="st-song" href="sang" aria-label="Sang">🎤</a>
+      <a class="stamp" id="st-selfie" href="selfie" aria-label="Selfie">🤳</a>
+    </div>
+    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved kaka!</p>
+  </section>
+
   <h3 class="more-title">Mer moro</h3>
   <nav class="more">
     <a href="quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
     <a href="hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
+    <a href="galleri" style="grid-column:1/-1"><span aria-hidden="true">📸</span><em>Se alt som er laget, og gi hjerter ❤️</em></a>
   </nav>
+
+  <div id="react"></div>
 
   <p class="program" id="program" hidden></p>
 </main>
 <script src="common.js"></script>
 <script src="help.js"></script>
+<script src="reactions.js"></script>
 <script>
+  Party.reactions(document.getElementById('react'));
+  fetch('api/stamps?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).then((s) => {
+    const box = document.getElementById('stamps');
+    box.hidden = false;
+    let n = 0;
+    for (const t of ['drawing', 'song', 'selfie']) { document.getElementById('st-' + t).classList.toggle('done', !!s[t]); if (s[t]) n++; }
+    if (s.complete) {
+      box.classList.add('complete');
+      document.getElementById('stampTitle').textContent = '🎟️ Du er med i trekningen!';
+      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på storskjermen ved kaka. Så langt er ${s.entries} med.`;
+    } else if (n) {
+      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved kaka 🎂`;
+    }
+  }).catch(() => {});
   Party.config().then((c) => {
     document.getElementById('title').textContent = c.partyTitle;
     document.title = c.partyTitle;

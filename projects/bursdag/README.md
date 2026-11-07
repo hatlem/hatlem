@@ -13,6 +13,13 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 - 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
+## Mer moro: reaksjoner, stempelkort, hjerter og kveldens film
+
+- **Emoji-reaksjoner:** på forsiden og statussiden trykker gjestene ❤️😂🔥🎉 og mer, og emojiene flyr opp over begge skjermene. Maks 15 per 10 sekunder per mobil.
+- **Stempelkort:** forsiden viser 🖍️ 🎤 🤳. Med alle tre er man med i trekningen. Admin → «🎟️ Trekk stempelkort» ruller navnene på storskjermen og viser vinneren.
+- **Hjerter:** i galleriet kan man gi ❤️ til filmer og selfies, ett per mobil. Admin → «❤️ Kveldens favoritter» viser topp 3 på storskjermen (nr. 3, så 2, så 1 med konfetti).
+- **Kveldens film:** Admin → «🎞️ Lag kveldens film» syr sammen opptil 40 klipp à 5 sekunder (1280×720) med gjestesangene under, og toner ut på slutten. Vis den med «🎞️ Vis kveldens film». Mobilen spiller lyden i takt med storskjermen. Filmen ligger øverst i galleriet og i zip-fila. Den krever ffmpeg, som `nixpacks.toml` installerer på Railway.
+
 ## Hjelp til de som står fast
 
 - **Sang:**

@@ -20,6 +20,8 @@
     <div class="progress"><div id="bar"></div></div>
     <p class="hint">Du kan lukke siden. Resultatet dukker opp på storskjermen!</p>
   </div>
+  <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
+  <div id="react"></div>
   <div id="actions" class="row" hidden>
     <a class="btn secondary" href="./">🏠 Forsiden</a>
     <a class="btn secondary" id="again" href="./">🔁 Lag en til</a>
@@ -27,6 +29,7 @@
 </main>
 <script src="common.js"></script>
 <script src="help.js"></script>
+<script src="reactions.js"></script>
 <script>
   const id = location.pathname.split('/').pop();
   const box = document.getElementById('box');
@@ -71,6 +74,7 @@
     }
     done = true;
     Party.confetti();
+    showStamps();
     const r = job.result || {};
     let html = '<h2>Ferdig! 🎉</h2>';
     if (job.type === 'song') {
@@ -103,6 +107,18 @@
       render(job);
     } catch { /* nettverk hikker, prøv igjen */ }
     if (!done) setTimeout(tick, 3000);
+  }
+  Party.reactions(document.getElementById('react'));
+  function showStamps() {
+    fetch('api/stamps?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).then((s) => {
+      const n = ['drawing', 'song', 'selfie'].filter((t) => s[t]).length;
+      if (!n) return;
+      const left = { drawing: '🖍️ tegning', song: '🎤 sang', selfie: '🤳 selfie' };
+      const missing = ['drawing', 'song', 'selfie'].filter((t) => !s[t]).map((t) => left[t]);
+      document.getElementById('stampMsg').textContent = s.complete ? '🎟️ Alle tre stempler! Du er med i trekningen ved kaka.' : `🎟️ ${n} av 3 stempler. Mangler: ${missing.join(' og ')}`;
+      document.getElementById('stampLine').hidden = false;
+      if (s.complete) document.getElementById('stampLine').classList.add('complete');
+    }).catch(() => {});
   }
   tick();
   // Oppdater køplass jevnlig etter at sangen er ferdig
