@@ -66,6 +66,8 @@
   .muted { color: var(--muted); font-size: 1.1vw; }
   .working { margin-top: auto; margin-bottom: .4vw; font-size: 1.2vw; color: var(--muted); }
   .working b { color: var(--cyan); }
+  .making { font-size: 1.1vw; color: var(--text); padding: .15vw 0; }
+  .making small { color: var(--muted); margin-left: .3vw; }
 
   .toast { position: fixed; top: 2vw; left: 50%; transform: translate(-50%, -200%); z-index: 20; background: linear-gradient(90deg, var(--pink), var(--violet)); padding: 1vw 2vw; border-radius: 999px; font-size: 1.8vw; font-weight: 800; transition: transform .5s cubic-bezier(.2,1.4,.4,1); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
   .toast.show { transform: translate(-50%, 0); }
@@ -344,7 +346,11 @@
       ? data.queue.slice(0, 4).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
       : '<li class="muted">Tom kø. Skann og lag en sang!</li>';
     renderProgram();
-    document.getElementById('working').innerHTML = data.working ? `⚙️ <b>${data.working}</b> kreasjon${data.working === 1 ? '' : 'er'} lages akkurat nå …` : '';
+    const making = data.making || [];
+    document.getElementById('working').innerHTML = making.length
+      ? '<h2>Lages nå</h2>' + making.map((m) => `<div class="making">${esc(m.emoji || '✨')} ${esc(m.guest || 'En gjest')} <small>${m.waiting ? 'i kø' : esc(m.label)}</small></div>`).join('') +
+        (data.working > making.length ? `<div class="making"><small>+ ${data.working - making.length} til …</small></div>` : '')
+      : '';
   }
 
   // ---------------------------------------------------------------- program

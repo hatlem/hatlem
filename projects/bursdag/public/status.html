@@ -53,6 +53,13 @@
       again.textContent = '🔁 Prøv igjen';
       return;
     }
+    if (job.status === 'waiting' && job.waitPosition) {
+      msg.textContent = job.waitPosition === 1
+        ? 'Du er neste i køen hos filmstudioet 🎬'
+        : 'Du er nr. ' + job.waitPosition + ' i køen hos filmstudioet 🎬 (ca. ' + job.waitMinutes + ' min)';
+      bar.style.width = '4%';
+      return;
+    }
     if (job.status !== 'done') {
       const list = MSGS[job.type] || MSGS.drawing;
       const secs = (Date.now() - start) / 1000;

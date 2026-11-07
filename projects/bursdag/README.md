@@ -74,6 +74,18 @@ API-klienten i `lib/higgsfield.js` følger den offisielle SDK-en `higgsfield-cli
 
 Standardmodellen er `higgsfield-ai/dop/standard`. Sjekk modellnavn og parametere i Higgsfield-konsollen, og bytt med `HF_VIDEO_MODEL`, `HF_VIDEO_EXTRA`, `HF_IMAGE_FIELD` og `HF_PROMPT_FIELD` uten å endre kode.
 
+### Kø hos Higgsfield
+
+Higgsfield-kontoen har en grense for hvor mange videoer som kan lages samtidig (Creator-pakken: 8). Appen sender aldri flere enn `HF_MAX_CONCURRENT` (standard 8). Resten venter i appens egen kø og starter automatisk når en plass blir ledig.
+
+- Gjesten ser «Du er nr. 3 i køen hos filmstudioet (ca. 2 min)».
+- Storskjermen viser «Lages nå».
+- Admin viser hvor mange av de 8 plassene som er i bruk.
+- Køen overlever en omstart av serveren.
+- Hvis Higgsfield likevel svarer at kontoen er full, legges jobben tilbake i køen og prøves på nytt.
+
+Med rundt 2 minutter per video gir 8 plasser omtrent 4 videoer i minuttet.
+
 ### Kostnader
 
 Hver video og sang koster kreditter. `MAX_JOBS_TOTAL` setter et tak for hele kvelden, og `MAX_PER_DEVICE` begrenser hver gjest per time.

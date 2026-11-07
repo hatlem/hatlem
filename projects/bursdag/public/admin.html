@@ -19,7 +19,7 @@
   .hl-btns button { font: inherit; font-weight: 800; font-size: 17px; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--card-border); background: rgba(0,0,0,.25); color: var(--text); cursor: pointer; }
   .hl-btns button.on { border-color: var(--yellow); background: rgba(255,210,63,.18); }
   .item q { display: block; margin-top: 4px; font-style: italic; }
-  .s-failed { color: var(--danger); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
+  .s-failed { color: var(--danger); } .s-waiting { color: var(--muted); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
 </style>
 </head>
 <body>
@@ -74,7 +74,7 @@
     document.getElementById('party').hidden = false;
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
-    document.getElementById('partyInfo').textContent = `Quiz: ${p.quiz.count} svar${p.quiz.closed ? ' (avsluttet)' : ''} · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
+    document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.count} svar${p.quiz.closed ? ' (avsluttet)' : ''} · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
     document.getElementById('top').innerHTML = p.quiz.top.map((t) => `<li>${esc(t.name)}: ${t.score}/${p.quiz.max}</li>`).join('');
   }
   document.querySelector('.hl-btns').addEventListener('click', async (e) => {

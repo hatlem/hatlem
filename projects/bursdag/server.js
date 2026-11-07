@@ -39,6 +39,10 @@ const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
 const MAX_JOBS_TOTAL = Number(process.env.MAX_JOBS_TOTAL || 400); // budsjettsperre for kreditter
 const MAX_PER_DEVICE = Number(process.env.MAX_PER_DEVICE || 8); // per gjest per time
 const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MIN || 25) * 60 * 1000;
+// Hvor mange videoer Higgsfield-kontoen kan lage samtidig (Creator-pakken: 8). Resten venter i vår egen kø.
+const HF_MAX_CONCURRENT = Math.max(1, Number(process.env.HF_MAX_CONCURRENT || 8));
+const VIDEO_TYPES = new Set(['drawing', 'selfie']);
+const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidsestimat
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
@@ -136,6 +140,7 @@ async function mirror(url, fallbackType) {
 function publicJob(job) {
   if (!job) return null;
   const pos = job.type === 'song' ? state.queue.indexOf(job.id) : -1;
+  const wait = job.status === 'waiting' ? videoWaitList().indexOf(job) : -1;
   return {
     id: job.id,
     type: job.type,
@@ -150,6 +155,8 @@ function publicJob(job) {
     error: job.status === 'failed' ? job.error : undefined,
     demo: !!job.demo,
     queuePosition: pos >= 0 ? pos + 1 : null,
+    waitPosition: wait >= 0 ? wait + 1 : null,
+    waitMinutes: wait >= 0 ? Math.max(1, Math.ceil(((Math.floor(wait / HF_MAX_CONCURRENT) + 1) * AVG_VIDEO_MIN))) : null,
     nowPlaying: state.nowPlaying === job.id,
   };
 }
@@ -170,14 +177,54 @@ function checkLimits(deviceId, { budget = true } = {}) {
   return null;
 }
 
-async function startVideoJob(job, imageBuffer, contentType, prompt) {
+// --- Videokø: maks HF_MAX_CONCURRENT jobber hos Higgsfield samtidig -------------
+function videoWaitList() {
+  return [...jobs.values()].filter((j) => j.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
+}
+function activeVideoCount() {
+  return [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && (j.status === 'processing' || j.status === 'starting')).length;
+}
+
+/** Legg videojobben i kø. Bildet ligger allerede på disk (inputUrl), så køen overlever omstart. */
+function enqueueVideo(job, contentType, prompt) {
+  updateJob(job, { status: 'waiting', input: { ...job.input, prompt, contentType } });
+  pumpVideos();
+}
+
+let pumping = false;
+async function pumpVideos() {
+  if (pumping) return;
+  pumping = true;
+  try {
+    for (const job of videoWaitList()) {
+      if (activeVideoCount() >= HF_MAX_CONCURRENT) break;
+      if (job.retryAt && Date.now() < job.retryAt) continue;
+      updateJob(job, { status: 'starting', startedAt: Date.now() });
+      startVideoJob(job).catch((err) => {
+        // Kontoen er full (eller midlertidig feil hos Higgsfield): tilbake i køen og prøv igjen litt senere.
+        if (/429|concurren|too many|rate.?limit|limit.*(reached|exceeded)|queue.*full/i.test(err.message) && (job.retries || 0) < 20) {
+          console.warn(`[video ${job.id}] Higgsfield er fullt, venter litt:`, err.message.slice(0, 120));
+          updateJob(job, { status: 'waiting', retryAt: Date.now() + 20000, retries: (job.retries || 0) + 1 });
+        } else {
+          fail(job, friendly(err));
+        }
+      });
+    }
+  } finally {
+    pumping = false;
+  }
+}
+
+async function startVideoJob(job) {
   if (!useHiggsfield) {
     updateJob(job, { status: 'processing', demo: true, provider: { name: 'demo', readyAt: Date.now() + demo.VIDEO_DELAY_MS } });
     return;
   }
-  const imageUrl = await higgsfield.upload(imageBuffer, contentType);
+  const buffer = fs.readFileSync(path.join(MEDIA_DIR, path.basename(job.inputUrl)));
+  const imageUrl = job.hfImageUrl || (await higgsfield.upload(buffer, job.input.contentType || 'image/jpeg'));
+  if (!job.hfImageUrl) updateJob(job, { hfImageUrl: imageUrl }); // ikke last opp på nytt ved nytt forsøk
   const webhook = PUBLIC_URL ? `${PUBLIC_URL}/api/hooks/higgsfield?job=${job.id}&t=${job.hookToken}` : undefined;
-  const { requestId } = await higgsfield.submitImageToVideo({ imageUrl, prompt, webhookUrl: webhook });
+  const { requestId } = await higgsfield.submitImageToVideo({ imageUrl, prompt: job.input.prompt, webhookUrl: webhook });
   updateJob(job, { status: 'processing', provider: { name: 'higgsfield', requestId } });
 }
 
@@ -215,6 +262,7 @@ async function completeVideo(job, videoUrl) {
   if (local !== videoUrl) updateJob(job, { result: { ...job.result, videoUrl: local } });
 }
 
+
 async function completeSong(job, track) {
   updateJob(job, {
     status: 'done',
@@ -231,13 +279,15 @@ async function completeSong(job, track) {
 function fail(job, message) {
   console.warn(`[job ${job.id}] feilet: ${message}`);
   updateJob(job, { status: 'failed', error: message });
+  if (VIDEO_TYPES.has(job.type)) setImmediate(pumpVideos);
 }
 
 const lastPoll = new Map();
 
 async function pollJob(job) {
   const p = job.provider || {};
-  if (Date.now() - job.createdAt > JOB_TIMEOUT_MS) return fail(job, 'Det tok for lang tid. Prøv igjen!');
+  // Tidsfristen regnes fra jobben faktisk startet, ikke fra den kom i kø.
+  if (Date.now() - (job.startedAt || job.createdAt) > JOB_TIMEOUT_MS) return fail(job, 'Det tok for lang tid. Prøv igjen!');
 
   if (p.name === 'demo') {
     if (Date.now() < p.readyAt) return;
@@ -285,12 +335,15 @@ async function pollAll() {
   } finally {
     polling = false;
   }
+  await pumpVideos(); // ledige plasser? start neste i køen
 }
 setInterval(pollAll, 3000);
 
 // Jobber som sto i "queued" da serveren stoppet får aldri startet: marker dem som feilet.
 for (const job of jobs.values()) {
   if (job.status === 'queued') fail(job, 'Serveren ble startet på nytt. Prøv igjen!');
+  // Stoppet midt i innsendingen: vi vet ikke om Higgsfield fikk den, så send på nytt.
+  if (job.status === 'starting') updateJob(job, { status: 'waiting' });
 }
 
 // ---------------------------------------------------------------------------
@@ -371,7 +424,7 @@ app.post('/api/drawing', upload.single('image'), async (req, res) => {
   const job = newJob('drawing', { guest: clean(req.body.name, 40), label: style.name, emoji: style.emoji, inputUrl, input: { style: style.id, description } });
 
   res.json({ id: job.id });
-  startVideoJob(job, req.file.buffer, req.file.mimetype, prompt).catch((err) => fail(job, friendly(err)));
+  enqueueVideo(job, req.file.mimetype, prompt);
 });
 
 // Selfie -> effekt
@@ -385,7 +438,7 @@ app.post('/api/selfie', upload.single('image'), async (req, res) => {
   const job = newJob('selfie', { guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id } });
 
   res.json({ id: job.id });
-  startVideoJob(job, req.file.buffer, req.file.mimetype, effect.prompt).catch((err) => fail(job, friendly(err)));
+  enqueueVideo(job, req.file.mimetype, effect.prompt);
 });
 
 // Sang
@@ -434,7 +487,13 @@ app.get('/api/screen', (req, res) => {
     .slice(0, 60)
     .map(publicJob);
   const songs = (ids) => ids.map((id) => jobs.get(id)).filter((j) => j && !j.hidden).map(publicJob);
-  const working = visible.filter((j) => j.status === 'processing' || j.status === 'queued').length;
+  const inProgress = visible.filter((j) => ['processing', 'queued', 'starting', 'waiting'].includes(j.status));
+  const working = inProgress.length;
+  const making = inProgress
+    .filter((j) => VIDEO_TYPES.has(j.type) || j.type === 'song')
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(0, 5)
+    .map((j) => ({ guest: j.guest, emoji: j.emoji, label: j.label, waiting: j.status === 'waiting' }));
   const nostalgia = nostalgiaFiles().map((f) => {
     const { year, title } = party.parseName(f);
     return { id: 'n:' + f, type: 'nostalgia', emoji: '🕰️', label: year ? String(year) : title, guest: year ? title : '', result: { imageUrl: '/nostalgi/' + encodeURIComponent(f) } };
@@ -454,6 +513,8 @@ app.get('/api/screen', (req, res) => {
     queue: songs(state.queue),
     played: songs(state.played).slice(-30),
     working,
+    making,
+    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
   });
 });
 
@@ -565,6 +626,7 @@ app.get('/api/admin/party', requireAdmin, (req, res) => {
   res.json({
     takeover: state.takeover ? state.takeover.mode : null,
     quiz: { count: state.quiz.length, max: PARTY.quiz.questions.length, top, example: PARTY.quiz.example, closed: !!state.quizClosed },
+    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
     nostalgia: nostalgiaFiles().length,
     playlist: playlistFiles().length,
   });
@@ -610,7 +672,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}`);
   for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}`);
-  console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}`);
+  console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, maks ${HF_MAX_CONCURRENT} samtidig`);
   console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}`);
   if (!PUBLIC_URL) console.log('   Tips: sett PUBLIC_URL slik at QR-kodene peker til riktig adresse.\n');
 });
