@@ -7,83 +7,127 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Quiz</title>
+<style>
+  .qz { min-height: 70dvh; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 14px; }
+  .qz .big { font-size: 72px; line-height: 1; }
+  .qz h2 { font-size: 28px; margin: 0; }
+  .qz p { margin: 0; color: var(--muted); font-size: 18px; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .answers button { font: inherit; border: 0; border-radius: 20px; min-height: 130px; color: #fff; font-weight: 800; font-size: 17px; cursor: pointer; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: transform .1s, opacity .2s; }
+  .answers button span { font-size: 40px; line-height: 1; }
+  .answers button:active { transform: scale(.96); }
+  .answers button:disabled { opacity: .3; }
+  .answers button.picked { opacity: 1; outline: 4px solid #fff; }
+  .o0 { background: #e0457b; } .o1 { background: #2f80ed; } .o2 { background: #e2a400; } .o3 { background: #20a87e; }
+  .timer { font-size: 22px; font-weight: 800; color: var(--yellow); }
+  .result { border-radius: 24px; padding: 30px 16px; }
+  .result.ok { background: linear-gradient(135deg, #20a87e, #127a5a); }
+  .result.bad { background: linear-gradient(135deg, #e0457b, #9b1c4a); }
+  .result.miss { background: var(--card); }
+  .score { font-size: 20px; font-weight: 800; }
+  .me { text-align: center; color: var(--muted); font-weight: 700; margin-top: 18px; }
+</style>
 </head>
 <body>
 <main class="wrap">
-  <div class="top"><a class="back" href="/">‹ Tilbake</a></div>
-  <h1>🧠 Quiz om <span class="bname">bursdagsbarnet</span></h1>
-  <p class="hint" id="intro">Hvor godt kjenner du bursdagsbarnet? Vinneren trekkes ved kaka!</p>
-
-  <form id="f" hidden>
-    <div id="qs"></div>
-    <div class="card">
-      <div class="step">Til slutt · Hvem er du?</div>
-      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name" required>
-    </div>
-    <button class="btn" id="go" type="submit">🏆 Send inn svarene</button>
-    <div class="error" id="err" role="alert"></div>
-  </form>
-
-  <div class="card done-box" id="done" hidden>
-    <div class="big">🎟️</div>
-    <h2>Svarene er levert!</h2>
-    <p class="hint" id="doneText">Vinneren trekkes på storskjermen ved kaka.</p>
-    <p><button class="btn secondary" id="change" type="button">✏️ Endre svarene</button></p>
-    <a class="btn secondary" href="/">🏠 Forsiden</a>
-  </div>
+  <div class="top"><a class="back" href="./">‹ Tilbake</a><span class="hint" id="meName"></span></div>
+  <div id="view" class="qz" aria-live="polite"></div>
+  <p class="me" id="me"></p>
 </main>
-<script src="/common.js"></script>
+<script src="common.js"></script>
 <script>
-  const form = document.getElementById('f');
-  const go = document.getElementById('go');
-  const show = (id) => { form.hidden = id !== 'f'; document.getElementById('done').hidden = id !== 'done'; };
-  Party.rememberName(document.getElementById('name'));
+(function () {
+  const esc = Party.esc;
+  const $ = (id) => document.getElementById(id);
+  const deviceId = Party.deviceId();
+  const SYMS = ['▲', '◆', '●', '■'];
+  let birthdayName = 'bursdagsbarnet', highlight = null, last = '', offset = 0, current = null, answering = false;
+  Party.config().then((c) => {
+    birthdayName = c.birthdayName;
+    highlight = (c.schedule || []).find((p) => p.highlight);
+    last = ''; render(current);
+  });
 
-  Promise.all([Party.config(), fetch('/api/quiz?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json())]).then(([c, quiz]) => {
-    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
-    const hl = (c.schedule || []).find((p) => p.highlight);
-    if (hl) document.getElementById('doneText').textContent = 'Vinneren trekkes på storskjermen kl. ' + hl.time + ' 🎂';
-    document.getElementById('qs').innerHTML = quiz.questions.map((q, i) =>
-      '<div class="card"><div class="step">Spørsmål ' + (i + 1) + ' av ' + quiz.questions.length + '</div><h3>' + Party.esc(q.q) + '</h3><div id="q' + i + '"></div></div>').join('');
-    quiz.questions.forEach((q, i) => {
-      const letters = 'ABCD';
-      Party.chips(document.getElementById('q' + i), 'q' + i, q.options.map((o, j) => ({ id: String(j), name: o, emoji: letters[j] || '•' })), { list: true, checked: -1 });
-    });
-    if (quiz.closed) {
-      document.getElementById('intro').textContent = 'Quizen er avsluttet og vinneren er trukket. Takk for at du var med! 🏆';
+  function joinForm(v) {
+    const name = (() => { try { return localStorage.getItem('bursdag-name') || ''; } catch { return ''; } })();
+    return '<div class="big">🧠</div><h2>Quiz om ' + esc(birthdayName) + '</h2>' +
+      '<p>' + (v.phase ? 'Quizen er i gang. Bli med nå!' : 'Live-quiz på storskjermen' + (highlight ? ' kl. ' + esc(highlight.time) : '') + '. Meld deg på nå, så er du klar!') + '</p>' +
+      '<form id="join" class="card" style="text-align:left;margin-top:10px"><label for="nm">Navnet ditt</label><input type="text" id="nm" maxlength="24" required value="' + esc(name) + '" autocomplete="given-name"><p></p><button class="btn">🙋 Bli med</button><div class="error" id="err"></div></form>';
+  }
+
+  function render(v) {
+    if (!v) return;
+    const key = JSON.stringify([v.phase, v.q, v.joined, v.answered, v.result && v.result.points, v.rank, v.score]);
+    if (key === last) return;
+    last = key;
+    const view = $('view');
+    $('meName').textContent = v.joined ? '👤 ' + v.name : '';
+    $('me').textContent = v.joined && v.phase ? 'Poeng: ' + v.score + (v.rank ? ' · plass ' + v.rank + ' av ' + v.players : '') : '';
+
+    if (!v.joined) {
+      view.innerHTML = joinForm(v);
+      $('join').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = $('nm').value.trim();
+        try { localStorage.setItem('bursdag-name', name); } catch {}
+        try { current = await Party.submit('api/kahoot/join', { deviceId, name }); last = ''; render(current); } catch (err) { $('err').textContent = err.message; }
+      });
       return;
     }
-    if (quiz.mine) {
-      quiz.mine.answers.forEach((a, i) => { const el = form.querySelector('input[name=q' + i + '][value="' + a + '"]'); if (el) el.checked = true; });
-      show('done');
-    } else show('f');
-    document.getElementById('change').onclick = () => show('f');
+    if (!v.phase) {
+      view.innerHTML = '<div class="big">✅</div><h2>Du er med, ' + esc(v.name) + '!</h2><p>Quizen starter på storskjermen' + (highlight ? ' kl. ' + esc(highlight.time) + ' ved kaka 🎂' : '') + '.</p><p>Ha telefonen klar, og svar raskt for flest poeng!</p>';
+    } else if (v.phase === 'lobby') {
+      view.innerHTML = '<div class="big">⏳</div><h2>Du er med!</h2><p>Se på storskjermen. Quizen starter straks …</p><p><b>' + v.players + '</b> spillere er klare</p>';
+    } else if (v.phase === 'question') {
+      if (v.answered != null) {
+        view.innerHTML = '<div class="big">📨</div><h2>Svaret er sendt!</h2><p>Venter på de andre …</p><div class="answers" style="margin-top:14px">' +
+          v.options.map((o, i) => '<button class="o' + i + (i === v.answered ? ' picked' : '') + '" disabled><span>' + SYMS[i] + '</span>' + esc(o) + '</button>').join('') + '</div>';
+      } else {
+        view.innerHTML = '<div class="timer" id="tm"></div><p style="color:var(--text);font-weight:700">' + esc(v.question) + '</p><div class="answers">' +
+          v.options.map((o, i) => '<button class="o' + i + '" data-c="' + i + '"><span>' + SYMS[i] + '</span>' + esc(o) + '</button>').join('') + '</div>';
+        view.querySelectorAll('button[data-c]').forEach((b) => b.addEventListener('click', () => answer(v.q, Number(b.dataset.c))));
+      }
+    } else if (v.phase === 'reveal') {
+      const r = v.result || {};
+      const cls = r.missed ? 'miss' : r.correct ? 'ok' : 'bad';
+      const msg = r.missed ? '<div class="big">⌛</div><h2>Du rakk ikke å svare</h2>' : r.correct ? '<div class="big">🎉</div><h2>Riktig!</h2><div class="score">+' + r.points + ' poeng</div>' : '<div class="big">😅</div><h2>Feil!</h2>';
+      view.innerHTML = '<div class="result ' + cls + '">' + msg + '<p style="color:#fff;margin-top:10px">Riktig svar: <b>' + esc(v.correctText) + '</b></p></div>';
+      if (r.correct) Party.confetti(50);
+    } else if (v.phase === 'leaderboard') {
+      view.innerHTML = '<div class="big">🏅</div><h2>Du er på ' + v.rank + '. plass</h2><p>' + v.score + ' poeng. Se topplisten på storskjermen!</p>';
+    } else if (v.phase === 'podium') {
+      const medal = ['🥇', '🥈', '🥉'][v.rank - 1];
+      view.innerHTML = '<div class="big">' + (medal || '🎊') + '</div><h2>Du kom på ' + v.rank + '. plass!</h2><p>' + v.score + ' poeng av ' + v.players + ' spillere. Takk for at du var med!</p>';
+      if (medal) Party.confetti(150);
+    }
+  }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      document.getElementById('err').textContent = '';
-      const answers = quiz.questions.map((q, i) => { const el = form.querySelector('input[name=q' + i + ']:checked'); return el ? Number(el.value) : null; });
-      const missing = answers.indexOf(null);
-      if (missing >= 0) {
-        document.getElementById('err').textContent = 'Du mangler svar på spørsmål ' + (missing + 1) + '!';
-        document.getElementById('q' + missing).scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      go.disabled = true;
-      try {
-        await Party.submit('/api/quiz', { answers, name: form.name.value, deviceId: Party.deviceId() });
-        Party.confetti(60);
-        show('done');
-        scrollTo(0, 0);
-      } catch (err) {
-        document.getElementById('err').textContent = err.message;
-      }
-      go.disabled = false;
-    });
-  });
+  async function answer(q, choice) {
+    if (answering) return;
+    answering = true;
+    if (navigator.vibrate) navigator.vibrate(30);
+    try { current = await Party.submit('api/kahoot/answer', { deviceId, q, choice }); render(current); } catch {}
+    answering = false;
+  }
+
+  async function poll() {
+    try {
+      const v = await (await fetch('api/kahoot?deviceId=' + encodeURIComponent(deviceId))).json();
+      offset = v.serverNow - Date.now();
+      current = v;
+      render(v);
+    } catch {}
+  }
+  setInterval(() => {
+    const tm = $('tm');
+    if (tm && current && current.endsAt) tm.textContent = '⏱️ ' + Math.max(0, Math.ceil((current.endsAt - Date.now() - offset) / 1000)) + ' sek';
+  }, 250);
+  poll();
+  setInterval(poll, 1000);
+})();
 </script>
 </body>
 </html>

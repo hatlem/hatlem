@@ -16,7 +16,7 @@
 
   let configPromise;
   function config() {
-    configPromise = configPromise || fetch('/api/config').then((r) => r.json());
+    configPromise = configPromise || fetch('api/config').then((r) => r.json());
     return configPromise;
   }
 

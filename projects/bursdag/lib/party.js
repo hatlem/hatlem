@@ -52,16 +52,4 @@ function makeFolderScanner(dir, pattern) {
   };
 }
 
-function scoreQuiz(questions, answers) {
-  return questions.reduce((sum, q, i) => sum + (Number(answers[i]) === q.correct ? 1 : 0), 0);
-}
-
-/** Vinner = høyest poengsum, tilfeldig blant de som står likt. */
-function drawWinner(entries) {
-  if (!entries.length) return null;
-  const best = Math.max(...entries.map((e) => e.score));
-  const top = entries.filter((e) => e.score === best);
-  return top[Math.floor(Math.random() * top.length)];
-}
-
-module.exports = { loadConfig, parseName, makeFolderScanner, scoreQuiz, drawWinner, IMAGE, AUDIO };
+module.exports = { loadConfig, parseName, makeFolderScanner, IMAGE, AUDIO };

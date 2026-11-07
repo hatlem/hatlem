@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Lag en sang</title>
 </head>
 <body>
 <main class="wrap">
-  <div class="top"><a class="back" href="/">‹ Tilbake</a></div>
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🎤 Lag en sang</h1>
   <p class="hint">AI-en skriver og synger låten. Den legges i kø og spilles på festen!</p>
 
@@ -41,7 +41,7 @@
     <div class="error" id="err" role="alert"></div>
   </form>
 </main>
-<script src="/common.js"></script>
+<script src="common.js"></script>
 <script>
   const form = document.getElementById('f');
   const go = document.getElementById('go');
@@ -58,11 +58,11 @@
     go.disabled = true; go.textContent = '⏳ Sender …';
     document.getElementById('err').textContent = '';
     try {
-      const { id } = await Party.submit('/api/song', {
+      const { id } = await Party.submit('api/song', {
         to: form.to.value, about: form.about.value, genre: form.genre.value, mood: form.mood.value,
         name: form.name.value, deviceId: Party.deviceId(),
       });
-      location.href = '/status/' + id;
+      location.href = 'status/' + id;
     } catch (err) {
       document.getElementById('err').textContent = err.message;
       go.disabled = false; go.textContent = '🎶 Lag sangen!';

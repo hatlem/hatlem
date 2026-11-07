@@ -7,26 +7,50 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Galleri</title>
 <style>
-  .wrap.wide { max-width: 1100px; }
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 18px 0; }
-  .filters button { font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); cursor: pointer; }
-  .filters button.on { background: linear-gradient(90deg, var(--yellow), var(--pink)); color: #2a0b2b; border-color: transparent; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-  .tile { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
-  .tile video, .tile img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #000; display: block; }
-  .tile .meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .tile .meta small { color: var(--muted); }
-  .tile .meta a { margin-top: auto; font-weight: 700; color: var(--cyan); text-decoration: none; }
-  .tile.greet .meta { justify-content: center; }
-  .tile.greet q { font-size: 20px; font-weight: 700; }
-  .tile.song .cover { aspect-ratio: 1; display: grid; place-items: center; font-size: 80px; background: linear-gradient(135deg, var(--pink), var(--violet)); }
-  .tile audio { width: 100%; }
-  .finale { margin: 10px 0 24px; }
-  .finale video { width: 100%; border-radius: 18px; background: #000; }
+  .wrap.wide { max-width: 1200px; }
+  .bar-top { position: sticky; top: 0; z-index: 5; background: rgba(18,10,36,.9); backdrop-filter: blur(10px); margin: 0 -16px; padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filters { display: flex; gap: 6px; overflow-x: auto; flex: 1; }
+  .filters button, .dl { font: inherit; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; text-decoration: none; font-size: 15px; }
+  .filters button.on { background: var(--text); color: var(--bg); }
+  .dl { background: linear-gradient(90deg, var(--yellow), var(--pink)); color: #2a0b2b; border: 0; }
+  .group h2 { font-size: 18px; margin: 22px 0 8px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  @media (min-width: 700px) { .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px; } }
+  @media (max-width: 600px) { .filters { flex: 1 1 100%; } .dl { margin-left: auto; } .cell .cap { font-size: 11px; padding: 14px 6px 4px; } .cell.greet q { font-size: 13px; -webkit-line-clamp: 4; } .cell.greet { padding: 8px; } }
+  .cell { position: relative; aspect-ratio: 1; overflow: hidden; cursor: pointer; background: var(--card); border: 0; padding: 0; color: var(--text); font: inherit; border-radius: 4px; }
+  .cell img, .cell video { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+  .cell:hover img, .cell:hover video { transform: scale(1.04); }
+  .cell .badge { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.6); border-radius: 999px; padding: 2px 8px; font-size: 13px; }
+  .cell .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; font-size: 13px; font-weight: 700; text-align: left; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+  .cell.greet { display: flex; flex-direction: column; justify-content: center; padding: 12px; text-align: left; background: linear-gradient(135deg, rgba(255,79,163,.35), rgba(62,230,216,.25)); }
+  .cell.greet q { font-weight: 800; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .cell.song .note { width: 100%; height: 100%; display: grid; place-items: center; font-size: 56px; background: linear-gradient(135deg, var(--pink), var(--violet)); }
+  .finale { margin: 16px 0; }
+  .finale video { width: 100%; border-radius: 16px; background: #000; }
+
+  .lb { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; touch-action: pan-y; }
+  .lb[hidden] { display: none; }
+  .lb-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top)); }
+  .lb-top .info { flex: 1; min-width: 0; }
+  .lb-top .info b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-top .info small { color: var(--muted); }
+  .lb-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; text-decoration: none; flex: none; }
+  .lb-stage { flex: 1; position: relative; display: grid; place-items: center; overflow: hidden; }
+  .lb-stage img, .lb-stage video { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .lb-stage .greet-big { max-width: 700px; padding: 24px; text-align: center; }
+  .lb-stage .greet-big q { font-size: clamp(24px, 5vw, 44px); font-weight: 800; display: block; }
+  .lb-stage .song-big { text-align: center; padding: 20px; width: min(420px, 100%); }
+  .lb-stage .song-big .cover { width: min(320px, 70vw); aspect-ratio: 1; margin: 0 auto 16px; border-radius: 18px; overflow: hidden; display: grid; place-items: center; font-size: 90px; background: linear-gradient(135deg, var(--pink), var(--violet)); }
+  .lb-stage .song-big .cover img { width: 100%; height: 100%; object-fit: cover; }
+  .lb-stage .song-big audio { width: 100%; margin-top: 12px; }
+  .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+  .lb-prev { left: 10px; } .lb-next { right: 10px; }
+  @media (hover: none) { .lb-nav { display: none; } }
+  .lb-count { text-align: center; color: var(--muted); font-size: 14px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
 </style>
 </head>
 <body>
@@ -34,53 +58,150 @@
   <section class="hero">
     <div class="cake" aria-hidden="true">📸</div>
     <h1><span class="gradient-text" id="title">Galleri</span></h1>
-    <p>Alt som ble laget på festen. Trykk på en lenke for å laste ned.</p>
+    <p id="sub">Alt som ble laget på festen</p>
   </section>
   <section class="finale" id="finale" hidden></section>
-  <div class="filters" id="filters">
-    <button data-f="all" class="on">Alt</button>
-    <button data-f="drawing">🖍️ Tegninger</button>
-    <button data-f="selfie">🤳 Selfies</button>
-    <button data-f="song">🎵 Sanger</button>
-    <button data-f="greeting">💌 Hilsener</button>
+  <div class="bar-top">
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">Alt</button>
+      <button data-f="drawing">🖍️ Tegninger</button>
+      <button data-f="selfie">🤳 Selfies</button>
+      <button data-f="song">🎵 Sanger</button>
+      <button data-f="greeting">💌 Hilsener</button>
+    </div>
+    <a class="dl" href="api/gallery/zip" download>⬇️ Last ned alt</a>
   </div>
-  <div class="grid" id="grid"></div>
+  <div id="groups"></div>
 </main>
-<script src="/common.js"></script>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Visning">
+  <div class="lb-top">
+    <button class="lb-btn" id="lbClose" aria-label="Lukk">✕</button>
+    <div class="info"><b id="lbTitle"></b><small id="lbBy"></small></div>
+    <button class="lb-btn" id="lbShare" aria-label="Del" hidden>📤</button>
+    <a class="lb-btn" id="lbDl" aria-label="Last ned" download>⬇️</a>
+  </div>
+  <div class="lb-stage" id="lbStage"></div>
+  <button class="lb-btn lb-nav lb-prev" id="lbPrev" aria-label="Forrige">‹</button>
+  <button class="lb-btn lb-nav lb-next" id="lbNext" aria-label="Neste">›</button>
+  <div class="lb-count" id="lbCount"></div>
+</div>
+
+<script src="common.js"></script>
 <script>
+(function () {
   const esc = Party.esc;
-  let items = [];
-  function tile(j) {
+  const $ = (id) => document.getElementById(id);
+  let items = [], shown = [], filter = 'all', pos = -1;
+  const time = (t) => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+  const by = (j) => (j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : j.type === 'greeting' ? 'Fra ' : 'Av ') + j.guest : 'Anonym') + ' · ' + time(j.createdAt);
+  const mediaUrl = (j) => { const r = j.result || {}; return r.videoUrl || r.audioUrl || r.imageUrl || j.inputUrl || ''; };
+  const titleOf = (j) => (j.type === 'song' ? (j.result && j.result.title) || j.label : (j.emoji ? j.emoji + ' ' : '') + j.label);
+
+  function cell(j, i) {
     const r = j.result || {};
-    const by = j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : 'Av ') + esc(j.guest) : '';
-    if (j.type === 'greeting') return '<div class="tile greet"><div class="meta"><small>' + esc(j.emoji) + ' ' + esc(j.label) + '</small><q>' + esc(j.text) + '</q><small>' + (j.guest ? '– ' + esc(j.guest) : '') + '</small></div></div>';
-    if (j.type === 'song') return '<div class="tile song">' + (r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="" loading="lazy">' : '<div class="cover">🎵</div>') +
-      '<div class="meta"><strong>' + esc(r.title || j.label) + '</strong><small>' + esc(j.label) + (by ? ' · ' + by : '') + '</small><audio controls preload="none" src="' + esc(r.audioUrl) + '"></audio><a href="' + esc(r.audioUrl) + '" download>⬇️ Last ned sangen</a></div></div>';
-    const media = r.videoUrl ? '<video src="' + esc(r.videoUrl) + '" muted loop playsinline preload="metadata" onmouseenter="this.play()" onmouseleave="this.pause()" onclick="this.paused?this.play():this.pause()"></video>'
-      : '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="" loading="lazy">';
-    return '<div class="tile">' + media + '<div class="meta"><strong>' + esc(j.emoji) + ' ' + esc(j.label) + '</strong><small>' + by + '</small>' +
-      (r.videoUrl ? '<a href="' + esc(r.videoUrl) + '" download>⬇️ Last ned filmen</a>' : '') + '</div></div>';
+    if (j.type === 'greeting') return '<button class="cell greet" data-i="' + i + '"><small>' + esc(j.emoji) + ' ' + esc(j.label) + '</small><q>' + esc(j.text) + '</q></button>';
+    let inner;
+    if (j.type === 'song') inner = r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="" loading="lazy">' : '<div class="note">🎵</div>';
+    else if (r.videoUrl) inner = '<video src="' + esc(r.videoUrl) + '#t=0.5" muted playsinline preload="metadata"></video>';
+    else inner = '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="" loading="lazy">';
+    const badge = j.type === 'song' ? '🎵' : r.videoUrl ? '▶︎' : '';
+    return '<button class="cell ' + (j.type === 'song' ? 'song' : '') + '" data-i="' + i + '">' + inner + (badge ? '<span class="badge">' + badge + '</span>' : '') + '<span class="cap">' + esc(titleOf(j)) + '</span></button>';
   }
-  function render(f) {
-    document.getElementById('grid').innerHTML = items.filter((j) => f === 'all' || j.type === f).map(tile).join('') || '<p class="hint">Ingenting her ennå.</p>';
+
+  function render() {
+    shown = items.filter((j) => filter === 'all' || j.type === filter);
+    const groups = new Map();
+    shown.forEach((j, i) => {
+      const h = new Date(j.createdAt).getHours();
+      const k = String(h).padStart(2, '0') + ':00–' + String((h + 1) % 24).padStart(2, '0') + ':00';
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(cell(j, i));
+    });
+    $('groups').innerHTML = [...groups].map(([k, cells]) => '<section class="group"><h2>' + k + '</h2><div class="grid">' + cells.join('') + '</div></section>').join('')
+      || '<p class="hint" style="text-align:center;margin-top:30px">Ingenting her ennå.</p>';
   }
-  document.getElementById('filters').addEventListener('click', (e) => {
+
+  // ---------------------------------------------------------- fullskjermvisning
+  function open(i) {
+    pos = (i + shown.length) % shown.length;
+    const j = shown[pos];
+    const r = j.result || {};
+    const stage = $('lbStage');
+    if (j.type === 'greeting') stage.innerHTML = '<div class="greet-big"><small>' + esc(j.emoji) + ' ' + esc(j.label) + '</small><q>«' + esc(j.text) + '»</q></div>';
+    else if (j.type === 'song') stage.innerHTML = '<div class="song-big"><div class="cover">' + (r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="">' : '🎵') + '</div><h2>' + esc(r.title || j.label) + '</h2><p class="hint">' + esc(j.label) + '</p><audio controls autoplay src="' + esc(r.audioUrl) + '"></audio></div>';
+    else if (r.videoUrl) stage.innerHTML = '<video src="' + esc(r.videoUrl) + '" controls autoplay loop playsinline></video>';
+    else stage.innerHTML = '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="">';
+    $('lbTitle').textContent = titleOf(j);
+    $('lbBy').textContent = by(j);
+    $('lbCount').textContent = (pos + 1) + ' av ' + shown.length;
+    const url = mediaUrl(j);
+    $('lbDl').hidden = j.type === 'greeting' || !url;
+    $('lbDl').href = url;
+    $('lb').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function close() { $('lb').hidden = true; $('lbStage').innerHTML = ''; document.body.style.overflow = ''; }
+
+  $('groups').addEventListener('click', (e) => { const c = e.target.closest('.cell'); if (c) open(Number(c.dataset.i)); });
+  $('lbClose').addEventListener('click', close);
+  $('lbPrev').addEventListener('click', () => open(pos - 1));
+  $('lbNext').addEventListener('click', () => open(pos + 1));
+  document.addEventListener('keydown', (e) => {
+    if ($('lb').hidden) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowLeft') open(pos - 1);
+    if (e.key === 'ArrowRight') open(pos + 1);
+  });
+  // Sveip mellom bildene på mobil
+  let sx = null, sy = null;
+  $('lbStage').addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  $('lbStage').addEventListener('touchend', (e) => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) open(pos + (dx < 0 ? 1 : -1));
+    else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close(); // sveip ned for å lukke
+    sx = null;
+  });
+  // Del via telefonens delingsmeny (fil hvis mulig, ellers lenke)
+  if (navigator.share) {
+    $('lbShare').hidden = false;
+    $('lbShare').addEventListener('click', async () => {
+      const j = shown[pos];
+      const url = new URL(mediaUrl(j) || location.href, document.baseURI).href;
+      try {
+        if (j.type !== 'greeting' && navigator.canShare) {
+          const blob = await (await fetch(url)).blob();
+          const file = new File([blob], (titleOf(j) || 'bursdag').replace(/[^\p{L}\p{N} _-]+/gu, '') + '.' + (blob.type.split('/')[1] || 'jpg').replace('mpeg', 'mp3'), { type: blob.type });
+          if (navigator.canShare({ files: [file] })) return await navigator.share({ files: [file], title: titleOf(j) });
+        }
+        await navigator.share({ title: titleOf(j), text: j.text || by(j), url: j.type === 'greeting' ? location.href : url });
+      } catch { /* avbrutt */ }
+    });
+  }
+
+  $('filters').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
+    filter = b.dataset.f;
     document.querySelectorAll('#filters button').forEach((x) => x.classList.toggle('on', x === b));
-    render(b.dataset.f);
+    render();
   });
-  fetch('/api/gallery').then((r) => r.json()).then((d) => {
-    items = d.items;
-    document.getElementById('title').textContent = d.partyTitle;
+
+  fetch('api/gallery').then((r) => r.json()).then((d) => {
+    items = d.items.slice().reverse(); // nyeste først, som i en fotoapp
+    $('title').textContent = d.partyTitle;
     document.title = 'Galleri · ' + d.partyTitle;
+    const n = (t) => d.items.filter((j) => j.type === t).length;
+    const word = (t, one, many) => n(t) && n(t) + ' ' + (n(t) === 1 ? one : many);
+    $('sub').textContent = [word('drawing', 'tegning', 'tegninger'), word('selfie', 'selfie', 'selfies'), word('song', 'sang', 'sanger'), word('greeting', 'hilsen', 'hilsener')].filter(Boolean).join(' · ') || 'Alt som ble laget på festen';
     if (d.finale && d.finale.lipsync) {
-      const el = document.getElementById('finale');
-      el.hidden = false;
-      el.innerHTML = '<h2>🎬 Finalen</h2><video src="' + esc(d.finale.videoUrl) + '" controls playsinline></video><p><a class="btn secondary" href="' + esc(d.finale.videoUrl) + '" download>⬇️ Last ned finalen</a></p>';
+      $('finale').hidden = false;
+      $('finale').innerHTML = '<h2>🎬 Finalen</h2><video src="' + esc(d.finale.videoUrl) + '" controls playsinline></video>';
     }
-    render('all');
+    render();
   });
+})();
 </script>
 </body>
 </html>

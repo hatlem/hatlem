@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>Musikk · Admin</title>
+<style>
+  .wrap { padding-bottom: 200px; }
+  .np { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(18,10,36,.96); backdrop-filter: blur(12px); border-top: 1px solid var(--card-border); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .np-in { max-width: 560px; margin: 0 auto; }
+  .np-row { display: flex; gap: 12px; align-items: center; }
+  .np .art { width: 52px; height: 52px; border-radius: 10px; flex: none; display: grid; place-items: center; font-size: 26px; overflow: hidden; background: linear-gradient(135deg, var(--pink), var(--violet)); font-weight: 800; }
+  .np .art img { width: 100%; height: 100%; object-fit: cover; }
+  .np .meta { flex: 1; min-width: 0; }
+  .np .meta b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np .meta small { color: var(--muted); }
+  .ctl { width: 52px; height: 52px; border-radius: 50%; border: 0; font-size: 22px; cursor: pointer; background: var(--text); color: var(--bg); flex: none; }
+  .ctl.ghost { background: transparent; color: var(--text); border: 1px solid var(--card-border); }
+  .np .bar { height: 4px; background: rgba(255,255,255,.15); border-radius: 999px; margin: 10px 0 8px; overflow: hidden; }
+  .np .bar div { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--pink)); width: 0; }
+  .vol { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--muted); }
+  .vol input { flex: 1; accent-color: var(--yellow); }
+  .online { font-size: 13px; font-weight: 700; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 10px; }
+  .tabs button { font: inherit; font-weight: 800; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; }
+  .tabs button.on { background: var(--text); color: var(--bg); }
+  .search { margin-bottom: 10px; }
+  .song { display: flex; gap: 12px; align-items: center; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .song .art { width: 44px; height: 44px; border-radius: 8px; flex: none; display: grid; place-items: center; overflow: hidden; background: linear-gradient(135deg, var(--pink), var(--violet)); font-size: 18px; font-weight: 800; }
+  .song .art img { width: 100%; height: 100%; object-fit: cover; }
+  .song .art.y { background: linear-gradient(135deg, var(--yellow), var(--pink)); color: #2a0b2b; font-size: 13px; }
+  .song .meta { flex: 1; min-width: 0; }
+  .song .meta b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song .meta small { color: var(--muted); }
+  .song.playing .meta b { color: var(--cyan); }
+  .song button { font: inherit; border: 0; background: rgba(255,255,255,.1); color: var(--text); border-radius: 10px; width: 38px; height: 38px; cursor: pointer; font-size: 16px; flex: none; }
+  .song button:active { transform: scale(.94); }
+  .empty { color: var(--muted); padding: 20px 0; text-align: center; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><a class="back" href="admin">‹ Admin</a><span class="online" id="online"></span></div>
+  <h1>🎵 Musikk</h1>
+  <div id="login" class="card" hidden><p>Logg inn på <a href="admin">admin</a> først.</p></div>
+  <div id="app" hidden>
+    <div class="tabs" id="tabs">
+      <button data-t="queue" class="on">Kø</button>
+      <button data-t="songs">Alle sanger</button>
+      <button data-t="played">Spilt</button>
+      <button data-t="playlist">Årsspilleliste</button>
+    </div>
+    <input type="text" class="search" id="search" placeholder="🔍 Søk etter tittel, gjest eller år">
+    <div id="list"></div>
+  </div>
+</main>
+
+<div class="np" id="np" hidden>
+  <div class="np-in">
+    <div class="np-row">
+      <div class="art" id="npArt">🎵</div>
+      <div class="meta"><b id="npTitle">Ingenting spilles</b><small id="npBy"></small></div>
+      <button class="ctl" id="toggle" aria-label="Spill/pause">⏯️</button>
+      <button class="ctl ghost" id="skip" aria-label="Hopp over">⏭️</button>
+    </div>
+    <div class="bar"><div id="npBar"></div></div>
+    <div class="vol"><span>🔈</span><input type="range" id="vol" min="0" max="100" step="5" aria-label="Volum"><span>🔊</span></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+(function () {
+  const esc = Party.esc;
+  const $ = (id) => document.getElementById(id);
+  let key = '';
+  try { key = sessionStorage.getItem('bursdag-admin') || ''; } catch {}
+  const api = (url, body) => fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': key }, body: JSON.stringify(body) } : { headers: { 'x-admin-key': key } });
+  let tab = 'queue', d = null, fetchedAt = 0, volDragging = false;
+
+  async function load() {
+    const r = await api('api/admin/music');
+    if (!r.ok) { $('login').hidden = false; $('app').hidden = true; $('np').hidden = true; return; }
+    d = await r.json();
+    fetchedAt = Date.now();
+    $('login').hidden = true; $('app').hidden = false; $('np').hidden = false;
+    renderNow();
+    renderList();
+  }
+
+  function art(s, cls = 'art') {
+    if (s.kind === 'playlist') return `<div class="${cls} y">${esc(s.year || '🕰️')}</div>`;
+    const img = (s.result && s.result.imageUrl) || s.imageUrl;
+    return `<div class="${cls}">${img ? `<img src="${esc(img)}" alt="">` : '🎵'}</div>`;
+  }
+
+  function renderNow() {
+    const p = d.player;
+    $('online').innerHTML = p.online ? '🟢 Musikkskjermen er på' : '🔴 Musikkskjermen er ikke startet';
+    const now = p.report && p.report.now;
+    if (now) {
+      $('npArt').outerHTML = art(now).replace('class="art', 'id="npArt" class="art');
+      $('npTitle').textContent = now.title;
+      $('npBy').textContent = now.kind === 'playlist' ? 'Årsspillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}${now.guest || 'anonym'}${now.label ? ' · ' + now.label : ''}`;
+    } else {
+      $('npTitle').textContent = p.online ? 'Ingenting spilles' : 'Start /musikk på musikkskjermen';
+      $('npBy').textContent = '';
+    }
+    $('toggle').textContent = p.paused || p.forcePause ? '▶️' : '⏸️';
+    $('toggle').title = p.forcePause ? 'Pause pga. kake/tale/finale på storskjermen' : '';
+    if (!volDragging) $('vol').value = Math.round(p.volume * 100);
+    tickBar();
+  }
+
+  function tickBar() {
+    const rep = d && d.player.report;
+    if (!rep || !rep.duration) { $('npBar').style.width = '0'; return; }
+    const pos = rep.position + (rep.paused ? 0 : (Date.now() - fetchedAt) / 1000);
+    $('npBar').style.width = Math.min(100, (pos / rep.duration) * 100) + '%';
+  }
+  setInterval(tickBar, 500);
+
+  function row(s, buttons, i) {
+    const title = s.kind === 'playlist' ? s.title : (s.result && s.result.title) || s.label;
+    const by = s.kind === 'playlist' ? `${s.year || ''} · årsspilleliste` : `${s.guest || 'anonym'} · ${s.label}`;
+    const playing = d.player.report && d.player.report.now && d.player.report.now.id === s.id;
+    return `<div class="song ${playing ? 'playing' : ''}" data-id="${esc(s.id)}">${art(s)}<div class="meta"><b>${i != null ? `${i + 1}. ` : ''}${playing ? '🔊 ' : ''}${esc(title)}</b><small>${esc(by)}</small></div>${buttons}</div>`;
+  }
+  const btn = (a, label, t) => `<button data-a="${a}" title="${t}" aria-label="${t}">${label}</button>`;
+
+  function renderList() {
+    const q = $('search').value.trim().toLowerCase();
+    const match = (s) => !q || JSON.stringify([s.title, s.year, s.guest, s.label, s.result && s.result.title]).toLowerCase().includes(q);
+    let html = '';
+    if (tab === 'queue') {
+      const list = d.queue.filter(match);
+      html = list.map((s, i) => row(s, btn('play-now', '▶️', 'Spill nå') + btn('up', '⬆️', 'Flytt opp') + btn('down', '⬇️', 'Flytt ned') + btn('remove', '✖️', 'Fjern fra køen'), i)).join('')
+        || '<p class="empty">Køen er tom. Når den er tom, spilles årsspillelisten.</p>';
+    } else if (tab === 'songs') {
+      html = d.songs.filter(match).map((s) => row(s, btn('play-now', '▶️', 'Spill nå') + btn('add', '➕', 'Legg i kø'))).join('') || '<p class="empty">Ingen sanger ennå.</p>';
+    } else if (tab === 'played') {
+      html = d.played.filter(match).map((s) => row(s, btn('play-now', '▶️', 'Spill igjen') + btn('add', '➕', 'Legg i kø'))).join('') || '<p class="empty">Ingenting spilt ennå.</p>';
+    } else {
+      html = d.playlist.filter(match).map((s) => row(s, btn('play-now', '▶️', 'Spill nå'))).join('')
+        || '<p class="empty">Legg lydfiler i data/spilleliste/ (f.eks. «1986 a-ha - Take On Me.mp3»).</p>';
+    }
+    $('list').innerHTML = html;
+  }
+
+  $('tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    tab = b.dataset.t;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    renderList();
+  });
+  $('search').addEventListener('input', renderList);
+  $('list').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a]');
+    if (!b) return;
+    const id = b.closest('.song').dataset.id;
+    const a = b.dataset.a;
+    b.disabled = true;
+    if (a === 'play-now') await api('api/admin/player', { action: 'play-now', id });
+    else await api('api/admin/queue', { action: a, id });
+    load();
+  });
+  $('toggle').addEventListener('click', async () => { await api('api/admin/player', { action: 'toggle' }); load(); });
+  $('skip').addEventListener('click', async () => { await api('api/admin/player', { action: 'skip' }); setTimeout(load, 1500); });
+  $('vol').addEventListener('input', () => { volDragging = true; });
+  $('vol').addEventListener('change', async (e) => {
+    await api('api/admin/player', { action: 'volume', value: e.target.value / 100 });
+    volDragging = false;
+    load();
+  });
+
+  load();
+  setInterval(load, 3000);
+})();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <title>Storskjerm</title>
 <style>
   html, body { height: 100%; overflow: hidden; }
@@ -92,11 +92,45 @@
   .takeover .huge { font-size: 14vw; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
   .takeover h1 { font-size: 6vw; margin: 1vw 0; }
   .takeover p { font-size: 2.2vw; color: var(--muted); margin: 0; }
-  .takeover .spin-name { font-size: 7vw; font-weight: 800; min-height: 1.2em; }
-  .takeover .winner { font-size: 8vw; font-weight: 800; animation: pop .8s cubic-bezier(.2,1.6,.4,1); }
-  .fasit { display: grid; grid-template-columns: 1fr 1fr; gap: .6vw 2vw; text-align: left; margin-top: 2vw; font-size: 1.3vw; max-width: 80vw; }
-  .fasit div { background: rgba(255,255,255,.07); border-radius: .8vw; padding: .6vw 1vw; }
-  .fasit b { color: var(--cyan); display: block; }
+  .finale-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+  /* Live-quiz */
+  .lq { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 3vw 4vw; gap: 2vw; text-align: left; }
+  .lq-head { display: flex; justify-content: space-between; align-items: center; font-size: 1.8vw; font-weight: 800; color: var(--muted); }
+  .lq-q { font-size: 3.8vw; font-weight: 800; line-height: 1.1; text-align: center; margin: 0 auto; max-width: 85vw; }
+  .lq-mid { display: flex; justify-content: center; align-items: center; gap: 4vw; }
+  .lq-timer { width: 10vw; height: 10vw; border-radius: 50%; display: grid; place-items: center; font-size: 4.5vw; font-weight: 800; background: conic-gradient(var(--yellow) var(--p, 100%), rgba(255,255,255,.1) 0); position: relative; }
+  .lq-timer::before { content: ''; position: absolute; inset: .8vw; border-radius: 50%; background: var(--bg); }
+  .lq-timer span { position: relative; }
+  .lq-count { font-size: 2.4vw; font-weight: 800; text-align: center; }
+  .lq-count small { display: block; font-size: 1.3vw; color: var(--muted); font-weight: 600; }
+  .lq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vw; flex: 1; }
+  .lq-opt { border-radius: 1.4vw; padding: 1.5vw 2vw; display: flex; align-items: center; gap: 1.5vw; font-size: 2.6vw; font-weight: 800; color: #fff; position: relative; overflow: hidden; transition: opacity .4s, transform .4s; }
+  .lq-opt .sym { font-size: 3.4vw; width: 4vw; text-align: center; }
+  .lq-opt .n { margin-left: auto; font-size: 3vw; }
+  .lq-opt.dim { opacity: .25; }
+  .lq-opt.ok { transform: scale(1.03); box-shadow: 0 0 0 .5vw #fff; }
+  .o0 { background: #e0457b; } .o1 { background: #2f80ed; } .o2 { background: #e2a400; } .o3 { background: #20a87e; }
+  .lq-center { margin: auto; text-align: center; }
+  .lq-center h1 { font-size: 5vw; margin: 0 0 1vw; }
+  .lq-join { display: flex; gap: 4vw; align-items: center; justify-content: center; }
+  .lq-join img { width: 22vw; height: 22vw; background: #fff; padding: 1vw; border-radius: 1.5vw; }
+  .lq-join p { font-size: 2.4vw; color: var(--text); margin: 0 0 1vw; text-align: left; }
+  .lq-names { display: flex; flex-wrap: wrap; gap: .8vw; justify-content: center; max-width: 85vw; margin: 2vw auto 0; }
+  .lq-names span { background: var(--card); border: 1px solid var(--card-border); padding: .5vw 1.2vw; border-radius: 999px; font-size: 1.6vw; font-weight: 700; animation: pop .5s ease; }
+  .lq-board { list-style: none; padding: 0; margin: 0 auto; width: min(70vw, 1100px); display: grid; gap: 1vw; }
+  .lq-board li { display: flex; align-items: center; gap: 1.5vw; font-size: 2.6vw; font-weight: 800; background: var(--card); border-radius: 1.2vw; padding: 1vw 2vw; animation: fadein .5s ease both; }
+  .lq-board li b { color: var(--yellow); width: 3vw; }
+  .lq-board li .sc { margin-left: auto; }
+  .lq-board li small { color: var(--cyan); font-size: 1.6vw; margin-left: 1vw; }
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 2vw; margin-top: 2vw; }
+  .podium div { width: 20vw; text-align: center; font-weight: 800; }
+  .podium .nm { font-size: 2.6vw; margin-bottom: 1vw; animation: pop .8s cubic-bezier(.2,1.6,.4,1) both; }
+  .podium .blk { border-radius: 1.2vw 1.2vw 0 0; display: grid; place-items: start center; padding-top: 1vw; font-size: 5vw; background: linear-gradient(180deg, var(--violet), var(--bg-2)); }
+  .podium .p1 .blk { height: 22vw; background: linear-gradient(180deg, var(--yellow), #b47a00); }
+  .podium .p2 .blk { height: 15vw; }
+  .podium .p3 .blk { height: 10vw; }
+  .podium .pts { font-size: 1.6vw; color: var(--muted); }
 
   .song-intro { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; text-align: center; background: rgba(18,10,36,.82); backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .6s ease; }
   .song-intro.show { opacity: 1; }
@@ -107,8 +141,6 @@
   .lyrics span { display: block; opacity: .55; }
   .lyrics span:first-child { opacity: 1; }
   .offline { position: fixed; bottom: 1vw; left: 1vw; z-index: 40; font-size: 1.2vw; font-weight: 800; padding: .5vw 1vw; border-radius: 999px; background: var(--danger); color: #fff; }
-  .finale-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-
   .start { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; text-align: center; background: rgba(18,10,36,.92); cursor: pointer; }
   .start h1 { font-size: 5vw; }
   .start p { font-size: 1.8vw; color: var(--muted); }
@@ -131,7 +163,7 @@
 
   <aside class="side">
     <div class="qr">
-      <img src="/qr.svg?path=/" alt="QR-kode til forsiden">
+      <img src="qr.svg?path=/" alt="QR-kode til forsiden">
       <div><strong>Skann og bli med!</strong><span id="url"></span></div>
     </div>
 
@@ -157,364 +189,18 @@
 
 <div class="toast" id="toast"></div>
 <div class="takeover" id="takeover" hidden></div>
-<audio id="audio" preload="auto"></audio>
 <div class="offline" id="offline" hidden>⚠️ Mistet kontakt med serveren, prøver igjen …</div>
 
 <div class="start" id="start">
   <div>
     <div style="font-size:8vw">📺</div>
     <h1>Trykk for å starte storskjermen</h1>
-    <p>Starter fullskjerm og musikk. Legg til <code>?lyd=av</code> i adressen på ekstra skjermer.</p>
+    <p id="startHint">Starter fullskjerm. Musikken spilles fra musikkskjermen (<code>/musikk</code>).</p>
   </div>
 </div>
 
-<script src="/common.js"></script>
-<script>
-(function () {
-  const esc = Party.esc;
-  const params = new URLSearchParams(location.search);
-  const SOUND = params.get('lyd') !== 'av';
-  const audio = document.getElementById('audio');
-  const layers = [document.getElementById('l0'), document.getElementById('l1')];
-  let active = 0;
-
-  Party.config().then((c) => { document.getElementById('emptyTitle').textContent = c.partyTitle; });
-  fetch('/api/qr-info').then((r) => r.json()).then((i) => { document.getElementById('url').textContent = i.base.replace(/^https?:\/\//, ''); });
-
-  // ---------------------------------------------------------------- data
-  let data = { gallery: [], nostalgia: [], playlist: [], schedule: [], queue: [], played: [], nowPlaying: null, working: 0, takeover: null };
-  let birthdayName = 'bursdagsbarnet';
-  Party.config().then((c) => { birthdayName = c.birthdayName; });
-  const seen = new Set();
-  const priority = [];
-  let firstLoad = true;
-  let failures = 0;
-  const knownSongs = new Set();
-
-  async function refresh() {
-    try {
-      const r = await fetch('/api/screen');
-      if (!r.ok) throw new Error(r.status);
-      data = await r.json();
-      failures = 0;
-      document.getElementById('offline').hidden = true;
-    } catch {
-      if (++failures >= 3) document.getElementById('offline').hidden = false;
-      return;
-    }
-    for (const item of data.gallery) {
-      if (!seen.has(item.id)) {
-        seen.add(item.id);
-        if (!firstLoad) {
-          priority.push(item);
-          toast(item.type === 'greeting' ? `💌 Ny hilsen${item.guest ? ' fra ' + item.guest : ''}!` : `${item.emoji || '✨'} Nytt fra ${item.guest || 'en gjest'}!`);
-        }
-      }
-    }
-    for (const s of [...data.queue, ...(data.nowPlaying ? [data.nowPlaying] : [])]) {
-      if (!knownSongs.has(s.id)) {
-        knownSongs.add(s.id);
-        if (!firstLoad) toast(`🎵 Ny sang i køen${s.guest ? ' fra ' + s.guest : ''}!`);
-      }
-    }
-    firstLoad = false;
-    const hasSlides = data.gallery.length || data.nostalgia.length;
-    document.getElementById('empty').style.display = hasSlides ? 'none' : '';
-    renderSide();
-    renderTakeover();
-    if (!showing && hasSlides) next();
-    if (SOUND && started && fallback && data.queue.length) playNext(null); // ny sang i kø: avbryt reprise
-  }
-
-  // ---------------------------------------------------------------- galleri
-  let showing = false, idx = 0, nIdx = 0, slideNo = 0, timer = null;
-  function next() {
-    clearTimeout(timer);
-    if (!data.gallery.length && !data.nostalgia.length) { showing = false; return; }
-    showing = true;
-    let item, isNew = false;
-    while (priority.length && !item) {
-      const p = priority.shift();
-      item = data.gallery.find((g) => g.id === p.id);
-      isNew = !!item;
-    }
-    slideNo++;
-    // Nostalgivegg: hvert tredje lysbilde (eller alle, hvis ingen har laget noe ennå)
-    if (!item && data.nostalgia.length && (slideNo % 3 === 0 || !data.gallery.length)) {
-      item = data.nostalgia[nIdx % data.nostalgia.length]; nIdx++;
-    }
-    if (!item) { item = data.gallery[idx % data.gallery.length]; idx++; }
-
-    if (item.type === 'greeting') {
-      const layer = layers[1 - active];
-      layer.innerHTML = `<div class="greet-bg"></div><div class="quote"><div class="prompt">${esc(item.emoji)} ${esc(item.label)}</div>
-        <blockquote>«${esc(item.text)}»</blockquote><div class="from">${item.guest ? '– ' + esc(item.guest) : ''}</div></div>` + (isNew ? '<div class="badge-new">NYTT! 🎉</div>' : '');
-      timer = setTimeout(next, 9000);
-      return swap(layer);
-    }
-    if (item.type === 'nostalgia') {
-      const layer = layers[1 - active];
-      const url = item.result.imageUrl;
-      layer.innerHTML = `<div class="bg" style="background-image:url('${esc(url)}')"></div><img class="kb" src="${esc(url)}" alt="">` +
-        (/^\d{4}$/.test(item.label) ? `<div class="year-tag">${esc(item.label)}</div>` : '') +
-        (item.guest ? `<div class="caption"><span class="em">🕰️</span><div>${esc(item.guest)}</div></div>` : '');
-      timer = setTimeout(next, 8000);
-      return swap(layer);
-    }
-
-    const layer = layers[1 - active];
-    const r = item.result || {};
-    const src = r.videoUrl || r.imageUrl || item.inputUrl;
-    const caption = `<div class="caption"><span class="em">${esc(item.emoji || '✨')}</span><div>${esc(item.label || '')}<small>${item.type === 'drawing' ? 'Tegnet av' : 'Med'} ${esc(item.guest || 'en hemmelig gjest')}</small></div></div>`;
-    const badge = isNew ? '<div class="badge-new">NYTT! 🎉</div>' : '';
-    const bg = `<div class="bg" style="background-image:url('${esc(item.inputUrl || r.imageUrl || '')}')"></div>`;
-    if (r.videoUrl) {
-      layer.innerHTML = bg + `<video src="${esc(src)}" muted playsinline autoplay></video>` + caption + badge;
-      const v = layer.querySelector('video');
-      let loops = 0;
-      v.addEventListener('ended', () => { loops++; if (loops >= 2 || v.duration > 8) next(); else v.play(); });
-      v.addEventListener('error', () => next());
-      timer = setTimeout(next, 25000); // sikring
-    } else {
-      layer.innerHTML = bg + `<img class="kb" src="${esc(src)}" alt="">` + caption + badge;
-      timer = setTimeout(next, 9000);
-    }
-    swap(layer);
-  }
-
-  function swap(layer) {
-    layer.classList.add('on');
-    layers[active].classList.remove('on');
-    const old = layers[active];
-    setTimeout(() => { if (!old.classList.contains('on')) old.innerHTML = ''; }, 1400);
-    active = 1 - active;
-  }
-
-  // ---------------------------------------------------------------- musikk
-  let started = false, current = null, fallback = false;
-
-  let switching = false;
-  async function playNext(finishedId) {
-    if (!SOUND || switching) return;
-    switching = true;
-    let now = null;
-    try {
-      const r = await fetch('/api/queue/next', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ finished: finishedId || '' }) });
-      now = (await r.json()).nowPlaying;
-    } catch { /* prøv igjen senere */ }
-    switching = false;
-
-    if (now) {
-      fallback = false;
-      start(now);
-    } else if (data.playlist.length) {
-      // Køen er tom: årsspillelisten 1986 → i dag, kronologisk
-      fallback = true;
-      let i = Number(store('bursdag-pl')) || 0;
-      if (i >= data.playlist.length) i = 0;
-      store('bursdag-pl', String(i + 1));
-      start({ ...data.playlist[i], kind: 'playlist' });
-    } else if (data.played.length) {
-      // Ingen årsspilleliste: spill gjestenes sanger om igjen til noen lager en ny
-      fallback = true;
-      const pick = data.played[Math.floor(Math.random() * data.played.length)];
-      start(pick);
-    } else {
-      current = null;
-      fallback = false;
-      renderSide();
-      setTimeout(() => { if (!current) playNext(null); }, 5000);
-    }
-  }
-
-  function start(song) {
-    current = song;
-    current.lines = cleanLyrics(song.result && song.result.lyrics);
-    audio.src = song.kind === 'playlist' ? song.url : song.result.audioUrl;
-    if (song.kind !== 'playlist' && !fallback) showIntro(song);
-    if (!data.takeover) audio.play().catch(() => {});
-    renderSide();
-  }
-
-  function cleanLyrics(text) {
-    if (!text) return [];
-    return String(text).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !/^[\[(].*[\])]$/.test(l));
-  }
-
-  let introTimer;
-  function showIntro(song) {
-    const el = document.getElementById('songIntro');
-    const r = song.result || {};
-    el.innerHTML = `<div><div class="k">🎤 Neste sang</div><div class="t gradient-text">${esc(r.title || song.label)}</div><div class="b">laget av ${esc(song.guest || 'en hemmelig gjest')} · ${esc(song.label)}</div></div>`;
-    el.classList.add('show');
-    clearTimeout(introTimer);
-    introTimer = setTimeout(() => el.classList.remove('show'), 6000);
-  }
-
-  function renderLyrics() {
-    const el = document.getElementById('lyrics');
-    if (!el || !current || !current.lines || !current.lines.length || !audio.duration) return;
-    const i = Math.min(current.lines.length - 1, Math.floor((audio.currentTime / audio.duration) * current.lines.length));
-    el.innerHTML = current.lines.slice(i, i + 2).map((l) => `<span>${esc(l)}</span>`).join('');
-  }
-
-  audio.addEventListener('ended', () => playNext(fallback ? null : current && current.id));
-  audio.addEventListener('error', () => setTimeout(() => playNext(fallback ? null : current && current.id), 1500));
-  audio.addEventListener('timeupdate', () => {
-    const b = document.querySelector('#now .bar div');
-    if (b && audio.duration) b.style.width = (audio.currentTime / audio.duration) * 100 + '%';
-    renderLyrics();
-  });
-
-  // ---------------------------------------------------------------- sidepanel
-  function store(k, v) {
-    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; }
-  }
-
-  function renderSide() {
-    const song = SOUND ? current : data.nowPlaying;
-    const now = document.getElementById('now');
-    if (song && song.kind === 'playlist') {
-      now.innerHTML = `<div class="row2"><div class="cover" style="font-size:1.8vw;font-weight:800">${esc(song.year || '🕰️')}</div>
-        <div><div class="title"><span class="eq"><i></i><i></i><i></i></span>${esc(song.title)}</div>
-        <div class="by">Årsspillelisten · én låt for hvert år</div></div></div><div class="bar"><div></div></div>`;
-    } else if (song) {
-      const r = song.result || {};
-      now.innerHTML = `<div class="row2"><div class="cover">${r.imageUrl ? `<img src="${esc(r.imageUrl)}" alt="">` : '🎵'}</div>
-        <div><div class="title"><span class="eq"><i></i><i></i><i></i></span>${esc(r.title || song.label)}</div>
-        <div class="by">${fallback ? 'Reprise · ' : ''}Laget av ${esc(song.guest || 'en hemmelig gjest')}</div></div></div>
-        <div class="bar"><div></div></div>${song.lines && song.lines.length ? '<div class="lyrics" id="lyrics"></div>' : ''}`;
-      renderLyrics();
-    } else {
-      now.innerHTML = '<p class="muted">Ingen sanger ennå. Lag den første! 🎤</p>';
-    }
-    const q = document.getElementById('queue');
-    q.innerHTML = data.queue.length
-      ? data.queue.slice(0, 4).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
-      : '<li class="muted">Tom kø. Skann og lag en sang!</li>';
-    renderProgram();
-    const making = data.making || [];
-    document.getElementById('working').innerHTML = making.length
-      ? '<h2>Lages nå</h2>' + making.map((m) => `<div class="making">${esc(m.emoji || '✨')} ${esc(m.guest || 'En gjest')} <small>${m.waiting ? 'i kø' : esc(m.label)}</small></div>`).join('') +
-        (data.working > making.length ? `<div class="making"><small>+ ${data.working - making.length} til …</small></div>` : '')
-      : '';
-  }
-
-  // ---------------------------------------------------------------- program
-  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
-  function renderProgram() {
-    const box = document.getElementById('programBox');
-    if (!data.schedule.length) { box.hidden = true; return; }
-    box.hidden = false;
-    const d = new Date();
-    const nowMin = d.getHours() * 60 + d.getMinutes();
-    let cur = -1;
-    data.schedule.forEach((p, i) => { if (toMin(p.time) <= nowMin) cur = i; });
-    document.getElementById('program').innerHTML = data.schedule.map((p, i) =>
-      `<li class="${i === cur ? 'now' : i < cur ? 'past' : ''}"><b>${esc(p.time)}</b><span>${esc(p.emoji)} ${esc(p.title)}</span></li>`).join('');
-    const hl = data.schedule.find((p) => p.highlight && toMin(p.time) > nowMin);
-    const left = hl ? toMin(hl.time) - nowMin : null;
-    document.getElementById('countdown').textContent = hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
-  }
-
-  // ---------------------------------------------------------------- felles høydepunkt
-  let shownTakeover = null, greetTimer = null, finaleAudio = null;
-  function renderTakeover() {
-    const t = data.takeover;
-    const el = document.getElementById('takeover');
-    const key = t ? t.mode + t.at : null;
-    if (key === shownTakeover) return;
-    shownTakeover = key;
-    clearInterval(greetTimer);
-    if (finaleAudio) { finaleAudio.pause(); finaleAudio = null; }
-    if (!t) {
-      el.hidden = true; el.innerHTML = '';
-      if (SOUND && started && current) audio.play().catch(() => {});
-      return;
-    }
-    audio.pause();
-    el.hidden = false;
-    if (t.mode === 'cake') {
-      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Samle dere rundt kaka, så synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
-      Party.confetti(150);
-    } else if (t.mode === 'finale') {
-      const f = t.finale;
-      if (!f) { el.innerHTML = '<div><div class="huge">🎬</div><h1>Finalen er ikke klar</h1></div>'; return; }
-      const title = (f.song && f.song.result && f.song.result.title) || 'Bursdagssangen';
-      el.innerHTML = `<div><div class="huge">🎬</div><h1 class="gradient-text">Verdenspremiere!</h1><p>${esc(birthdayName)} synger «${esc(title)}»${f.song && f.song.guest ? `, laget av ${esc(f.song.guest)}` : ''}</p></div>`;
-      const key = shownTakeover;
-      const end = () => {
-        if (shownTakeover !== key) return;
-        el.innerHTML = `<div><div class="huge">🎉</div><h1 class="gradient-text">Gratulerer med dagen, ${esc(birthdayName)}!</h1></div>`;
-        Party.confetti(220);
-      };
-      setTimeout(() => {
-        if (shownTakeover !== key) return;
-        el.innerHTML = `<video class="finale-video" src="${esc(f.videoUrl)}" playsinline ${f.lipsync ? '' : 'muted loop'}></video>`;
-        const v = el.querySelector('video');
-        if (f.lipsync) {
-          v.addEventListener('ended', end);
-        } else if (f.audioUrl) {
-          finaleAudio = new Audio(f.audioUrl);
-          finaleAudio.addEventListener('ended', () => { v.pause(); end(); });
-          finaleAudio.play().catch(() => {});
-        }
-        v.play().catch(() => {});
-      }, 4000);
-    } else if (t.mode === 'greetings') {
-      const list = t.greetings || [];
-      if (!list.length) { el.innerHTML = '<div><div class="huge">💌</div><h1>Ingen hilsener ennå</h1></div>'; return; }
-      let i = 0;
-      const show = () => {
-        const g = list[i % list.length]; i++;
-        el.innerHTML = `<div class="quote" style="max-width:85vw"><div class="prompt">${esc(g.emoji)} ${esc(g.label)} · ${i} av ${list.length}</div><blockquote>«${esc(g.text)}»</blockquote><div class="from">${g.guest ? '– ' + esc(g.guest) : ''}</div></div>`;
-      };
-      show();
-      greetTimer = setInterval(show, 12000);
-    } else if (t.mode === 'quiz') {
-      if (!t.winner) { el.innerHTML = '<div><div class="huge">🧠</div><h1>Ingen har svart på quizen ennå!</h1></div>'; return; }
-      el.innerHTML = `<div><div class="huge">🥁</div><h1>Quiz-vinneren er …</h1><div class="spin-name" id="spinName"></div><p>${t.count} deltakere</p></div>`;
-      const names = t.names.length ? t.names : [t.winner.name];
-      let n = 0, delay = 60;
-      const spin = () => {
-        const sp = document.getElementById('spinName');
-        if (!sp) return;
-        sp.textContent = names[n++ % names.length];
-        delay *= 1.12;
-        if (delay < 650) setTimeout(spin, delay);
-        else setTimeout(reveal, 500);
-      };
-      const reveal = () => {
-        el.innerHTML = `<div><div class="huge">🏆</div><div class="winner gradient-text">${esc(t.winner.name)}</div>
-          <p>${t.winner.score} av ${t.max} riktige!</p>
-          <div class="fasit">${t.answers.map((a, i) => `<div>${i + 1}. ${esc(a.q)}<b>${esc(a.a)}</b></div>`).join('')}</div></div>`;
-        Party.confetti(200);
-      };
-      spin();
-    }
-  }
-
-  // ---------------------------------------------------------------- toast
-  let toastTimer;
-  function toast(text) {
-    const t = document.getElementById('toast');
-    t.textContent = text;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
-  }
-
-  // ---------------------------------------------------------------- start
-  document.getElementById('start').addEventListener('click', () => {
-    document.getElementById('start').remove();
-    started = true;
-    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-    playNext(null);
-  });
-
-  refresh();
-  setInterval(refresh, 4000);
-})();
-</script>
+<script src="common.js"></script>
+<script src="player.js"></script>
+<script src="screen.js"></script>
 </body>
 </html>

@@ -9,6 +9,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: resolve(import.meta.dirname),
   },
+  // Bursdagsappen (projects/bursdag) kjører som egen tjeneste. Sett BURSDAG_URL
+  // (f.eks. https://bursdag-production.up.railway.app) for å vise den på /bursdag.
+  async rewrites() {
+    const target = process.env.BURSDAG_URL?.replace(/\/+$/, "");
+    if (!target) return [];
+    return [
+      { source: "/bursdag", destination: `${target}/bursdag/` },
+      { source: "/bursdag/:path*", destination: `${target}/bursdag/:path*` },
+    ];
+  },
   async headers() {
     return [
       {

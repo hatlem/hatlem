@@ -10,16 +10,35 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
-- 🧠 **Quiz om bursdagsbarnet** (`/quiz`): gjestene svarer når de kommer, og vinneren trekkes på storskjermen ved kaka.
-- 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv. Hilsenene vises på storskjermen.
+- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
+- 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
-Sider:
+## Skjermer og lyd
 
-- `/` er forsiden med de tre valgene.
-- `/skjerm` er storskjermen. Den viser et galleri med alle filmer og effekter (nye kommer først med «NYTT!»), spiller sangkøen og viser en QR-kode. Når køen er tom, spilles tidligere sanger om igjen. Klikk én gang for fullskjerm og lyd. Ekstra skjermer uten lyd: `/skjerm?lyd=av`.
-- `/qr` gir A4-plakater med QR-koder for forsiden, hver aktivitet, «Tiger-hjørnet» og «Spøkelseshjørnet». Skriv ut og heng opp.
-- `/admin` har også knapper for det **felles høydepunktet**: 🎂 Kaketid, 🧠 Trekk quizvinner (trommevirvel og fasit), 💌 Les hilsener (én og én i stor tekst) og ⏹️ Tilbake til vanlig. Musikken pauses mens høydepunktet vises.
-- `/admin` lar deg skjule upassende ting og flytte en sang først i køen. Krever `ADMIN_KEY`.
+Én datamaskin med to skjermer, og høyttaleren koblet til maskinen:
+
+| Skjerm | Adresse | Viser |
+|---|---|---|
+| 1 | `/skjerm` | Galleri, «Nå spilles», program og QR. Under høydepunktet viser den kake, live-quiz, hilsener og finale. **Ingen lyd** (unntatt finalen). |
+| 2 | `/musikk` | Stor «Nå spilles» med cover og sangtekst, køen og en QR-kode til «Lag din egen sang». **Spiller musikken.** |
+
+- **Bare én kilde spiller lyd.** Siden som sist trykket «Start» tar over, og andre blir stille. Har du bare én skjerm, bruk `/skjerm?lyd=pa`.
+- **Musikken går hele tiden.** Rekkefølgen er gjestesanger i kø, så årsspillelisten (kronologisk), så reprise. En ny gjestesang avbryter årsspillelisten.
+- **Under kake, hilsener og finale** settes musikken på pause automatisk. Under quizen dempes den til en firedel.
+
+Sider for verten:
+
+- `/admin`: godkjenning, felles høydepunkt (🎂 kake, 💌 hilsener, 🎬 finale), live-quiz med én «Neste»-knapp, og forbruk.
+- `/admin/musikk`: fjernkontroll i Spotify-stil.
+  - Nå spilles med ⏯️, ⏭️ og volum.
+  - Fanene **Kø** (⬆️⬇️, ▶️ spill nå, ✖️ fjern), **Alle sanger** og **Spilt** (▶️ / ➕ legg i kø) og **Årsspilleliste**.
+  - Søk på tittel, gjest eller år.
+- `/galleri`: galleri i Google Photos-stil.
+  - Tidslinje per time.
+  - Fullskjerm med sveip, piltaster og «sveip ned for å lukke».
+  - 📤 Del via telefonen og ⬇️ last ned enkeltfiler.
+  - **Last ned alt** som én zip, sortert i mappene `tegninger/`, `selfies/` og `sanger/`, med `hilsener.txt` og finalen.
+- `/qr`: A4-plakater med QR-koder.
 
 ## Før festen: fyll inn ditt eget innhold
 
@@ -72,6 +91,17 @@ Skriptet leser `.env`. Den ekte testen viser:
   - Hvis lipsync ikke er satt opp eller feiler, blir finalen videoen og sangen spilt samtidig, så den virker uansett.
 - **Galleri** (`/galleri`): alt som ble vist på skjermen, med nedlastingslenker og finalen øverst. Send lenken til gjestene dagen etter.
 - **Forbruk:** admin viser hvor mange videoer og sanger som er laget, mot `MAX_JOBS_TOTAL`.
+
+## På andreashatlem.no/bursdag
+
+Bursdagsappen kjører som egen tjeneste (Railway), og hovedsiden videresender `/bursdag` dit:
+
+1. Deploy bursdagsappen (se under) med `PUBLIC_URL=https://andreashatlem.no/bursdag`. Da ligger alle sidene under `/bursdag/`.
+2. Sett `BURSDAG_URL=https://<bursdag-tjenesten>.up.railway.app` på **hovedsiden** og deploy den. `next.config.ts` videresender `/bursdag/*`, og språkruteren hopper over `/bursdag`. Uten `BURSDAG_URL` endres ingenting på hovedsiden.
+3. Webhooks og QR-kodene bruker `PUBLIC_URL`.
+4. Opplasting av store finalevideoer går fint via Railway-adressen direkte, hvis hovedsiden begrenser størrelsen.
+
+Vil du heller ha et subdomene (`bursdag.andreashatlem.no`), legg det til som eget domene på Railway og sett `PUBLIC_URL` til det. Da trengs ingen `BURSDAG_URL`.
 
 ## Deploy på Railway (anbefalt)
 

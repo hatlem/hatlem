@@ -52,7 +52,7 @@
     { path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', text: 'Tegn noe, ta bilde av det, og se det bli levende på storskjermen', grad: 'linear-gradient(135deg,#ffd23f,#ff9f1c)' },
     { path: '/sang', emoji: '🎤', title: 'Lag en sang', text: 'Velg tema og sjanger. Sangen din legges i spillelisten på festen!', grad: 'linear-gradient(135deg,#ff4fa3,#9b6bff)' },
     { path: '/selfie', emoji: '🤳', title: 'Selfie med effekt', text: 'Få en tiger til å gå rundt deg, bli et spøkelse eller fly som en superhelt', grad: 'linear-gradient(135deg,#3ee6d8,#3a86ff)' },
-    { path: '/quiz', emoji: '🧠', title: 'Quiz om bursdagsbarnet', text: 'Hvor godt kjenner du bursdagsbarnet? Vinneren trekkes ved kaka!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
+    { path: '/quiz', emoji: '🧠', title: 'Quiz om bursdagsbarnet', text: 'Live-quiz på storskjermen ved kaka. Skann og meld deg på nå!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
     { path: '/hilsen', emoji: '💌', title: 'Gjestebok med vri', text: 'Gi 40-åringen ett råd, eller gjett hva bursdagsbarnet gjorde som 20-åring', grad: 'linear-gradient(135deg,#ff4fa3,#ffd23f)' },
     { path: '/selfie?effekt=attitall', emoji: '📼', title: 'Fotohjørnet: 1986', text: 'Ta på deg 80-tallsrekvisittene, ta en selfie og bli en del av en 80-tallsvideo!', grad: 'linear-gradient(135deg,#ff4fa3,#3ee6d8)' },
     { path: '/selfie?effekt=tiger', emoji: '🐯', title: 'Tiger-hjørnet', text: 'Still deg her, ta en selfie, og se en tiger gå rundt deg!', grad: 'linear-gradient(135deg,#ff9f1c,#ff4f4f)' },
@@ -60,7 +60,7 @@
   ];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-  Promise.all([fetch('/api/qr-info').then((r) => r.json()), fetch('/api/config').then((r) => r.json())]).then(([info, cfg]) => {
+  Promise.all([fetch('api/qr-info').then((r) => r.json()), fetch('api/config').then((r) => r.json())]).then(([info, cfg]) => {
     for (const p of POSTERS) {
       p.title = p.title.replace('bursdagsbarnet', cfg.birthdayName);
       p.text = p.text.replace(/bursdagsbarnet/g, cfg.birthdayName);
@@ -71,7 +71,7 @@
     document.getElementById('sheets').innerHTML = POSTERS.map((p) => {
       const qrPath = p.path.split('?')[0];
       const query = p.path.includes('?') ? '?' + p.path.split('?')[1] : '';
-      const src = '/qr.svg?path=' + encodeURIComponent(qrPath) + (query ? '&q=' + encodeURIComponent(query.slice(1)) : '');
+      const src = 'qr.svg?path=' + encodeURIComponent(qrPath) + (query ? '&q=' + encodeURIComponent(query.slice(1)) : '');
       return `<section class="poster" style="--grad:${p.grad}">
         <div><div class="emoji">${p.emoji}</div><h2>${esc(p.title)}</h2><p>${esc(p.text)}</p></div>
         <img src="${src}" alt="QR-kode til ${esc(p.title)}">

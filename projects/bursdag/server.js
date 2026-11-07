@@ -24,12 +24,17 @@ const suno = require('./lib/suno');
 const demo = require('./lib/demo');
 const { DRAWING_STYLES, SELFIE_EFFECTS, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
 const party = require('./lib/party');
+const { createKahoot } = require('./lib/kahoot');
+const { writeZip } = require('./lib/zip');
 
 // ---------------------------------------------------------------------------
 // Konfig
 // ---------------------------------------------------------------------------
 const PORT = Number(process.env.PORT || 4830);
+// Full offentlig adresse, inkludert eventuell sti (f.eks. https://andreashatlem.no/bursdag)
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+// Stien appen ligger under (tom = rot). Settes automatisk fra PUBLIC_URL hvis den har en sti.
+const BASE_PATH = ((process.env.BASE_PATH ?? (PUBLIC_URL ? new URL(PUBLIC_URL).pathname : '')) || '').replace(/\/+$/, '');
 const BIRTHDAY_NAME = process.env.BIRTHDAY_NAME || 'bursdagsbarnet';
 const PARTY_TITLE = process.env.PARTY_TITLE || `${BIRTHDAY_NAME} sin bursdag`;
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
@@ -62,7 +67,18 @@ const useSuno = suno.isConfigured();
 // ---------------------------------------------------------------------------
 /** @type {Map<string, any>} */
 const jobs = new Map();
-const state = { queue: [], nowPlaying: null, played: [], quiz: [], takeover: null, moderation: /^(1|on|ja|true)$/i.test(process.env.GODKJENNING || ''), finaleId: null };
+const state = {
+  queue: [],
+  nowPlaying: null,
+  played: [],
+  playlistIndex: 0,
+  takeover: null,
+  moderation: /^(1|on|ja|true)$/i.test(process.env.GODKJENNING || ''),
+  finaleId: null,
+  kahoot: null,
+  // Én lydkilde: siden som sist trykket «Start» med lyd. Admin fjernstyrer den.
+  player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
+};
 
 /** Vises på storskjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
 const onScreen = (j) => !j.hidden && j.approved !== false;
@@ -79,13 +95,18 @@ function queueSong(job) {
 function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(JOBS_FILE, 'utf8'));
-    for (const j of raw.jobs || []) jobs.set(j.id, j);
+    // Eldre data hadde absolutte lenker (/media/…): gjør dem relative
+    const fix = (o) => JSON.parse(JSON.stringify(o).replace(/"\/(media|nostalgi|spilleliste)\//g, '"$1/'));
+    for (const j of raw.jobs || []) jobs.set(j.id, fix(j));
     Object.assign(state, raw.state || {});
   } catch {
     /* første oppstart */
   }
 }
 load();
+state.player = { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null, ...(state.player || {}) };
+const kahoot = createKahoot(() => PARTY.quiz.questions, state.kahoot);
+state.kahoot = kahoot.state;
 
 let saveTimer = null;
 function save() {
@@ -109,8 +130,8 @@ function updateJob(job, patch) {
 function baseUrl(req) {
   if (PUBLIC_URL) return PUBLIC_URL;
   const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  return `${proto}://${host}`;
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host).split(',')[0];
+  return `${proto}://${host}${BASE_PATH}`;
 }
 
 function lanAddresses() {
@@ -132,12 +153,12 @@ const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 
 function saveMedia(buffer, contentType) {
   const name = crypto.randomUUID() + (EXT[contentType] || '');
   fs.writeFileSync(path.join(MEDIA_DIR, name), buffer);
-  return `/media/${name}`;
+  return `media/${name}`; // relativ: virker både på rot og under BASE_PATH
 }
 
 /** Last ned ferdig resultat lokalt, så skjermen fungerer selv om API-lenkene utløper. */
 async function mirror(url, fallbackType) {
-  if (!url || url.startsWith('/media/')) return url;
+  if (!url || url.startsWith('media/')) return url;
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -366,8 +387,9 @@ for (const job of jobs.values()) {
 const app = express();
 app.set('trust proxy', true);
 app.disable('x-powered-by');
-app.use(express.json({ limit: '200kb' }));
-app.use((req, res, next) => {
+const r = express.Router(); // alle ruter, montert under BASE_PATH
+r.use(express.json({ limit: '200kb' }));
+r.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
@@ -379,23 +401,33 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype)),
 });
 
-const page = (name) => (req, res) => res.sendFile(path.join(__dirname, 'public', `${name}.html`));
-app.get('/', page('index'));
-app.get('/tegning', page('tegning'));
-app.get('/sang', page('sang'));
-app.get('/selfie', page('selfie'));
-app.get('/status/:id', page('status'));
-app.get('/skjerm', page('skjerm'));
-app.get('/qr', page('qr'));
-app.get('/admin', page('admin'));
-app.get('/quiz', page('quiz'));
-app.get('/hilsen', page('hilsen'));
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
-app.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
-app.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
-app.use('/spilleliste', express.static(PLAYLIST_DIR, { maxAge: '1h' }));
+const pageCache = new Map();
+const page = (name) => (req, res) => {
+  // <base> gjør at alle relative lenker i sidene virker både på rot og under BASE_PATH
+  let html = pageCache.get(name);
+  if (!html || process.env.NODE_ENV !== 'production') {
+    html = fs.readFileSync(path.join(__dirname, 'public', `${name}.html`), 'utf8').replace('<head>', `<head>\n<base href="${BASE_PATH}/">`);
+    pageCache.set(name, html);
+  }
+  res.type('html').setHeader('Cache-Control', 'no-cache');
+  res.send(html);
+};
+r.get('/', page('index'));
+r.get('/tegning', page('tegning'));
+r.get('/sang', page('sang'));
+r.get('/selfie', page('selfie'));
+r.get('/status/:id', page('status'));
+r.get('/skjerm', page('skjerm'));
+r.get('/qr', page('qr'));
+r.get('/admin', page('admin'));
+r.get('/quiz', page('quiz'));
+r.get('/hilsen', page('hilsen'));
+r.use(express.static(path.join(__dirname, 'public'), { index: false }));
+r.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
+r.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
+r.use('/spilleliste', express.static(PLAYLIST_DIR, { maxAge: '1h' }));
 
-app.get('/api/config', (req, res) => {
+r.get('/api/config', (req, res) => {
   res.json({
     birthdayName: BIRTHDAY_NAME,
     partyTitle: PARTY_TITLE,
@@ -410,7 +442,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.get('/qr.svg', async (req, res) => {
+r.get('/qr.svg', async (req, res) => {
   const target = String(req.query.path || '/');
   const query = String(req.query.q || '');
   if (!/^\/[a-z0-9/_-]*$/i.test(target) || !/^[a-z0-9=&_-]*$/i.test(query)) return res.status(400).end();
@@ -419,14 +451,14 @@ app.get('/qr.svg', async (req, res) => {
   res.send(svg);
 });
 
-app.get('/api/qr-info', (req, res) => {
+r.get('/api/qr-info', (req, res) => {
   const base = baseUrl(req);
   const local = /localhost|127\.0\.0\.1/.test(base);
-  res.json({ base, local, lan: lanAddresses().map((ip) => `http://${ip}:${PORT}`) });
+  res.json({ base, local, lan: lanAddresses().map((ip) => `http://${ip}:${PORT}${BASE_PATH}`) });
 });
 
 // Tegning -> film
-app.post('/api/drawing', upload.single('image'), async (req, res) => {
+r.post('/api/drawing', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fant ikke noe bilde. Prøv igjen!' });
   const limit = checkLimits(clean(req.body.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
@@ -442,7 +474,7 @@ app.post('/api/drawing', upload.single('image'), async (req, res) => {
 });
 
 // Selfie -> effekt
-app.post('/api/selfie', upload.single('image'), async (req, res) => {
+r.post('/api/selfie', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fant ikke noe bilde. Prøv igjen!' });
   const limit = checkLimits(clean(req.body.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
@@ -456,7 +488,7 @@ app.post('/api/selfie', upload.single('image'), async (req, res) => {
 });
 
 // Sang
-app.post('/api/song', async (req, res) => {
+r.post('/api/song', async (req, res) => {
   const b = req.body || {};
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
@@ -486,14 +518,14 @@ function friendly(err) {
   return 'Noe gikk galt hos AI-tjenesten. Prøv igjen om litt!';
 }
 
-app.get('/api/jobs/:id', (req, res) => {
+r.get('/api/jobs/:id', (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: 'Fant ikke denne.' });
   res.json(publicJob(job));
 });
 
 // Storskjerm
-app.get('/api/screen', (req, res) => {
+r.get('/api/screen', (req, res) => {
   const visible = [...jobs.values()].filter(onScreen);
   const gallery = visible
     .filter((j) => VIDEO_TYPES.has(j.type) || j.type === 'greeting')
@@ -511,18 +543,18 @@ app.get('/api/screen', (req, res) => {
     .map((j) => ({ guest: j.guest, emoji: j.emoji, label: j.label, waiting: j.status === 'waiting' }));
   const nostalgia = nostalgiaFiles().map((f) => {
     const { year, title } = party.parseName(f);
-    return { id: 'n:' + f, type: 'nostalgia', emoji: '🕰️', label: year ? String(year) : title, guest: year ? title : '', result: { imageUrl: '/nostalgi/' + encodeURIComponent(f) } };
+    return { id: 'n:' + f, type: 'nostalgia', emoji: '🕰️', label: year ? String(year) : title, guest: year ? title : '', result: { imageUrl: 'nostalgi/' + encodeURIComponent(f) } };
   });
   const playlist = playlistFiles().map((f) => {
     const { year, title } = party.parseName(f);
-    return { id: 'p:' + f, year, title, url: '/spilleliste/' + encodeURIComponent(f) };
+    return { id: 'p:' + f, year, title, url: 'spilleliste/' + encodeURIComponent(f) };
   });
   res.json({
     nostalgia,
     playlist,
     schedule: PARTY.schedule,
     takeover: takeoverView(),
-    quizCount: state.quiz.length,
+    playing: playerReport(),
     gallery,
     nowPlaying: state.nowPlaying && !jobs.get(state.nowPlaying)?.hidden ? publicJob(jobs.get(state.nowPlaying)) : null,
     queue: songs(state.queue),
@@ -533,29 +565,123 @@ app.get('/api/screen', (req, res) => {
   });
 });
 
-// Skjermen sier fra når en sang er ferdig spilt (eller vil hoppe over). Returnerer neste sang.
-app.post('/api/queue/next', (req, res) => {
-  const finished = String((req.body || {}).finished || '');
+// Lydkilden sier fra når en sang er ferdig spilt. Svarer med neste sang:
+// gjestesang fra køen → årsspillelisten (kronologisk) → reprise av gjestesanger.
+function playlistEntries() {
+  return playlistFiles().map((f) => {
+    const { year, title } = party.parseName(f);
+    return { id: 'p:' + f, kind: 'playlist', year, title, url: 'spilleliste/' + encodeURIComponent(f) };
+  });
+}
+
+function nextSong(finished) {
   if (finished && finished === state.nowPlaying) {
     state.played.push(finished);
     state.nowPlaying = null;
   }
   if (!state.nowPlaying) {
     while (state.queue.length) {
-      const id = state.queue.shift();
-      const j = jobs.get(id);
-      if (j && !j.hidden) {
-        state.nowPlaying = id;
+      const j = jobs.get(state.queue.shift());
+      if (j && onScreen(j)) {
+        state.nowPlaying = j.id;
         break;
       }
     }
   }
   save();
-  res.json({ nowPlaying: state.nowPlaying ? publicJob(jobs.get(state.nowPlaying)) : null });
+  if (state.nowPlaying) return publicJob(jobs.get(state.nowPlaying));
+  const list = playlistEntries();
+  if (list.length) {
+    const song = list[state.playlistIndex % list.length];
+    state.playlistIndex = (state.playlistIndex + 1) % list.length;
+    return song;
+  }
+  const played = state.played.map((id) => jobs.get(id)).filter((j) => j && onScreen(j));
+  if (played.length) return { ...publicJob(played[Math.floor(Math.random() * played.length)]), kind: 'reprise' };
+  return null;
+}
+
+r.post('/api/queue/next', (req, res) => {
+  const b = req.body || {};
+  if (b.playerId && b.playerId !== state.player.id) return res.json({ song: null, inactive: true });
+  res.json({ song: nextSong(String(b.finished || '')) });
 });
 
+// --- Lydkilden (musikkskjermen) ---------------------------------------------
+function playerReport() {
+  const rep = state.player.report;
+  return rep && Date.now() - rep.at < 12000 ? rep : null;
+}
+
+/** Under kake, tale og finale stopper musikken; under quizen senkes den. */
+function playerMix() {
+  const mode = state.takeover && state.takeover.mode;
+  return { forcePause: ['cake', 'greetings', 'finale'].includes(mode), duck: mode === 'kahoot' ? 0.25 : 1 };
+}
+
+r.post('/api/player/claim', (req, res) => {
+  const id = clean((req.body || {}).playerId, 64);
+  if (!id) return res.status(400).end();
+  state.player.id = id;
+  save();
+  res.json({ ok: true });
+});
+
+r.get('/api/player', (req, res) => {
+  const p = state.player;
+  res.json({
+    active: !!p.id && req.query.playerId === p.id,
+    paused: p.paused,
+    volume: p.volume,
+    seq: p.seq,
+    cmd: p.cmd,
+    queueLength: state.queue.length,
+    ...playerMix(),
+  });
+});
+
+r.post('/api/player/report', (req, res) => {
+  const b = req.body || {};
+  if (b.playerId !== state.player.id) return res.json({ active: false });
+  const now = b.now && typeof b.now === 'object' ? b.now : null;
+  state.player.report = {
+    at: Date.now(),
+    now: now && { id: clean(now.id, 200), kind: clean(now.kind, 20), title: clean(now.title, 120), guest: clean(now.guest, 40), label: clean(now.label, 80), year: Number(now.year) || null, imageUrl: clean(now.imageUrl, 300) },
+    position: Number(b.position) || 0,
+    duration: Number(b.duration) || 0,
+    paused: !!b.paused,
+  };
+  res.json({ active: true });
+});
+
+// --- Kahoot-quiz --------------------------------------------------------------
+r.get('/api/kahoot', (req, res) => {
+  res.json(kahoot.playerView(clean(req.query.deviceId, 64)));
+});
+r.get('/api/kahoot/screen', (req, res) => res.json(kahoot.screenView()));
+r.post('/api/kahoot/join', (req, res) => {
+  const deviceId = clean((req.body || {}).deviceId, 64);
+  const name = clean((req.body || {}).name, 24);
+  if (!deviceId || !name) return res.status(400).json({ error: 'Skriv navnet ditt først!' });
+  kahoot.join(deviceId, name);
+  save();
+  res.json(kahoot.playerView(deviceId));
+});
+r.post('/api/kahoot/answer', (req, res) => {
+  const b = req.body || {};
+  const ok = kahoot.answer(clean(b.deviceId, 64), Number(b.q), Number(b.choice));
+  if (ok) {
+    kahoot.tick();
+    save();
+  }
+  res.json({ ok, ...kahoot.playerView(clean(b.deviceId, 64)) });
+});
+setInterval(() => {
+  if (kahoot.tick()) save();
+}, 400);
+
 // Webhooks (brukes når PUBLIC_URL er satt; polling er alltid backup)
-app.post('/api/hooks/:provider', (req, res) => {
+r.post('/api/hooks/:provider', (req, res) => {
   const job = jobs.get(String(req.query.job || ''));
   if (!job || req.query.t !== job.hookToken) return res.status(404).end();
   res.json({ ok: true });
@@ -564,7 +690,7 @@ app.post('/api/hooks/:provider', (req, res) => {
 });
 
 // Gjestebok med vri: korte hilsener som vises på storskjermen
-app.post('/api/greeting', (req, res) => {
+r.post('/api/greeting', (req, res) => {
   const b = req.body || {};
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip, { budget: false });
   if (limit) return res.status(429).json({ error: limit });
@@ -575,45 +701,10 @@ app.post('/api/greeting', (req, res) => {
   res.json({ id: job.id });
 });
 
-// Quiz om bursdagsbarnet
-app.get('/api/quiz', (req, res) => {
-  const deviceId = clean(req.query.deviceId, 64);
-  const mine = state.quiz.find((e) => e.deviceId === deviceId);
-  res.json({
-    questions: PARTY.quiz.questions.map(({ q, options }) => ({ q, options })),
-    closed: !!state.quizClosed,
-    mine: mine ? { name: mine.name, answers: mine.answers } : null,
-  });
-});
-
-app.post('/api/quiz', (req, res) => {
-  const b = req.body || {};
-  if (state.quizClosed) return res.status(409).json({ error: 'Quizen er avsluttet, vinneren er trukket! 🏆' });
-  const deviceId = clean(b.deviceId, 64);
-  const name = clean(b.name, 40);
-  if (!deviceId || !name) return res.status(400).json({ error: 'Skriv navnet ditt, så vi vet hvem som vinner!' });
-  const qs = PARTY.quiz.questions;
-  const answers = qs.map((q, i) => {
-    const a = Number(Array.isArray(b.answers) ? b.answers[i] : NaN);
-    return Number.isInteger(a) && a >= 0 && a < q.options.length ? a : null;
-  });
-  if (answers.some((a) => a === null)) return res.status(400).json({ error: 'Svar på alle spørsmålene først!' });
-  const entry = { deviceId, name, answers, score: party.scoreQuiz(qs, answers), at: Date.now() };
-  state.quiz = state.quiz.filter((e) => e.deviceId !== deviceId).concat(entry);
-  save();
-  res.json({ ok: true, count: state.quiz.length });
-});
-
 // Felles høydepunkt: storskjermen tar over (kaketid, quiz-trekning, hilsener høyt)
 function takeoverView() {
   const t = state.takeover;
   if (!t) return null;
-  if (t.mode === 'quiz') {
-    return {
-      ...t,
-      answers: PARTY.quiz.questions.map((q) => ({ q: q.q, a: q.options[q.correct] })),
-    };
-  }
   if (t.mode === 'finale') {
     const f = jobs.get(state.finaleId);
     return { ...t, finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
@@ -635,16 +726,17 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-app.get('/api/admin/jobs', requireAdmin, (req, res) => {
+r.get('/api/admin/jobs', requireAdmin, (req, res) => {
   const list = [...jobs.values()].sort((a, b) => b.createdAt - a.createdAt).map((j) => ({ ...publicJob(j), hidden: !!j.hidden, error: j.error }));
   res.json({ jobs: list, queue: state.queue, nowPlaying: state.nowPlaying });
 });
 
-app.get('/api/admin/party', requireAdmin, (req, res) => {
-  const top = [...state.quiz].sort((a, b) => b.score - a.score || a.at - b.at).slice(0, 10).map(({ name, score }) => ({ name, score }));
+r.get('/api/admin/party', requireAdmin, (req, res) => {
   res.json({
     takeover: state.takeover ? state.takeover.mode : null,
-    quiz: { count: state.quiz.length, max: PARTY.quiz.questions.length, top, example: PARTY.quiz.example, closed: !!state.quizClosed },
+    quiz: { example: PARTY.quiz.example, questions: PARTY.quiz.questions.length },
+    kahoot: kahoot.adminView(),
+    player: { online: !!playerReport(), ...playerReport() },
     videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
     usage: {
       videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type)).length,
@@ -665,7 +757,7 @@ app.get('/api/admin/party', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/admin/takeover', requireAdmin, (req, res) => {
+r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   const mode = (req.body || {}).mode;
   if (mode === 'off') state.takeover = null;
   else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: (PARTY.schedule.find((p) => p.highlight) || {}).title || 'Kaketid!' };
@@ -675,19 +767,13 @@ app.post('/api/admin/takeover', requireAdmin, (req, res) => {
     if (!f || f.status !== 'done') return res.status(409).json({ error: 'Finalen er ikke klar ennå.' });
     state.takeover = { mode, at: Date.now() };
   }
-  else if (mode === 'quiz') {
-    const winner = party.drawWinner(state.quiz);
-    const names = [...new Set(state.quiz.map((e) => e.name))].sort(() => Math.random() - 0.5).slice(0, 40);
-    state.takeover = { mode, at: Date.now(), winner: winner && { name: winner.name, score: winner.score }, max: PARTY.quiz.questions.length, count: state.quiz.length, names };
-    state.quizClosed = true;
-  } else if (mode === 'reopen-quiz') {
-    state.quizClosed = false;
-  } else return res.status(400).json({ error: 'Ukjent modus' });
+  else return res.status(400).json({ error: 'Ukjent modus' });
+  if (mode !== 'off' && kahoot.state.phase) kahoot.end(); // noe annet tar over skjermen
   save();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
+r.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).end();
   const { action } = req.body || {};
@@ -706,7 +792,91 @@ app.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/admin/settings', requireAdmin, (req, res) => {
+r.post('/api/admin/kahoot', requireAdmin, (req, res) => {
+  const action = (req.body || {}).action;
+  if (action === 'next') kahoot.next();
+  else if (action === 'end') kahoot.end();
+  else return res.status(400).json({ error: 'Ukjent handling' });
+  // Quizen tar over storskjermen så lenge den pågår
+  if (kahoot.state.phase) state.takeover = { mode: 'kahoot', at: (state.takeover && state.takeover.mode === 'kahoot' && state.takeover.at) || Date.now() };
+  else if (state.takeover && state.takeover.mode === 'kahoot') state.takeover = null;
+  save();
+  res.json(kahoot.adminView());
+});
+
+// --- Musikkstyring (Spotify-lignende fjernkontroll) ---------------------------
+function sendCommand(cmd) {
+  state.player.seq++;
+  state.player.cmd = cmd;
+  save();
+}
+
+r.get('/api/admin/music', requireAdmin, (req, res) => {
+  const songJobs = [...jobs.values()].filter((j) => j.type === 'song' && j.status === 'done' && onScreen(j)).sort((a, b) => b.createdAt - a.createdAt);
+  res.json({
+    player: { online: !!playerReport(), report: playerReport(), paused: state.player.paused, volume: state.player.volume, ...playerMix() },
+    nowPlaying: state.nowPlaying,
+    queue: state.queue.map((id) => jobs.get(id)).filter((j) => j && onScreen(j)).map(publicJob),
+    played: state.played.map((id) => jobs.get(id)).filter((j) => j && onScreen(j)).reverse().map(publicJob),
+    songs: songJobs.map(publicJob),
+    playlist: playlistEntries(),
+    playlistIndex: state.playlistIndex,
+  });
+});
+
+r.post('/api/admin/player', requireAdmin, (req, res) => {
+  const { action, value, id } = req.body || {};
+  const p = state.player;
+  if (action === 'toggle') p.paused = !p.paused;
+  else if (action === 'pause') p.paused = true;
+  else if (action === 'play') p.paused = false;
+  else if (action === 'volume') p.volume = Math.max(0, Math.min(1, Number(value)));
+  else if (action === 'skip') sendCommand({ type: 'skip' });
+  else if (action === 'play-now') {
+    let song = null;
+    if (String(id).startsWith('p:')) {
+      const list = playlistEntries();
+      const i = list.findIndex((x) => x.id === id);
+      if (i < 0) return res.status(404).end();
+      song = list[i];
+      state.playlistIndex = (i + 1) % list.length; // fortsett kronologisk derfra
+      if (state.nowPlaying) state.played.push(state.nowPlaying);
+      state.nowPlaying = null;
+    } else {
+      const j = jobs.get(String(id));
+      if (!j || j.type !== 'song' || j.status !== 'done') return res.status(404).end();
+      if (state.nowPlaying && state.nowPlaying !== j.id) state.played.push(state.nowPlaying);
+      state.queue = state.queue.filter((x) => x !== j.id);
+      state.played = state.played.filter((x) => x !== j.id);
+      state.nowPlaying = j.id;
+      song = publicJob(j);
+    }
+    p.paused = false;
+    sendCommand({ type: 'play', song });
+  } else return res.status(400).json({ error: 'Ukjent handling' });
+  save();
+  res.json({ ok: true });
+});
+
+r.post('/api/admin/queue', requireAdmin, (req, res) => {
+  const { action, id } = req.body || {};
+  const q = state.queue;
+  const i = q.indexOf(id);
+  if (action === 'add') {
+    const j = jobs.get(String(id));
+    if (!j || j.type !== 'song' || j.status !== 'done') return res.status(404).end();
+    if (i < 0 && state.nowPlaying !== id) q.push(id);
+    state.played = state.played.filter((x) => x !== id);
+  } else if (i < 0) return res.status(404).end();
+  else if (action === 'up' && i > 0) [q[i - 1], q[i]] = [q[i], q[i - 1]];
+  else if (action === 'down' && i < q.length - 1) [q[i + 1], q[i]] = [q[i], q[i + 1]];
+  else if (action === 'top') q.unshift(...q.splice(i, 1));
+  else if (action === 'remove') q.splice(i, 1);
+  save();
+  res.json({ ok: true });
+});
+
+r.post('/api/admin/settings', requireAdmin, (req, res) => {
   const b = req.body || {};
   if (typeof b.moderation === 'boolean') {
     state.moderation = b.moderation;
@@ -735,7 +905,7 @@ const videoUpload = multer({
 });
 
 function readMedia(url) {
-  if (!url || !url.startsWith('/media/')) return null;
+  if (!url || !url.startsWith('media/')) return null;
   return fs.readFileSync(path.join(MEDIA_DIR, path.basename(url)));
 }
 
@@ -754,7 +924,7 @@ function finaleFallback(job, reason) {
   });
 }
 
-app.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (req, res) => {
+r.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (req, res) => {
   const song = jobs.get(String(req.body.songId || ''));
   if (!song || song.type !== 'song' || song.status !== 'done') return res.status(400).json({ error: 'Velg en ferdig sang.' });
   let videoUrl;
@@ -788,8 +958,41 @@ app.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (
 });
 
 // Galleri etter festen: alt som ble vist på skjermen, til å laste ned
-app.get('/galleri', page('galleri'));
-app.get('/api/gallery', (req, res) => {
+r.get('/galleri', page('galleri'));
+r.get('/musikk', page('musikk'));
+r.get('/admin/musikk', page('admin-musikk'));
+
+// «Last ned alt» som én zip-fil
+r.get('/api/gallery/zip', async (req, res) => {
+  const items = [...jobs.values()].filter((j) => onScreen(j) && j.status === 'done' && (AI_TYPES.has(j.type) || j.type === 'greeting')).sort((a, b) => a.createdAt - b.createdAt);
+  const entries = [];
+  const safe = (t) => String(t || '').replace(/[^\p{L}\p{N} _-]+/gu, '').trim().slice(0, 40) || 'gjest';
+  const fileOf = (url) => (url && url.startsWith('media/') ? path.join(MEDIA_DIR, path.basename(url)) : null);
+  const greetings = [];
+  items.forEach((j, n) => {
+    const r2 = j.result || {};
+    const prefix = String(n + 1).padStart(3, '0');
+    const date = new Date(j.createdAt);
+    if (j.type === 'greeting') return greetings.push(`${j.label}\n«${j.text}»${j.guest ? `\n– ${j.guest}` : ''}\n`);
+    const src = fileOf(r2.videoUrl) || fileOf(r2.audioUrl) || fileOf(r2.imageUrl);
+    if (!src || !fs.existsSync(src)) return;
+    const folder = { drawing: 'tegninger', selfie: 'selfies', song: 'sanger' }[j.type];
+    entries.push({ name: `${folder}/${prefix} ${safe(j.type === 'song' ? r2.title || j.label : j.label)} - ${safe(j.guest)}${path.extname(src)}`, file: src, date });
+  });
+  if (greetings.length) entries.push({ name: 'hilsener.txt', data: Buffer.from(greetings.join('\n')) });
+  const finale = jobs.get(state.finaleId);
+  const ff = finale && finale.status === 'done' && fileOf(finale.result.videoUrl);
+  if (ff && fs.existsSync(ff)) entries.push({ name: 'finale' + path.extname(ff), file: ff });
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(PARTY_TITLE)}.zip"; filename*=UTF-8''${encodeURIComponent(PARTY_TITLE)}.zip`);
+  try {
+    await writeZip(res, entries);
+  } catch (err) {
+    console.warn('[zip]', err.message);
+    res.destroy();
+  }
+});
+r.get('/api/gallery', (req, res) => {
   const items = [...jobs.values()]
     .filter((j) => onScreen(j) && j.status === 'done' && (AI_TYPES.has(j.type) || j.type === 'greeting'))
     .sort((a, b) => a.createdAt - b.createdAt)
@@ -799,7 +1002,7 @@ app.get('/api/gallery', (req, res) => {
 });
 
 // Helsesjekk for overvåking (f.eks. Railway eller UptimeRobot)
-app.get('/api/health', (req, res) => {
+r.get('/api/health', (req, res) => {
   res.json({
     ok: true,
     higgsfield: useHiggsfield ? 'på' : 'demo',
@@ -811,6 +1014,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use(BASE_PATH || '/', r);
+if (BASE_PATH) app.get('/', (req, res) => res.redirect(BASE_PATH + '/'));
+
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Filen er for stor. Prøv igjen!' });
   console.error(err);
@@ -818,8 +1024,8 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}`);
-  for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}`);
+  console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}${BASE_PATH}/`);
+  for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}${BASE_PATH}/`);
   console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, maks ${HF_MAX_CONCURRENT} samtidig`);
   console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}`);
   if (!PUBLIC_URL) console.log('   Tips: sett PUBLIC_URL slik at QR-kodene peker til riktig adresse.\n');

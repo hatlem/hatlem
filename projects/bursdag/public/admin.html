@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <title>Admin</title>
 <style>
   .item { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--card); margin-bottom: 10px; }
@@ -35,6 +35,10 @@
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
 
   <div id="panel" hidden>
+    <a class="choice c-song" href="admin/musikk" style="margin-bottom:16px">
+      <div class="icon" aria-hidden="true">🎵</div>
+      <div><h2>Musikk</h2><p id="musicLine">Kø, spill av, pause, hopp over og volum</p></div>
+    </a>
     <section class="card">
       <div class="step">Status</div>
       <div id="partyWarn"></div>
@@ -53,13 +57,20 @@
       <div class="step">Felles høydepunkt på storskjermen</div>
       <div class="hl-btns">
         <button data-mode="cake">🎂 Kaketid</button>
-        <button data-mode="quiz">🧠 Trekk quizvinner</button>
         <button data-mode="greetings">💌 Les hilsener</button>
         <button data-mode="finale" id="finaleBtn" disabled>🎬 Vis finalen</button>
-        <button data-mode="off" style="grid-column:1/-1">⏹️ Tilbake til vanlig</button>
+        <button data-mode="off">⏹️ Tilbake til vanlig</button>
       </div>
+      <p class="hint" style="margin:6px 0 0">Musikken stopper under kake, hilsener og finale, og senkes under quizen.</p>
+    </section>
+
+    <section class="card">
+      <div class="step">🧠 Live-quiz</div>
+      <p id="lqStatus" style="margin:0 0 10px;font-weight:700"></p>
+      <button class="btn" id="lqNext" type="button">🧠 Åpne quizen (lobby)</button>
+      <p></p>
+      <button class="btn secondary" id="lqEnd" type="button" hidden>⏹️ Avslutt quizen</button>
       <ol id="top" class="hint"></ol>
-      <button class="link" id="reopen" hidden>Gjenåpne quizen</button>
     </section>
 
     <section class="card">
@@ -81,7 +92,7 @@
     <div id="list"></div>
   </div>
 </main>
-<script src="/common.js"></script>
+<script src="common.js"></script>
 <script>
   const esc = Party.esc;
   let key = '';
@@ -100,7 +111,7 @@
 
   let pendingKey = '';
   async function load() {
-    const r = await api('/api/admin/jobs');
+    const r = await api('api/admin/jobs');
     if (!r.ok) {
       document.getElementById('err').textContent = (await r.json().catch(() => ({}))).error || 'Feil';
       document.getElementById('login').hidden = false;
@@ -145,17 +156,18 @@
 
   let lastOptions = '', finaleTimer;
   async function loadParty() {
-    const r = await api('/api/admin/party');
+    const r = await api('api/admin/party');
     if (!r.ok) return;
     const p = await r.json();
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
+    renderQuiz(p.kahoot);
+    const now = p.player && p.player.now;
+    document.getElementById('musicLine').textContent = !p.player.online ? '🔴 Musikkskjermen er ikke startet' : now ? '🔊 ' + now.title : 'Kø, spill av, pause, hopp over og volum';
     document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
     const used = p.usage.videos + p.usage.songs;
     document.getElementById('usage').innerHTML = `💳 Brukt: <b>${p.usage.videos}</b> videoer og <b>${p.usage.songs}</b> sanger (${used} av maks ${p.usage.max})`;
-    document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.count} svar${p.quiz.closed ? ' (avsluttet)' : ''} · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
+    document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.questions} spørsmål · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
     document.getElementById('moderation').checked = p.moderation;
-    document.getElementById('top').innerHTML = p.quiz.top.map((t) => `<li>${esc(t.name)}: ${t.score}/${p.quiz.max}</li>`).join('');
-    document.getElementById('reopen').hidden = !p.quiz.closed;
 
     // Finale
     const opts = JSON.stringify([p.songs, p.videos]);
@@ -184,17 +196,31 @@
   document.querySelector('.hl-btns').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-mode]');
     if (!b) return;
-    if (b.dataset.mode === 'quiz' && !confirm('Trekke vinneren nå? Quizen stenges for nye svar.')) return;
-    const r = await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: b.dataset.mode }) });
+    const r = await api('api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: b.dataset.mode }) });
     if (!r.ok) alert((await r.json().catch(() => ({}))).error || 'Feil');
     loadParty();
   });
-  document.getElementById('reopen').addEventListener('click', async () => {
-    await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: 'reopen-quiz' }) });
+  const PHASE = { lobby: 'Lobby: gjestene blir med', question: 'Spørsmål pågår', reveal: 'Viser fasit', leaderboard: 'Viser toppliste', podium: 'Viser pallen' };
+  function renderQuiz(k) {
+    const st = k.phase ? `${PHASE[k.phase]}${k.q >= 0 && k.phase !== 'lobby' && k.phase !== 'podium' ? ` · spørsmål ${k.q + 1}/${k.total}` : ''}${k.phase === 'question' ? ` · ${k.answered}/${k.players} har svart` : ''} · ${k.players} spillere`
+      : `Ikke startet · ${k.players} har meldt seg på · ${k.total} spørsmål`;
+    document.getElementById('lqStatus').textContent = st;
+    document.getElementById('lqNext').textContent = k.nextLabel;
+    document.getElementById('lqEnd').hidden = !k.phase;
+    document.getElementById('top').innerHTML = k.phase ? k.top.slice(0, 5).map((t) => `<li>${esc(t.name)}: ${t.score}</li>`).join('') : '';
+    clearTimeout(quizTimer);
+    if (k.phase) quizTimer = setTimeout(loadParty, 1500); // følg quizen tett mens den pågår
+  }
+  let quizTimer;
+  async function quizAction(action) {
+    const r = await api('api/admin/kahoot', { method: 'POST', body: JSON.stringify({ action }) });
+    if (r.ok) renderQuiz(await r.json());
     loadParty();
-  });
+  }
+  document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
+  document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
   document.getElementById('moderation').addEventListener('change', async (e) => {
-    await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ moderation: e.target.checked }) });
+    await api('api/admin/settings', { method: 'POST', body: JSON.stringify({ moderation: e.target.checked }) });
     load();
   });
   document.getElementById('fGo').addEventListener('click', async () => {
@@ -204,7 +230,7 @@
     if (file) fd.append('video', file);
     fd.append('videoJobId', document.getElementById('fVideoJob').value);
     document.getElementById('fStatus').textContent = '⏳ Laster opp …';
-    const r = await api('/api/admin/finale', { method: 'POST', body: fd });
+    const r = await api('api/admin/finale', { method: 'POST', body: fd });
     if (!r.ok) document.getElementById('fStatus').textContent = '❌ ' + ((await r.json().catch(() => ({}))).error || 'Feil');
     else loadParty();
   });
@@ -213,7 +239,7 @@
     const b = e.target.closest('button[data-a]');
     if (!b) return;
     b.disabled = true;
-    await api('/api/admin/jobs/' + b.dataset.id, { method: 'POST', body: JSON.stringify({ action: b.dataset.a }) });
+    await api('api/admin/jobs/' + b.dataset.id, { method: 'POST', body: JSON.stringify({ action: b.dataset.a }) });
     load();
   });
   document.getElementById('login').addEventListener('submit', (e) => {

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Bursdagsmoro</title>
 </head>
@@ -20,15 +20,15 @@
   </section>
 
   <nav class="choices">
-    <a class="choice c-drawing" href="/tegning">
+    <a class="choice c-drawing" href="tegning">
       <div class="icon" aria-hidden="true">🖍️</div>
       <div><h2>Tegning blir film</h2><p>Ta bilde av tegningen din, så blir den levende</p></div>
     </a>
-    <a class="choice c-song" href="/sang">
+    <a class="choice c-song" href="sang">
       <div class="icon" aria-hidden="true">🎤</div>
       <div><h2>Lag en sang</h2><p>Din egen låt havner i spillelisten på festen</p></div>
     </a>
-    <a class="choice c-selfie" href="/selfie">
+    <a class="choice c-selfie" href="selfie">
       <div class="icon" aria-hidden="true">🤳</div>
       <div><h2>Selfie med effekt</h2><p>En tiger rundt deg, bli et spøkelse og mer</p></div>
     </a>
@@ -36,13 +36,13 @@
 
   <h3 class="more-title">Mer moro</h3>
   <nav class="more">
-    <a href="/quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
-    <a href="/hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
+    <a href="quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
+    <a href="hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
   </nav>
 
   <p class="program" id="program" hidden></p>
 </main>
-<script src="/common.js"></script>
+<script src="common.js"></script>
 <script>
   Party.config().then((c) => {
     document.getElementById('title').textContent = c.partyTitle;

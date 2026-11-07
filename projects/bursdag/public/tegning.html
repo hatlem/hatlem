@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Tegning blir film</title>
 </head>
 <body>
 <main class="wrap">
-  <div class="top"><a class="back" href="/">‹ Tilbake</a></div>
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🖍️ Tegning blir film</h1>
   <p class="hint">Tips: Tegn bursdagsbarnet! Ta bildet rett ovenfra i godt lys, og få med hele arket.</p>
 
@@ -42,7 +42,7 @@
     <div class="error" id="err" role="alert"></div>
   </form>
 </main>
-<script src="/common.js"></script>
+<script src="common.js"></script>
 <script>
   const form = document.getElementById('f');
   const go = document.getElementById('go');
@@ -64,8 +64,8 @@
       fd.append('description', form.description.value);
       fd.append('name', form.name.value);
       fd.append('deviceId', Party.deviceId());
-      const { id } = await Party.submit('/api/drawing', fd);
-      location.href = '/status/' + id;
+      const { id } = await Party.submit('api/drawing', fd);
+      location.href = 'status/' + id;
     } catch (err) {
       document.getElementById('err').textContent = err.message;
       go.disabled = false; go.textContent = '🎬 Lag filmen!';
