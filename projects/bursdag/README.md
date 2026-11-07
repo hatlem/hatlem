@@ -13,6 +13,15 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 - 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
+## Forhåndsvisning: «Slik kan det bli»
+
+På tegne- og selfiesiden ser gjesten stilen før de bestiller:
+
+- **Ditt bilde (smakebit):** gjestens eget bilde animeres med en gang i valgt stil. Tigeren går rundt deg, du blir et gjennomsiktig spøkelse, UFO-en løfter deg opp, VHS-striper og «REC 17.11.1986», konfetti, is, disko, drage, superhelt, gnistrende tegning, anime, 3D-tegnefilm og «blir ekte». Det er gratis, uten AI, og laget i `public/preview.js` og `public/preview.css`.
+- **Ekte eksempel:** en ekte AI-film i samme stil. Valgknapper med eksempel får ▶︎.
+  - Gjestenes egne filmer brukes automatisk, den nyeste godkjente i hver stil.
+  - Vil du ha eksempler fra start: Admin → «Eksempelfilmer» → last opp én tegning (4 filmer) og én selfie (9 filmer). Eksemplene går gjennom den vanlige videokøen og vises ikke i galleriet.
+
 ## Skjermer og lyd
 
 To skjermer, og **lyden går fra en mobil koblet til høyttaleren** (Bluetooth eller kabel):

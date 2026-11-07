@@ -220,7 +220,7 @@ function checkLimits(deviceId, { budget = true } = {}) {
 // --- Køer: maks antall samtidige jobber hos hver AI-tjeneste ------------------
 // Higgsfield (video) og Suno (sang) har hver sin grense. Resten venter i appens egen kø.
 const LANES = {
-  video: { types: VIDEO_TYPES, max: HF_MAX_CONCURRENT, avgMin: AVG_VIDEO_MIN, start: (j) => startVideoJob(j), name: 'Higgsfield' },
+  video: { types: new Set([...VIDEO_TYPES, 'example']), max: HF_MAX_CONCURRENT, avgMin: AVG_VIDEO_MIN, start: (j) => startVideoJob(j), name: 'Higgsfield' },
   song: { types: new Set(['song']), max: SUNO_MAX_CONCURRENT, avgMin: AVG_SONG_MIN, start: (j) => startSongJob(j), name: 'Suno' },
 };
 const laneOf = (job) => Object.values(LANES).find((l) => l.types.has(job.type));
@@ -310,7 +310,8 @@ function newJob(type, fields) {
 // Fullføring og polling
 // ---------------------------------------------------------------------------
 async function completeVideo(job, videoUrl) {
-  updateJob(job, { status: 'done', result: { videoUrl, ...(job.type === 'finale' ? { lipsync: true } : {}) }, ...(job.type === 'finale' ? {} : reviewFlag()) });
+  const noReview = job.type === 'finale' || job.type === 'example';
+  updateJob(job, { status: 'done', result: { videoUrl, ...(job.type === 'finale' ? { lipsync: true } : {}) }, ...(noReview ? {} : reviewFlag()) });
   const local = await mirror(videoUrl, 'video/mp4');
   if (local !== videoUrl) updateJob(job, { result: { ...job.result, videoUrl: local } });
 }
@@ -347,7 +348,7 @@ async function pollJob(job) {
       const audioUrl = saveMedia(demo.makeSongWav(job.id), 'audio/wav');
       return completeSong(job, { audioUrl, imageUrl: null, title: `${job.label} (demo)` });
     }
-    return updateJob(job, { status: 'done', result: { videoUrl: null, imageUrl: job.inputUrl }, ...reviewFlag() });
+    return updateJob(job, { status: 'done', result: { videoUrl: null, imageUrl: job.inputUrl }, ...(job.type === 'example' ? {} : reviewFlag()) });
   }
 
   const interval = p.name === 'suno' ? 12000 : 7000;
@@ -535,6 +536,28 @@ function friendly(err) {
   if (/credit|balance|insufficient|402/i.test(err.message)) return 'Tom for kreditter hos AI-tjenesten 😬 Si fra til verten!';
   return 'Noe gikk galt hos AI-tjenesten. Prøv igjen om litt!';
 }
+
+// --- Eksempelfilmer per stil/effekt (forhåndsvisning før man velger) ---------
+// Kilde: nyeste godkjente gjestefilm i den stilen, ellers eksempel verten har laget i admin.
+function examplesView() {
+  const out = { drawing: {}, selfie: {} };
+  const all = [...jobs.values()].filter((j) => j.status === 'done' && j.result && j.result.videoUrl).sort((a, b) => b.updatedAt - a.updatedAt);
+  for (const j of all) {
+    if (j.type === 'example') {
+      const slot = out[j.input.kind];
+      if (slot && !slot[j.input.ref]) slot[j.input.ref] = { url: j.result.videoUrl, source: 'eksempel' };
+    }
+  }
+  // Gjestefilmer går foran vertens eksempler (de er mer morsomme å se)
+  for (const j of all) {
+    if (!onScreen(j) || !VIDEO_TYPES.has(j.type)) continue;
+    const ref = j.type === 'drawing' ? j.input.style : j.input.effect;
+    const slot = out[j.type];
+    if (ref && (!slot[ref] || slot[ref].source === 'eksempel')) slot[ref] = { url: j.result.videoUrl, source: 'gjest', guest: j.guest || '' };
+  }
+  return out;
+}
+r.get('/api/examples', (req, res) => res.json(examplesView()));
 
 r.get('/api/jobs/:id', (req, res) => {
   const job = jobs.get(req.params.id);
@@ -791,6 +814,11 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
     },
     moderation: state.moderation,
     pending: [...jobs.values()].filter((j) => j.approved === false && !j.hidden).length,
+    examples: (() => {
+      const ex = [...jobs.values()].filter((j) => j.type === 'example');
+      const count = (k, st) => ex.filter((j) => j.input.kind === k && (!st || st.includes(j.status))).length;
+      return ['drawing', 'selfie'].map((k) => ({ kind: k, total: count(k), done: count(k, ['done']), working: count(k, ['waiting', 'starting', 'processing']), failed: count(k, ['failed']) }));
+    })(),
     finale: (() => {
       const f = jobs.get(state.finaleId);
       return f ? { status: f.status, lipsync: !!(f.result && f.result.lipsync), note: f.note || null, error: f.error || null } : null;
@@ -988,6 +1016,20 @@ function finaleFallback(job, reason) {
     result: { videoUrl: job.input.videoUrl, audioUrl: song && song.result && song.result.audioUrl, lipsync: false },
   });
 }
+
+// Verten laster opp én tegning eller én selfie, og får en eksempelfilm per stil/effekt
+r.post('/api/admin/examples', requireAdmin, upload.single('image'), (req, res) => {
+  const kind = req.body.kind === 'selfie' ? 'selfie' : 'drawing';
+  if (!req.file) return res.status(400).json({ error: 'Velg et bilde.' });
+  const list = kind === 'selfie' ? SELFIE_EFFECTS : DRAWING_STYLES;
+  const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
+  const ids = list.map((x) => {
+    const job = newJob('example', { label: x.name, emoji: x.emoji, inputUrl, input: { kind, ref: x.id } });
+    enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype });
+    return job.id;
+  });
+  res.json({ count: ids.length });
+});
 
 r.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (req, res) => {
   const song = jobs.get(String(req.body.songId || ''));

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="preview.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Selfie med effekt</title>
 </head>
@@ -32,6 +33,11 @@
       </label>
     </div>
 
+    <div class="card" id="pvCard">
+      <div class="step">👀 Slik kan det bli</div>
+      <div class="pv-tabs"><button type="button" data-tab="mine" class="on">Ditt bilde</button><button type="button" data-tab="example" disabled>▶︎ Ekte eksempel</button></div>
+      <div class="pv-box tall"></div>
+    </div>
     <div class="card">
       <div class="step">3 · Hva heter du?</div>
       <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
@@ -43,6 +49,7 @@
   </form>
 </main>
 <script src="common.js"></script>
+<script src="preview.js"></script>
 <script>
   const form = document.getElementById('f');
   const go = document.getElementById('go');
@@ -53,8 +60,12 @@
     const pre = new URLSearchParams(location.search).get('effekt');
     const idx = Math.max(0, c.selfieEffects.findIndex((e) => e.id === pre));
     Party.chips(document.getElementById('effects'), 'effect', c.selfieEffects, { checked: idx });
+    const sync = () => { const v = form.effect.value; pv.setStyle(v, (c.selfieEffects.find((e) => e.id === v) || {}).name); };
+    document.getElementById('effects').addEventListener('change', sync);
+    sync();
   });
-  Party.photoPicker(document.getElementById('drop'), (f) => { file = f; go.disabled = false; });
+  const pv = Party.preview(document.getElementById('pvCard'), 'selfie');
+  Party.photoPicker(document.getElementById('drop'), (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

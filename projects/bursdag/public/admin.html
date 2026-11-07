@@ -98,6 +98,16 @@
       <p class="hint" id="fStatus"></p>
     </section>
 
+    <section class="card">
+      <div class="step">🎬 Eksempelfilmer (forhåndsvisning)</div>
+      <p class="hint" style="margin-top:0">Gjestene ser en ekte AI-film for hver stil før de velger. Gjestenes egne filmer brukes automatisk. Vil du ha eksempler fra start, last opp én tegning og én selfie, så lages én film per stil (koster 4 + 9 videoer).</p>
+      <label for="exDrawing">Eksempeltegning → 4 tegnestiler</label>
+      <div class="row"><input type="file" id="exDrawing" accept="image/*"><button class="btn secondary" type="button" data-ex="drawing" style="font-size:16px;padding:10px">🖍️ Lag 4</button></div>
+      <label for="exSelfie">Eksempelselfie → 9 effekter</label>
+      <div class="row"><input type="file" id="exSelfie" accept="image/*"><button class="btn secondary" type="button" data-ex="selfie" style="font-size:16px;padding:10px">🤳 Lag 9</button></div>
+      <p class="hint" id="exStatus" style="margin-bottom:0"></p>
+    </section>
+
     <h2 style="margin-top:24px">Alt som er laget</h2>
     <div id="list"></div>
   </div>
@@ -149,7 +159,7 @@
           </div></div>`).join('');
     }
 
-    document.getElementById('list').innerHTML = jobs.filter((j) => j.type !== 'finale').map((j) => {
+    document.getElementById('list').innerHTML = jobs.filter((j) => j.type !== 'finale' && j.type !== 'example').map((j) => {
       const img = (j.result && j.result.imageUrl) || j.inputUrl;
       const q = queue.indexOf(j.id);
       return `<div class="item ${j.hidden ? 'hidden' : ''}">
@@ -171,6 +181,9 @@
     const p = await r.json();
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     renderQuiz(p.kahoot);
+    const exName = { drawing: 'Tegnestiler', selfie: 'Selfie-effekter' };
+    document.getElementById('exStatus').textContent = p.examples.filter((e) => e.total).map((e) =>
+      `${exName[e.kind]}: ${e.done} ferdig${e.working ? `, ${e.working} lages` : ''}${e.failed ? `, ${e.failed} feilet` : ''}`).join(' · ');
     const now = p.player && p.player.now;
     document.getElementById('musicLine').textContent = !p.player.online ? '🔴 Ingen lydkilde er startet' : now ? '🔊 ' + now.title : 'Kø, spill av, pause, hopp over og volum';
     document.getElementById('sourceLine').textContent = p.player.online ? `🟢 Spiller fra ${p.player.source === 'mobil' ? 'mobilen' : 'en skjerm'}` : '🔴 Ikke startet';
@@ -230,6 +243,18 @@
   }
   document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
   document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
+  document.querySelectorAll('[data-ex]').forEach((b) => b.addEventListener('click', async () => {
+    const kind = b.dataset.ex;
+    const file = document.getElementById(kind === 'selfie' ? 'exSelfie' : 'exDrawing').files[0];
+    if (!file) return alert('Velg et bilde først.');
+    if (!confirm(kind === 'selfie' ? 'Lage 9 eksempelfilmer (9 videoer i kreditter)?' : 'Lage 4 eksempelfilmer (4 videoer i kreditter)?')) return;
+    const fd = new FormData();
+    fd.append('kind', kind);
+    fd.append('image', await Party.shrinkImage(file), 'eksempel.jpg');
+    const r = await api('api/admin/examples', { method: 'POST', body: fd });
+    document.getElementById('exStatus').textContent = r.ok ? '⏳ Eksempelfilmene lages …' : '❌ ' + ((await r.json().catch(() => ({}))).error || 'Feil');
+    loadParty();
+  }));
   document.getElementById('moderation').addEventListener('change', async (e) => {
     await api('api/admin/settings', { method: 'POST', body: JSON.stringify({ moderation: e.target.checked }) });
     load();
