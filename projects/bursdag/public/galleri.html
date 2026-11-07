@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Galleri</title>
+<style>
+  .wrap.wide { max-width: 1100px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 18px 0; }
+  .filters button { font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); cursor: pointer; }
+  .filters button.on { background: linear-gradient(90deg, var(--yellow), var(--pink)); color: #2a0b2b; border-color: transparent; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .tile { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
+  .tile video, .tile img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #000; display: block; }
+  .tile .meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .tile .meta small { color: var(--muted); }
+  .tile .meta a { margin-top: auto; font-weight: 700; color: var(--cyan); text-decoration: none; }
+  .tile.greet .meta { justify-content: center; }
+  .tile.greet q { font-size: 20px; font-weight: 700; }
+  .tile.song .cover { aspect-ratio: 1; display: grid; place-items: center; font-size: 80px; background: linear-gradient(135deg, var(--pink), var(--violet)); }
+  .tile audio { width: 100%; }
+  .finale { margin: 10px 0 24px; }
+  .finale video { width: 100%; border-radius: 18px; background: #000; }
+</style>
+</head>
+<body>
+<main class="wrap wide">
+  <section class="hero">
+    <div class="cake" aria-hidden="true">📸</div>
+    <h1><span class="gradient-text" id="title">Galleri</span></h1>
+    <p>Alt som ble laget på festen. Trykk på en lenke for å laste ned.</p>
+  </section>
+  <section class="finale" id="finale" hidden></section>
+  <div class="filters" id="filters">
+    <button data-f="all" class="on">Alt</button>
+    <button data-f="drawing">🖍️ Tegninger</button>
+    <button data-f="selfie">🤳 Selfies</button>
+    <button data-f="song">🎵 Sanger</button>
+    <button data-f="greeting">💌 Hilsener</button>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<script src="/common.js"></script>
+<script>
+  const esc = Party.esc;
+  let items = [];
+  function tile(j) {
+    const r = j.result || {};
+    const by = j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : 'Av ') + esc(j.guest) : '';
+    if (j.type === 'greeting') return '<div class="tile greet"><div class="meta"><small>' + esc(j.emoji) + ' ' + esc(j.label) + '</small><q>' + esc(j.text) + '</q><small>' + (j.guest ? '– ' + esc(j.guest) : '') + '</small></div></div>';
+    if (j.type === 'song') return '<div class="tile song">' + (r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="" loading="lazy">' : '<div class="cover">🎵</div>') +
+      '<div class="meta"><strong>' + esc(r.title || j.label) + '</strong><small>' + esc(j.label) + (by ? ' · ' + by : '') + '</small><audio controls preload="none" src="' + esc(r.audioUrl) + '"></audio><a href="' + esc(r.audioUrl) + '" download>⬇️ Last ned sangen</a></div></div>';
+    const media = r.videoUrl ? '<video src="' + esc(r.videoUrl) + '" muted loop playsinline preload="metadata" onmouseenter="this.play()" onmouseleave="this.pause()" onclick="this.paused?this.play():this.pause()"></video>'
+      : '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="" loading="lazy">';
+    return '<div class="tile">' + media + '<div class="meta"><strong>' + esc(j.emoji) + ' ' + esc(j.label) + '</strong><small>' + by + '</small>' +
+      (r.videoUrl ? '<a href="' + esc(r.videoUrl) + '" download>⬇️ Last ned filmen</a>' : '') + '</div></div>';
+  }
+  function render(f) {
+    document.getElementById('grid').innerHTML = items.filter((j) => f === 'all' || j.type === f).map(tile).join('') || '<p class="hint">Ingenting her ennå.</p>';
+  }
+  document.getElementById('filters').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    document.querySelectorAll('#filters button').forEach((x) => x.classList.toggle('on', x === b));
+    render(b.dataset.f);
+  });
+  fetch('/api/gallery').then((r) => r.json()).then((d) => {
+    items = d.items;
+    document.getElementById('title').textContent = d.partyTitle;
+    document.title = 'Galleri · ' + d.partyTitle;
+    if (d.finale && d.finale.lipsync) {
+      const el = document.getElementById('finale');
+      el.hidden = false;
+      el.innerHTML = '<h2>🎬 Finalen</h2><video src="' + esc(d.finale.videoUrl) + '" controls playsinline></video><p><a class="btn secondary" href="' + esc(d.finale.videoUrl) + '" download>⬇️ Last ned finalen</a></p>';
+    }
+    render('all');
+  });
+</script>
+</body>
+</html>

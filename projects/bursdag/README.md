@@ -47,6 +47,40 @@ ADMIN_KEY=hemmelig \
 npm start
 ```
 
+## Generalprøve (gjør dette en uke før)
+
+```bash
+npm run sjekk                                    # gratis: sjekker oppsett, party.json, mapper og serveren
+npm run sjekk -- --ekte --bilde min-selfie.jpg   # lager 1 ekte video + 1 ekte sang (koster kreditter)
+```
+
+Skriptet leser `.env`. Den ekte testen viser:
+
+- om modellstien og feltnavnene hos Higgsfield stemmer
+- om Suno sender med sangtekst
+- hvor lang tid en video tar, og hvilken `AVG_VIDEO_MIN` du bør sette
+
+## Godkjenning, finale og galleri
+
+- **Godkjenn før visning** (`GODKJENNING=1`, eller bryteren i `/admin`): nye filmer, sanger og hilsener vises først i admin med forhåndsvisning og knappene ✅ Vis og 🚫 Avvis.
+  - Gjesten ser fortsatt resultatet sitt på telefonen.
+  - Skrur du godkjenningen av, slippes alt som venter gjennom.
+- **Sangintro og sangtekst:** før hver gjestesang viser storskjermen «🎤 Neste sang: tittel, laget av Per». Mens sangen spilles, vises teksten linje for linje i «Nå spilles».
+- **Finale** (i `/admin`): velg en gjestesang og last opp en kort video av bursdagsbarnet (5–15 sekunder, ansiktet rett mot kamera), eller bruk en ferdig selfievideo.
+  - Higgsfield lipsync (`HF_LIPSYNC_MODEL`) får munnen til å synge sangen. Sangen kuttes til `FINALE_SECONDS` for å spare kreditter.
+  - Trykk «🎬 Vis finalen» ved kaka. Skjermen viser «Verdenspremiere!», så musikkvideoen, så konfetti.
+  - Hvis lipsync ikke er satt opp eller feiler, blir finalen videoen og sangen spilt samtidig, så den virker uansett.
+- **Galleri** (`/galleri`): alt som ble vist på skjermen, med nedlastingslenker og finalen øverst. Send lenken til gjestene dagen etter.
+- **Forbruk:** admin viser hvor mange videoer og sanger som er laget, mot `MAX_JOBS_TOTAL`.
+
+## Deploy på Railway (anbefalt)
+
+1. Nytt prosjekt fra GitHub-repoet med **Root Directory** `projects/bursdag`. `railway.json` setter startkommando og helsesjekk (`/api/health`).
+2. Legg til et **volum** montert på `/data`, og sett `DATA_DIR=/data`. Da overlever bilder, sanger og køen en omstart.
+3. Sett variablene fra `.env.example`, med `PUBLIC_URL` lik Railway-adressen.
+4. Legg nostalgibilder og årsspilleliste i `/data/nostalgi` og `/data/spilleliste`, for eksempel med `railway run` eller ved å laste dem opp før festen.
+5. Ha en mobil klar som hotspot til storskjermen. Hvis skjermen mister kontakten, viser den et rødt varsel og prøver igjen av seg selv.
+
 ## Nettverk på festen
 
 Telefonene må nå serveren:

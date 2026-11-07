@@ -18,6 +18,13 @@
   .hl-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .hl-btns button { font: inherit; font-weight: 800; font-size: 17px; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--card-border); background: rgba(0,0,0,.25); color: var(--text); cursor: pointer; }
   .hl-btns button.on { border-color: var(--yellow); background: rgba(255,210,63,.18); }
+  .toggle { display: flex; gap: 10px; align-items: center; margin-top: 14px; font-weight: 800; cursor: pointer; }
+  .toggle input { width: 24px; height: 24px; accent-color: var(--yellow); }
+  .pend { padding: 12px 0; border-bottom: 1px solid var(--card-border); }
+  .pend:last-child { border-bottom: 0; }
+  .pend q { display: block; font-size: 18px; margin-top: 6px; }
+  .link { background: none; border: 0; color: var(--cyan); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
+  .hl-btns button:disabled { opacity: .4; cursor: not-allowed; }
   .item q { display: block; margin-top: 4px; font-style: italic; }
   .s-failed { color: var(--danger); } .s-waiting { color: var(--muted); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
 </style>
@@ -25,75 +32,198 @@
 <body>
 <main class="wrap">
   <h1>🛠️ Admin</h1>
-  <p class="hint">Skjul ting fra storskjermen, eller flytt en sang først i køen.</p>
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
-  <section class="card" id="party" hidden>
-    <div class="step">Felles høydepunkt på storskjermen</div>
-    <div id="partyWarn"></div>
-    <div class="hl-btns">
-      <button data-mode="cake">🎂 Kaketid</button>
-      <button data-mode="quiz">🧠 Trekk quizvinner</button>
-      <button data-mode="greetings">💌 Les hilsener</button>
-      <button data-mode="off">⏹️ Tilbake til vanlig</button>
-    </div>
-    <p class="hint" id="partyInfo"></p>
-    <ol id="top" class="hint"></ol>
-  </section>
-  <div id="list"></div>
+
+  <div id="panel" hidden>
+    <section class="card">
+      <div class="step">Status</div>
+      <div id="partyWarn"></div>
+      <p id="usage" style="margin:0 0 6px"></p>
+      <p class="hint" id="partyInfo" style="margin:0"></p>
+      <label class="toggle"><input type="checkbox" id="moderation"> <span>👀 Godkjenn før visning på storskjermen</span></label>
+      <p class="hint" style="margin:4px 0 0">Når den er på, må du godkjenne nye filmer, sanger og hilsener her før de vises. Skrur du den av, slippes alt som venter gjennom.</p>
+    </section>
+
+    <section class="card" id="pendingBox" hidden>
+      <div class="step">Venter på godkjenning (<span id="pendingCount">0</span>)</div>
+      <div id="pending"></div>
+    </section>
+
+    <section class="card">
+      <div class="step">Felles høydepunkt på storskjermen</div>
+      <div class="hl-btns">
+        <button data-mode="cake">🎂 Kaketid</button>
+        <button data-mode="quiz">🧠 Trekk quizvinner</button>
+        <button data-mode="greetings">💌 Les hilsener</button>
+        <button data-mode="finale" id="finaleBtn" disabled>🎬 Vis finalen</button>
+        <button data-mode="off" style="grid-column:1/-1">⏹️ Tilbake til vanlig</button>
+      </div>
+      <ol id="top" class="hint"></ol>
+      <button class="link" id="reopen" hidden>Gjenåpne quizen</button>
+    </section>
+
+    <section class="card">
+      <div class="step">🎬 Finale: bursdagsbarnet synger</div>
+      <p class="hint" style="margin-top:0">Velg en av gjestenes sanger og en video av bursdagsbarnet (helst 5–15 sek, ansiktet rett mot kamera). Higgsfield lipsync får munnen til å synge sangen.</p>
+      <div id="lipsyncNote"></div>
+      <label for="fSong">Sang</label>
+      <select id="fSong"></select>
+      <label for="fVideo">Video av bursdagsbarnet</label>
+      <input type="file" id="fVideo" accept="video/*">
+      <label for="fVideoJob">… eller bruk en ferdig selfie-/tegnevideo</label>
+      <select id="fVideoJob"><option value="">Ingen valgt</option></select>
+      <p></p>
+      <button class="btn" id="fGo" type="button">🎬 Lag musikkvideo</button>
+      <p class="hint" id="fStatus"></p>
+    </section>
+
+    <h2 style="margin-top:24px">Alt som er laget</h2>
+    <div id="list"></div>
+  </div>
 </main>
 <script src="/common.js"></script>
 <script>
   const esc = Party.esc;
-  let key = sessionStorage.getItem('bursdag-admin') || '';
-  const api = (url, opts = {}) => fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-key': key } });
+  let key = '';
+  try { key = sessionStorage.getItem('bursdag-admin') || ''; } catch {}
+  const api = (url, opts = {}) => fetch(url, { ...opts, headers: { ...(opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), 'x-admin-key': key } });
+  const STATUS = { done: 'ferdig', processing: 'lages', waiting: 'i kø', starting: 'starter', failed: 'feilet', queued: 'sendes' };
 
+  function preview(j) {
+    const r = j.result || {};
+    if (r.videoUrl) return `<video src="${esc(r.videoUrl)}" muted loop autoplay playsinline style="width:100%;border-radius:12px;margin-top:8px"></video>`;
+    if (r.audioUrl) return `<audio src="${esc(r.audioUrl)}" controls preload="none" style="width:100%;margin-top:8px"></audio>${r.title ? `<div class="hint">«${esc(r.title)}»</div>` : ''}`;
+    if (r.imageUrl) return `<img src="${esc(r.imageUrl)}" alt="" style="width:100%;border-radius:12px;margin-top:8px">`;
+    if (j.text) return `<q>${esc(j.text)}</q>`;
+    return '';
+  }
+
+  let pendingKey = '';
   async function load() {
     const r = await api('/api/admin/jobs');
-    if (!r.ok) { document.getElementById('err').textContent = (await r.json()).error; document.getElementById('login').hidden = false; return; }
+    if (!r.ok) {
+      document.getElementById('err').textContent = (await r.json().catch(() => ({}))).error || 'Feil';
+      document.getElementById('login').hidden = false;
+      document.getElementById('panel').hidden = true;
+      return;
+    }
     document.getElementById('login').hidden = true;
+    document.getElementById('panel').hidden = false;
     loadParty();
     const { jobs, queue, nowPlaying } = await r.json();
-    document.getElementById('list').innerHTML = jobs.map((j) => {
-      const img = (j.result && (j.result.imageUrl)) || j.inputUrl;
+
+    // Godkjenning: tegn bare på nytt når listen endrer seg (så lydavspilling ikke avbrytes)
+    const pend = jobs.filter((j) => j.pending).reverse();
+    const pk = pend.map((j) => j.id).join(',');
+    if (pk !== pendingKey) {
+      pendingKey = pk;
+      document.getElementById('pendingBox').hidden = !pend.length;
+      document.getElementById('pendingCount').textContent = pend.length;
+      document.getElementById('pending').innerHTML = pend.map((j) => `<div class="pend">
+          <strong>${esc(j.emoji || '')} ${esc(j.label)}</strong> · ${esc(j.guest || 'anonym')}
+          ${preview(j)}
+          <div class="row" style="margin-top:8px">
+            <button class="btn" data-id="${esc(j.id)}" data-a="approve" style="font-size:17px;padding:12px">✅ Vis</button>
+            <button class="btn secondary" data-id="${esc(j.id)}" data-a="reject" style="font-size:17px;padding:12px">🚫 Avvis</button>
+          </div></div>`).join('');
+    }
+
+    document.getElementById('list').innerHTML = jobs.filter((j) => j.type !== 'finale').map((j) => {
+      const img = (j.result && j.result.imageUrl) || j.inputUrl;
       const q = queue.indexOf(j.id);
       return `<div class="item ${j.hidden ? 'hidden' : ''}">
         <div class="thumb" style="${img ? `background-image:url('${esc(img)}')` : ''}">${img ? '' : esc(j.emoji || '🎵')}</div>
         <div><strong>${esc(j.emoji || '')} ${esc(j.label)}</strong> · ${esc(j.guest || 'anonym')}
           ${j.text ? `<q>${esc(j.text)}</q>` : ''}
-          <small><span class="s-${esc(j.status)}">${esc(j.status)}</span>${j.error ? ' · ' + esc(j.error) : ''}${j.id === nowPlaying ? ' · 🔊 spilles nå' : q >= 0 ? ' · kø #' + (q + 1) : ''}${j.result && j.result.videoUrl ? ` · <a href="${esc(j.result.videoUrl)}" target="_blank">video</a>` : ''}${j.result && j.result.audioUrl ? ` · <a href="${esc(j.result.audioUrl)}" target="_blank">lyd</a>` : ''}</small>
+          <small><span class="s-${esc(j.status)}">${esc(STATUS[j.status] || j.status)}</span>${j.pending ? ' · 👀 venter' : ''}${j.error ? ' · ' + esc(j.error) : ''}${j.id === nowPlaying ? ' · 🔊 spilles nå' : q >= 0 ? ' · kø #' + (q + 1) : ''}${j.result && j.result.videoUrl ? ` · <a href="${esc(j.result.videoUrl)}" target="_blank">video</a>` : ''}${j.result && j.result.audioUrl ? ` · <a href="${esc(j.result.audioUrl)}" target="_blank">lyd</a>` : ''}</small>
           <div class="acts">
             <button data-id="${esc(j.id)}" data-a="${j.hidden ? 'show' : 'hide'}">${j.hidden ? '👁️ Vis' : '🙈 Skjul'}</button>
             ${j.type === 'song' && j.status === 'done' ? `<button data-id="${esc(j.id)}" data-a="play-next">⏭️ Spill neste</button>` : ''}
           </div></div></div>`;
     }).join('') || '<p class="hint">Ingenting ennå.</p>';
   }
+
+  let lastOptions = '', finaleTimer;
   async function loadParty() {
     const r = await api('/api/admin/party');
     if (!r.ok) return;
     const p = await r.json();
-    document.getElementById('party').hidden = false;
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
+    const used = p.usage.videos + p.usage.songs;
+    document.getElementById('usage').innerHTML = `💳 Brukt: <b>${p.usage.videos}</b> videoer og <b>${p.usage.songs}</b> sanger (${used} av maks ${p.usage.max})`;
     document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.count} svar${p.quiz.closed ? ' (avsluttet)' : ''} · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
+    document.getElementById('moderation').checked = p.moderation;
     document.getElementById('top').innerHTML = p.quiz.top.map((t) => `<li>${esc(t.name)}: ${t.score}/${p.quiz.max}</li>`).join('');
+    document.getElementById('reopen').hidden = !p.quiz.closed;
+
+    // Finale
+    const opts = JSON.stringify([p.songs, p.videos]);
+    if (opts !== lastOptions) {
+      lastOptions = opts;
+      const fs = document.getElementById('fSong');
+      const keep = fs.value;
+      fs.innerHTML = p.songs.length ? p.songs.map((s) => `<option value="${esc(s.id)}">${esc(s.title)} (${esc(s.guest || 'anonym')})</option>`).join('') : '<option value="">Ingen ferdige sanger ennå</option>';
+      if (keep) fs.value = keep;
+      const fv = document.getElementById('fVideoJob');
+      const keepV = fv.value;
+      fv.innerHTML = '<option value="">Ingen valgt</option>' + p.videos.map((v) => `<option value="${esc(v.id)}">${esc(v.label)} (${esc(v.guest || 'anonym')})</option>`).join('');
+      fv.value = keepV;
+    }
+    document.getElementById('lipsyncNote').innerHTML = p.lipsyncConfigured ? '' :
+      '<div class="demo-banner">Lipsync er ikke satt opp (HF_LIPSYNC_MODEL). Finalen blir da videoen og sangen spilt samtidig, uten at munnen synger.</div>';
+    const f = p.finale;
+    document.getElementById('fStatus').textContent = !f ? '' :
+      f.status === 'done' ? (f.lipsync ? '✅ Musikkvideoen er klar! Trykk «Vis finalen» ved kaka.' : `✅ Klar (${f.note || 'uten lipsync'}). Trykk «Vis finalen» ved kaka.`)
+      : `⏳ Lager musikkvideo … (${STATUS[f.status] || f.status})`;
+    document.getElementById('finaleBtn').disabled = !(f && f.status === 'done');
+    clearTimeout(finaleTimer);
+    if (f && f.status !== 'done') finaleTimer = setTimeout(loadParty, 3000); // sjekk oftere mens finalen lages
   }
+
   document.querySelector('.hl-btns').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-mode]');
     if (!b) return;
     if (b.dataset.mode === 'quiz' && !confirm('Trekke vinneren nå? Quizen stenges for nye svar.')) return;
-    await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: b.dataset.mode }) });
+    const r = await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: b.dataset.mode }) });
+    if (!r.ok) alert((await r.json().catch(() => ({}))).error || 'Feil');
     loadParty();
   });
+  document.getElementById('reopen').addEventListener('click', async () => {
+    await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: 'reopen-quiz' }) });
+    loadParty();
+  });
+  document.getElementById('moderation').addEventListener('change', async (e) => {
+    await api('/api/admin/settings', { method: 'POST', body: JSON.stringify({ moderation: e.target.checked }) });
+    load();
+  });
+  document.getElementById('fGo').addEventListener('click', async () => {
+    const fd = new FormData();
+    fd.append('songId', document.getElementById('fSong').value);
+    const file = document.getElementById('fVideo').files[0];
+    if (file) fd.append('video', file);
+    fd.append('videoJobId', document.getElementById('fVideoJob').value);
+    document.getElementById('fStatus').textContent = '⏳ Laster opp …';
+    const r = await api('/api/admin/finale', { method: 'POST', body: fd });
+    if (!r.ok) document.getElementById('fStatus').textContent = '❌ ' + ((await r.json().catch(() => ({}))).error || 'Feil');
+    else loadParty();
+  });
 
-  document.getElementById('list').addEventListener('click', async (e) => {
+  document.getElementById('panel').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-a]');
     if (!b) return;
+    b.disabled = true;
     await api('/api/admin/jobs/' + b.dataset.id, { method: 'POST', body: JSON.stringify({ action: b.dataset.a }) });
     load();
   });
-  document.getElementById('login').addEventListener('submit', (e) => { e.preventDefault(); key = document.getElementById('k').value.trim(); sessionStorage.setItem('bursdag-admin', key); load(); });
+  document.getElementById('login').addEventListener('submit', (e) => {
+    e.preventDefault();
+    key = document.getElementById('k').value.trim();
+    try { sessionStorage.setItem('bursdag-admin', key); } catch {}
+    load();
+  });
   if (key) load();
-  setInterval(() => { if (key && document.getElementById('login').hidden) load(); }, 10000);
+  setInterval(() => { if (key && !document.getElementById('panel').hidden) load(); }, 8000);
 </script>
 </body>
 </html>

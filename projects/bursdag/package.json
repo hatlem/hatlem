@@ -5,7 +5,8 @@
   "description": "Interaktiv bursdagsinstallasjon: tegning til film, egen sang og selfie-effekter, med storskjerm og QR-koder.",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "sjekk": "node scripts/generalprove.js"
   },
   "engines": {
     "node": ">=18"

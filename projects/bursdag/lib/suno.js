@@ -60,6 +60,8 @@ async function status(taskId) {
     imageUrl: t.imageUrl || t.image_url || null,
     title: t.title || null,
     duration: t.duration || null,
+    // I ikke-custom modus ligger den genererte sangteksten i «prompt»
+    lyrics: t.prompt || t.lyric || t.lyrics || null,
   };
   if (FAILED.test(st)) return { failed: true, message: /SENSITIVE/i.test(st) ? 'Teksten ble stoppet av filteret. Prøv et annet tema!' : null };
   // FIRST_SUCCESS = første av to låter er ferdig, det holder for oss.

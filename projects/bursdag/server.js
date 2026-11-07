@@ -43,6 +43,7 @@ const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MIN || 25) * 60 * 1000;
 const HF_MAX_CONCURRENT = Math.max(1, Number(process.env.HF_MAX_CONCURRENT || 8));
 const VIDEO_TYPES = new Set(['drawing', 'selfie']);
 const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidsestimat
+const FINALE_SECONDS = Number(process.env.FINALE_SECONDS || 60); // finalen kuttes til så mange sekunder (sparer kreditter)
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
@@ -61,7 +62,19 @@ const useSuno = suno.isConfigured();
 // ---------------------------------------------------------------------------
 /** @type {Map<string, any>} */
 const jobs = new Map();
-const state = { queue: [], nowPlaying: null, played: [], quiz: [], takeover: null };
+const state = { queue: [], nowPlaying: null, played: [], quiz: [], takeover: null, moderation: /^(1|on|ja|true)$/i.test(process.env.GODKJENNING || ''), finaleId: null };
+
+/** Vises på storskjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
+const onScreen = (j) => !j.hidden && j.approved !== false;
+/** Når godkjenning er på, må verten godkjenne ferdige ting før de vises. */
+const reviewFlag = () => (state.moderation ? { approved: false } : {});
+
+function queueSong(job) {
+  if (!state.queue.includes(job.id) && !state.played.includes(job.id) && state.nowPlaying !== job.id) {
+    state.queue.push(job.id);
+    save();
+  }
+}
 
 function load() {
   try {
@@ -114,7 +127,7 @@ function clean(str, max) {
     .slice(0, max);
 }
 
-const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'video/mp4': '.mp4', 'audio/mpeg': '.mp3', 'audio/wav': '.wav' };
+const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'audio/mpeg': '.mp3', 'audio/wav': '.wav' };
 
 function saveMedia(buffer, contentType) {
   const name = crypto.randomUUID() + (EXT[contentType] || '');
@@ -158,6 +171,7 @@ function publicJob(job) {
     waitPosition: wait >= 0 ? wait + 1 : null,
     waitMinutes: wait >= 0 ? Math.max(1, Math.ceil(((Math.floor(wait / HF_MAX_CONCURRENT) + 1) * AVG_VIDEO_MIN))) : null,
     nowPlaying: state.nowPlaying === job.id,
+    pending: job.approved === false && !job.hidden,
   };
 }
 
@@ -179,7 +193,7 @@ function checkLimits(deviceId, { budget = true } = {}) {
 
 // --- Videokø: maks HF_MAX_CONCURRENT jobber hos Higgsfield samtidig -------------
 function videoWaitList() {
-  return [...jobs.values()].filter((j) => j.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
+  return [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
 }
 function activeVideoCount() {
   return [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && (j.status === 'processing' || j.status === 'starting')).length;
@@ -257,7 +271,7 @@ function newJob(type, fields) {
 // Fullføring og polling
 // ---------------------------------------------------------------------------
 async function completeVideo(job, videoUrl) {
-  updateJob(job, { status: 'done', result: { videoUrl } });
+  updateJob(job, { status: 'done', result: { videoUrl, ...(job.type === 'finale' ? { lipsync: true } : {}) }, ...(job.type === 'finale' ? {} : reviewFlag()) });
   const local = await mirror(videoUrl, 'video/mp4');
   if (local !== videoUrl) updateJob(job, { result: { ...job.result, videoUrl: local } });
 }
@@ -266,18 +280,17 @@ async function completeVideo(job, videoUrl) {
 async function completeSong(job, track) {
   updateJob(job, {
     status: 'done',
-    result: { audioUrl: track.audioUrl, imageUrl: track.imageUrl, title: track.title || job.label, duration: track.duration },
+    result: { audioUrl: track.audioUrl, imageUrl: track.imageUrl, title: track.title || job.label, duration: track.duration, lyrics: track.lyrics || null },
+    ...reviewFlag(),
   });
-  if (!state.queue.includes(job.id) && !state.played.includes(job.id) && state.nowPlaying !== job.id) {
-    state.queue.push(job.id);
-    save();
-  }
+  if (job.approved !== false) queueSong(job);
   const [audioUrl, imageUrl] = await Promise.all([mirror(track.audioUrl, 'audio/mpeg'), mirror(track.imageUrl, 'image/jpeg')]);
   updateJob(job, { result: { ...job.result, audioUrl, imageUrl } });
 }
 
 function fail(job, message) {
   console.warn(`[job ${job.id}] feilet: ${message}`);
+  if (job.type === 'finale') return finaleFallback(job, message);
   updateJob(job, { status: 'failed', error: message });
   if (VIDEO_TYPES.has(job.type)) setImmediate(pumpVideos);
 }
@@ -295,7 +308,7 @@ async function pollJob(job) {
       const audioUrl = saveMedia(demo.makeSongWav(job.id), 'audio/wav');
       return completeSong(job, { audioUrl, imageUrl: null, title: `${job.label} (demo)` });
     }
-    return updateJob(job, { status: 'done', result: { videoUrl: null, imageUrl: job.inputUrl } });
+    return updateJob(job, { status: 'done', result: { videoUrl: null, imageUrl: job.inputUrl }, ...reviewFlag() });
   }
 
   const interval = p.name === 'suno' ? 12000 : 7000;
@@ -343,7 +356,8 @@ setInterval(pollAll, 3000);
 for (const job of jobs.values()) {
   if (job.status === 'queued') fail(job, 'Serveren ble startet på nytt. Prøv igjen!');
   // Stoppet midt i innsendingen: vi vet ikke om Higgsfield fikk den, så send på nytt.
-  if (job.status === 'starting') updateJob(job, { status: 'waiting' });
+  if (job.status === 'starting' && VIDEO_TYPES.has(job.type)) updateJob(job, { status: 'waiting' });
+  if (job.status === 'starting' && job.type === 'finale') setImmediate(() => finaleFallback(job, 'serveren startet på nytt'));
 }
 
 // ---------------------------------------------------------------------------
@@ -480,14 +494,15 @@ app.get('/api/jobs/:id', (req, res) => {
 
 // Storskjerm
 app.get('/api/screen', (req, res) => {
-  const visible = [...jobs.values()].filter((j) => !j.hidden);
+  const visible = [...jobs.values()].filter(onScreen);
   const gallery = visible
-    .filter((j) => j.type !== 'song' && j.status === 'done')
+    .filter((j) => VIDEO_TYPES.has(j.type) || j.type === 'greeting')
+    .filter((j) => j.status === 'done')
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 60)
     .map(publicJob);
-  const songs = (ids) => ids.map((id) => jobs.get(id)).filter((j) => j && !j.hidden).map(publicJob);
-  const inProgress = visible.filter((j) => ['processing', 'queued', 'starting', 'waiting'].includes(j.status));
+  const songs = (ids) => ids.map((id) => jobs.get(id)).filter((j) => j && onScreen(j)).map(publicJob);
+  const inProgress = [...jobs.values()].filter((j) => !j.hidden && AI_TYPES.has(j.type)).filter((j) => ['processing', 'queued', 'starting', 'waiting'].includes(j.status));
   const working = inProgress.length;
   const making = inProgress
     .filter((j) => VIDEO_TYPES.has(j.type) || j.type === 'song')
@@ -556,7 +571,7 @@ app.post('/api/greeting', (req, res) => {
   const text = clean(b.text, 200);
   if (text.length < 2) return res.status(400).json({ error: 'Skriv litt først 😊' });
   const prompt = PARTY.greetingPrompts.find((g) => g.id === b.prompt) || PARTY.greetingPrompts[0] || { name: 'Hilsen', emoji: '💌' };
-  const job = newJob('greeting', { status: 'done', guest: clean(b.name, 40), label: prompt.name, emoji: prompt.emoji, text });
+  const job = newJob('greeting', { status: 'done', ...reviewFlag(), guest: clean(b.name, 40), label: prompt.name, emoji: prompt.emoji, text });
   res.json({ id: job.id });
 });
 
@@ -599,6 +614,10 @@ function takeoverView() {
       answers: PARTY.quiz.questions.map((q) => ({ q: q.q, a: q.options[q.correct] })),
     };
   }
+  if (t.mode === 'finale') {
+    const f = jobs.get(state.finaleId);
+    return { ...t, finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
+  }
   if (t.mode === 'greetings') {
     const list = [...jobs.values()].filter((j) => j.type === 'greeting' && !j.hidden).sort((a, b) => a.createdAt - b.createdAt).map(publicJob);
     return { ...t, greetings: list };
@@ -627,6 +646,20 @@ app.get('/api/admin/party', requireAdmin, (req, res) => {
     takeover: state.takeover ? state.takeover.mode : null,
     quiz: { count: state.quiz.length, max: PARTY.quiz.questions.length, top, example: PARTY.quiz.example, closed: !!state.quizClosed },
     videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
+    usage: {
+      videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type)).length,
+      songs: [...jobs.values()].filter((j) => j.type === 'song').length,
+      max: MAX_JOBS_TOTAL,
+    },
+    moderation: state.moderation,
+    pending: [...jobs.values()].filter((j) => j.approved === false && !j.hidden).length,
+    finale: (() => {
+      const f = jobs.get(state.finaleId);
+      return f ? { status: f.status, lipsync: !!(f.result && f.result.lipsync), note: f.note || null, error: f.error || null } : null;
+    })(),
+    lipsyncConfigured: higgsfield.lipsyncConfigured(),
+    songs: [...jobs.values()].filter((j) => j.type === 'song' && j.status === 'done' && !j.hidden).map((j) => ({ id: j.id, title: (j.result && j.result.title) || j.label, guest: j.guest })),
+    videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'done' && !j.hidden && j.result && j.result.videoUrl).map((j) => ({ id: j.id, label: j.label, guest: j.guest })),
     nostalgia: nostalgiaFiles().length,
     playlist: playlistFiles().length,
   });
@@ -637,6 +670,11 @@ app.post('/api/admin/takeover', requireAdmin, (req, res) => {
   if (mode === 'off') state.takeover = null;
   else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: (PARTY.schedule.find((p) => p.highlight) || {}).title || 'Kaketid!' };
   else if (mode === 'greetings') state.takeover = { mode, at: Date.now() };
+  else if (mode === 'finale') {
+    const f = jobs.get(state.finaleId);
+    if (!f || f.status !== 'done') return res.status(409).json({ error: 'Finalen er ikke klar ennå.' });
+    state.takeover = { mode, at: Date.now() };
+  }
   else if (mode === 'quiz') {
     const winner = party.drawWinner(state.quiz);
     const names = [...new Set(state.quiz.map((e) => e.name))].sort(() => Math.random() - 0.5).slice(0, 40);
@@ -653,6 +691,11 @@ app.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).end();
   const { action } = req.body || {};
+  if (action === 'approve') {
+    updateJob(job, { approved: true, hidden: false });
+    if (job.type === 'song' && job.status === 'done') queueSong(job);
+  }
+  if (action === 'reject') updateJob(job, { approved: true, hidden: true });
   if (action === 'hide') updateJob(job, { hidden: true });
   if (action === 'show') updateJob(job, { hidden: false });
   if (action === 'play-next' && job.type === 'song' && job.status === 'done') {
@@ -663,8 +706,113 @@ app.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/admin/settings', requireAdmin, (req, res) => {
+  const b = req.body || {};
+  if (typeof b.moderation === 'boolean') {
+    state.moderation = b.moderation;
+    // Skrus godkjenning av, slipper vi gjennom alt som venter.
+    if (!b.moderation) {
+      for (const j of jobs.values()) {
+        if (j.approved === false) {
+          updateJob(j, { approved: true });
+          if (j.type === 'song' && j.status === 'done' && !j.hidden) queueSong(j);
+        }
+      }
+    }
+    save();
+  }
+  res.json({ ok: true, moderation: state.moderation });
+});
+
+// ---------------------------------------------------------------------------
+// Finale: bursdagsbarnet synger en av gjestenes sanger (Higgsfield lipsync).
+// Virker alltid: uten lipsync (eller hvis den feiler) blir finalen videoen + sangen side om side.
+// ---------------------------------------------------------------------------
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 150 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(null, /^video\/(mp4|quicktime|webm)$/.test(file.mimetype)),
+});
+
+function readMedia(url) {
+  if (!url || !url.startsWith('/media/')) return null;
+  return fs.readFileSync(path.join(MEDIA_DIR, path.basename(url)));
+}
+
+/** Kutt en MP3 til ca. FINALE_SECONDS (MP3-rammer tåler å bli kuttet). */
+function trimAudio(buf, url, duration) {
+  if (!/\.mp3$/i.test(url) || !duration || duration <= FINALE_SECONDS) return buf;
+  return buf.subarray(0, Math.floor(buf.length * (FINALE_SECONDS / duration)));
+}
+
+function finaleFallback(job, reason) {
+  const song = jobs.get(job.input.songId);
+  updateJob(job, {
+    status: 'done',
+    note: reason ? `Uten lipsync (${reason})` : 'Uten lipsync',
+    result: { videoUrl: job.input.videoUrl, audioUrl: song && song.result && song.result.audioUrl, lipsync: false },
+  });
+}
+
+app.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (req, res) => {
+  const song = jobs.get(String(req.body.songId || ''));
+  if (!song || song.type !== 'song' || song.status !== 'done') return res.status(400).json({ error: 'Velg en ferdig sang.' });
+  let videoUrl;
+  if (req.file) videoUrl = saveMedia(req.file.buffer, req.file.mimetype === 'video/quicktime' ? 'video/quicktime' : 'video/mp4');
+  else {
+    const src = jobs.get(String(req.body.videoJobId || ''));
+    videoUrl = src && src.result && src.result.videoUrl;
+  }
+  if (!videoUrl) return res.status(400).json({ error: 'Last opp en video, eller velg en ferdig video.' });
+
+  const job = newJob('finale', { status: 'starting', startedAt: Date.now(), label: 'Finale', emoji: '🎬', input: { songId: song.id, videoUrl } });
+  state.finaleId = job.id;
+  save();
+  res.json({ id: job.id });
+
+  if (!higgsfield.lipsyncConfigured()) return finaleFallback(job, useHiggsfield ? 'HF_LIPSYNC_MODEL er ikke satt' : 'demomodus');
+  try {
+    const vbuf = readMedia(videoUrl);
+    const abuf = readMedia(song.result.audioUrl);
+    if (!vbuf || !abuf) throw new Error('Fant ikke filene lokalt');
+    const [hfVideo, hfAudio] = await Promise.all([
+      higgsfield.upload(vbuf, videoUrl.endsWith('.mov') ? 'video/quicktime' : 'video/mp4'),
+      higgsfield.upload(trimAudio(abuf, song.result.audioUrl, song.result.duration), song.result.audioUrl.endsWith('.wav') ? 'audio/wav' : 'audio/mpeg'),
+    ]);
+    const webhook = PUBLIC_URL ? `${PUBLIC_URL}/api/hooks/higgsfield?job=${job.id}&t=${job.hookToken}` : undefined;
+    const { requestId } = await higgsfield.submitLipsync({ videoUrl: hfVideo, audioUrl: hfAudio, webhookUrl: webhook });
+    updateJob(job, { status: 'processing', provider: { name: 'higgsfield', requestId } });
+  } catch (err) {
+    fail(job, err.message.slice(0, 120));
+  }
+});
+
+// Galleri etter festen: alt som ble vist på skjermen, til å laste ned
+app.get('/galleri', page('galleri'));
+app.get('/api/gallery', (req, res) => {
+  const items = [...jobs.values()]
+    .filter((j) => onScreen(j) && j.status === 'done' && (AI_TYPES.has(j.type) || j.type === 'greeting'))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map(publicJob);
+  const finale = jobs.get(state.finaleId);
+  res.json({ partyTitle: PARTY_TITLE, items, finale: finale && finale.status === 'done' ? finale.result : null });
+});
+
+// Helsesjekk for overvåking (f.eks. Railway eller UptimeRobot)
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    higgsfield: useHiggsfield ? 'på' : 'demo',
+    suno: useSuno ? 'på' : 'demo',
+    lipsync: higgsfield.lipsyncConfigured(),
+    publicUrl: PUBLIC_URL || null,
+    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
+    jobs: jobs.size,
+  });
+});
+
 app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Bildet er for stort. Prøv igjen!' });
+  if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Filen er for stor. Prøv igjen!' });
   console.error(err);
   res.status(500).json({ error: 'Noe gikk galt.' });
 });

@@ -57,12 +57,33 @@ async function upload(buffer, contentType) {
   return slot.public_url;
 }
 
-async function submitImageToVideo({ imageUrl, prompt, webhookUrl }) {
-  const args = { ...EXTRA, [IMAGE_FIELD]: imageUrl, [PROMPT_FIELD]: prompt };
+async function submit(model, args, webhookUrl) {
   const q = webhookUrl ? `?hf_webhook=${encodeURIComponent(webhookUrl)}` : '';
-  const data = await call('POST', `/${VIDEO_MODEL}${q}`, args);
+  const data = await call('POST', `/${String(model).replace(/^\/+/, '')}${q}`, args);
   if (!data.request_id) throw new Error(`Higgsfield svarte uten request_id: ${JSON.stringify(data).slice(0, 300)}`);
   return { requestId: data.request_id };
+}
+
+async function submitImageToVideo({ imageUrl, prompt, webhookUrl }) {
+  return submit(VIDEO_MODEL, { ...EXTRA, [IMAGE_FIELD]: imageUrl, [PROMPT_FIELD]: prompt }, webhookUrl);
+}
+
+// Lipsync (finalen): få en video til å synge en sang. Modellsti og feltnavn settes i env.
+const LIPSYNC_MODEL = (process.env.HF_LIPSYNC_MODEL || '').replace(/^\/+/, '');
+let LIPSYNC_EXTRA = { sync_mode: 'bounce' };
+try {
+  LIPSYNC_EXTRA = { ...LIPSYNC_EXTRA, ...JSON.parse(process.env.HF_LIPSYNC_EXTRA || '{}') };
+} catch {
+  console.warn('[higgsfield] HF_LIPSYNC_EXTRA er ikke gyldig JSON – ignorerer');
+}
+async function submitLipsync({ videoUrl, audioUrl, webhookUrl }) {
+  if (!LIPSYNC_MODEL) throw new Error('HF_LIPSYNC_MODEL er ikke satt');
+  const args = {
+    ...LIPSYNC_EXTRA,
+    [process.env.HF_LIPSYNC_VIDEO_FIELD || 'video_url']: videoUrl,
+    [process.env.HF_LIPSYNC_AUDIO_FIELD || 'audio_url']: audioUrl,
+  };
+  return submit(LIPSYNC_MODEL, args, webhookUrl);
 }
 
 /** Finn første video-URL i svaret, uansett hvordan modellen strukturerer det. */
@@ -85,4 +106,4 @@ async function status(requestId) {
   return { status: s, videoUrl: s === 'completed' ? findVideoUrl(data) : null, raw: data };
 }
 
-module.exports = { isConfigured, upload, submitImageToVideo, status, findVideoUrl };
+module.exports = { isConfigured, upload, submit, submitImageToVideo, submitLipsync, lipsyncConfigured: () => Boolean(KEY && LIPSYNC_MODEL), status, findVideoUrl };

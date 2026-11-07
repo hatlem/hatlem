@@ -75,7 +75,8 @@
       if (r.imageUrl) html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
       html += '<h3 style="margin-top:12px">' + Party.esc(r.title || job.label) + '</h3>';
       html += '<audio controls src="' + Party.esc(r.audioUrl) + '" style="width:100%"></audio>';
-      if (job.nowPlaying) html += '<div class="queue-badge">🔊 Spilles nå!</div>';
+      if (job.pending) html += '<div class="queue-badge">👀 Legges i køen når verten har hørt på den</div>';
+      else if (job.nowPlaying) html += '<div class="queue-badge">🔊 Spilles nå!</div>';
       else if (job.queuePosition) html += '<div class="queue-badge">Nr. ' + job.queuePosition + ' i køen 🎶</div>';
       else html += '<p class="hint">Sangen er lagt i spillelisten.</p>';
     } else if (r.videoUrl) {
@@ -85,7 +86,9 @@
       html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
       if (job.demo) html += '<p class="hint">Demo: med Higgsfield-nøkkel blir dette en film.</p>';
     }
-    html += '<p class="hint">Se etter den på storskjermen 📺</p>';
+    html += job.pending && job.type !== 'song'
+      ? '<p class="hint">Vises på storskjermen så snart verten har sett på den 👀</p>'
+      : '<p class="hint">Se etter den på storskjermen 📺</p>';
     box.innerHTML = html;
     document.getElementById('actions').hidden = false;
   }
@@ -106,7 +109,7 @@
     if (!b) return;
     try {
       const j = await (await fetch('/api/jobs/' + id)).json();
-      b.textContent = j.nowPlaying ? '🔊 Spilles nå!' : j.queuePosition ? 'Nr. ' + j.queuePosition + ' i køen 🎶' : '✅ Spilt på festen!';
+      b.textContent = j.pending ? '👀 Legges i køen når verten har hørt på den' : j.nowPlaying ? '🔊 Spilles nå!' : j.queuePosition ? 'Nr. ' + j.queuePosition + ' i køen 🎶' : '✅ Spilt på festen!';
     } catch {}
   }, 8000);
 </script>
