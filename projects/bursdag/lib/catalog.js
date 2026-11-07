@@ -35,6 +35,7 @@ const DRAWING_STYLES = [
 ];
 
 const SELFIE_EFFECTS = [
+  { id: 'attitall', name: 'Tilbake til 1986', emoji: '📼', prompt: 'The scene turns into a 1980s music video: VHS grain, neon pink and cyan lights, synth-pop vibe, the person gets big 80s hair, sunglasses and a colorful windbreaker and starts dancing with retro moves. Fun, nostalgic, cinematic.' },
   { id: 'tiger', name: 'Tiger rundt deg', emoji: '🐯', prompt: 'A majestic realistic tiger walks slowly in a full circle around the person, brushing past them; the person stays in place, looks amazed and smiles. Cinematic, photorealistic, steady camera.' },
   { id: 'spokelse', name: 'Bli et spøkelse', emoji: '👻', prompt: 'The person slowly turns into a translucent glowing white ghost, their body fading and becoming see-through, ghostly mist swirls around them and they float gently upward. Spooky but playful, cinematic.' },
   { id: 'superhelt', name: 'Superhelt', emoji: '🦸', prompt: 'The person gets a heroic flowing cape, wind blows, they crouch and launch into the sky flying away like a superhero, dramatic clouds, epic cinematic shot.' },

@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <title>Admin</title>
 <style>
@@ -12,6 +15,10 @@
   .item small { color: var(--muted); display: block; }
   .acts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   .acts button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,.15); color: var(--text); }
+  .hl-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hl-btns button { font: inherit; font-weight: 800; font-size: 17px; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--card-border); background: rgba(0,0,0,.25); color: var(--text); cursor: pointer; }
+  .hl-btns button.on { border-color: var(--yellow); background: rgba(255,210,63,.18); }
+  .item q { display: block; margin-top: 4px; font-style: italic; }
   .s-failed { color: var(--danger); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
 </style>
 </head>
@@ -20,6 +27,18 @@
   <h1>🛠️ Admin</h1>
   <p class="hint">Skjul ting fra storskjermen, eller flytt en sang først i køen.</p>
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
+  <section class="card" id="party" hidden>
+    <div class="step">Felles høydepunkt på storskjermen</div>
+    <div id="partyWarn"></div>
+    <div class="hl-btns">
+      <button data-mode="cake">🎂 Kaketid</button>
+      <button data-mode="quiz">🧠 Trekk quizvinner</button>
+      <button data-mode="greetings">💌 Les hilsener</button>
+      <button data-mode="off">⏹️ Tilbake til vanlig</button>
+    </div>
+    <p class="hint" id="partyInfo"></p>
+    <ol id="top" class="hint"></ol>
+  </section>
   <div id="list"></div>
 </main>
 <script src="/common.js"></script>
@@ -32,6 +51,7 @@
     const r = await api('/api/admin/jobs');
     if (!r.ok) { document.getElementById('err').textContent = (await r.json()).error; document.getElementById('login').hidden = false; return; }
     document.getElementById('login').hidden = true;
+    loadParty();
     const { jobs, queue, nowPlaying } = await r.json();
     document.getElementById('list').innerHTML = jobs.map((j) => {
       const img = (j.result && (j.result.imageUrl)) || j.inputUrl;
@@ -39,6 +59,7 @@
       return `<div class="item ${j.hidden ? 'hidden' : ''}">
         <div class="thumb" style="${img ? `background-image:url('${esc(img)}')` : ''}">${img ? '' : esc(j.emoji || '🎵')}</div>
         <div><strong>${esc(j.emoji || '')} ${esc(j.label)}</strong> · ${esc(j.guest || 'anonym')}
+          ${j.text ? `<q>${esc(j.text)}</q>` : ''}
           <small><span class="s-${esc(j.status)}">${esc(j.status)}</span>${j.error ? ' · ' + esc(j.error) : ''}${j.id === nowPlaying ? ' · 🔊 spilles nå' : q >= 0 ? ' · kø #' + (q + 1) : ''}${j.result && j.result.videoUrl ? ` · <a href="${esc(j.result.videoUrl)}" target="_blank">video</a>` : ''}${j.result && j.result.audioUrl ? ` · <a href="${esc(j.result.audioUrl)}" target="_blank">lyd</a>` : ''}</small>
           <div class="acts">
             <button data-id="${esc(j.id)}" data-a="${j.hidden ? 'show' : 'hide'}">${j.hidden ? '👁️ Vis' : '🙈 Skjul'}</button>
@@ -46,6 +67,24 @@
           </div></div></div>`;
     }).join('') || '<p class="hint">Ingenting ennå.</p>';
   }
+  async function loadParty() {
+    const r = await api('/api/admin/party');
+    if (!r.ok) return;
+    const p = await r.json();
+    document.getElementById('party').hidden = false;
+    document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
+    document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
+    document.getElementById('partyInfo').textContent = `Quiz: ${p.quiz.count} svar${p.quiz.closed ? ' (avsluttet)' : ''} · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
+    document.getElementById('top').innerHTML = p.quiz.top.map((t) => `<li>${esc(t.name)}: ${t.score}/${p.quiz.max}</li>`).join('');
+  }
+  document.querySelector('.hl-btns').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-mode]');
+    if (!b) return;
+    if (b.dataset.mode === 'quiz' && !confirm('Trekke vinneren nå? Quizen stenges for nye svar.')) return;
+    await api('/api/admin/takeover', { method: 'POST', body: JSON.stringify({ mode: b.dataset.mode }) });
+    loadParty();
+  });
+
   document.getElementById('list').addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-a]');
     if (!b) return;

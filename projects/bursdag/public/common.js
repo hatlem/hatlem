@@ -63,9 +63,10 @@
     });
   }
 
-  function chips(container, name, items, { checked = 0, small = false } = {}) {
+  function chips(container, name, items, { checked = 0, small = false, list = false } = {}) {
     container.classList.add('chips');
     if (small) container.classList.add('small');
+    if (list) container.classList.add('list');
     container.innerHTML = items
       .map((it, i) => {
         const value = typeof it === 'string' ? it : it.id;

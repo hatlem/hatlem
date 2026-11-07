@@ -23,6 +23,7 @@ const higgsfield = require('./lib/higgsfield');
 const suno = require('./lib/suno');
 const demo = require('./lib/demo');
 const { DRAWING_STYLES, SELFIE_EFFECTS, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
+const party = require('./lib/party');
 
 // ---------------------------------------------------------------------------
 // Konfig
@@ -41,6 +42,13 @@ const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MIN || 25) * 60 * 1000;
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
+const PARTY = party.loadConfig(process.env.PARTY_CONFIG || path.join(__dirname, 'party.json'), BIRTHDAY_NAME);
+const NOSTALGIA_DIR = path.join(DATA_DIR, 'nostalgi');
+const PLAYLIST_DIR = path.join(DATA_DIR, 'spilleliste');
+const nostalgiaFiles = party.makeFolderScanner(NOSTALGIA_DIR, party.IMAGE);
+const playlistFiles = party.makeFolderScanner(PLAYLIST_DIR, party.AUDIO);
+const AI_TYPES = new Set(['drawing', 'selfie', 'song']);
+
 const useHiggsfield = higgsfield.isConfigured();
 const useSuno = suno.isConfigured();
 
@@ -49,7 +57,7 @@ const useSuno = suno.isConfigured();
 // ---------------------------------------------------------------------------
 /** @type {Map<string, any>} */
 const jobs = new Map();
-const state = { queue: [], nowPlaying: null, played: [] };
+const state = { queue: [], nowPlaying: null, played: [], quiz: [], takeover: null };
 
 function load() {
   try {
@@ -137,6 +145,7 @@ function publicJob(job) {
     emoji: job.emoji,
     createdAt: job.createdAt,
     inputUrl: job.inputUrl,
+    text: job.text,
     result: job.result || null,
     error: job.status === 'failed' ? job.error : undefined,
     demo: !!job.demo,
@@ -150,8 +159,9 @@ function publicJob(job) {
 // ---------------------------------------------------------------------------
 const deviceLog = new Map(); // deviceId -> [timestamps]
 
-function checkLimits(deviceId) {
-  if (jobs.size >= MAX_JOBS_TOTAL) return 'Maks antall kreasjoner for kvelden er nådd 🎉';
+function checkLimits(deviceId, { budget = true } = {}) {
+  const used = [...jobs.values()].filter((j) => AI_TYPES.has(j.type)).length;
+  if (budget && used >= MAX_JOBS_TOTAL) return 'Maks antall kreasjoner for kvelden er nådd 🎉';
   const now = Date.now();
   const list = (deviceLog.get(deviceId) || []).filter((t) => now - t < 60 * 60 * 1000);
   if (list.length >= MAX_PER_DEVICE) return 'Du har laget mye i det siste! Gi de andre en sjanse og prøv igjen litt senere 😄';
@@ -311,8 +321,12 @@ app.get('/status/:id', page('status'));
 app.get('/skjerm', page('skjerm'));
 app.get('/qr', page('qr'));
 app.get('/admin', page('admin'));
+app.get('/quiz', page('quiz'));
+app.get('/hilsen', page('hilsen'));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
+app.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
+app.use('/spilleliste', express.static(PLAYLIST_DIR, { maxAge: '1h' }));
 
 app.get('/api/config', (req, res) => {
   res.json({
@@ -322,6 +336,9 @@ app.get('/api/config', (req, res) => {
     selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji }) => ({ id, name, emoji })),
     songGenres: SONG_GENRES,
     songMoods: SONG_MOODS,
+    schedule: PARTY.schedule,
+    greetingPrompts: PARTY.greetingPrompts,
+    age: PARTY.birthYear ? new Date().getFullYear() - PARTY.birthYear : null,
     demo: { video: !useHiggsfield, song: !useSuno },
   });
 });
@@ -418,7 +435,20 @@ app.get('/api/screen', (req, res) => {
     .map(publicJob);
   const songs = (ids) => ids.map((id) => jobs.get(id)).filter((j) => j && !j.hidden).map(publicJob);
   const working = visible.filter((j) => j.status === 'processing' || j.status === 'queued').length;
+  const nostalgia = nostalgiaFiles().map((f) => {
+    const { year, title } = party.parseName(f);
+    return { id: 'n:' + f, type: 'nostalgia', emoji: '🕰️', label: year ? String(year) : title, guest: year ? title : '', result: { imageUrl: '/nostalgi/' + encodeURIComponent(f) } };
+  });
+  const playlist = playlistFiles().map((f) => {
+    const { year, title } = party.parseName(f);
+    return { id: 'p:' + f, year, title, url: '/spilleliste/' + encodeURIComponent(f) };
+  });
   res.json({
+    nostalgia,
+    playlist,
+    schedule: PARTY.schedule,
+    takeover: takeoverView(),
+    quizCount: state.quiz.length,
     gallery,
     nowPlaying: state.nowPlaying && !jobs.get(state.nowPlaying)?.hidden ? publicJob(jobs.get(state.nowPlaying)) : null,
     queue: songs(state.queue),
@@ -457,6 +487,64 @@ app.post('/api/hooks/:provider', (req, res) => {
   pollJob(job).catch((err) => console.warn('[hook]', err.message));
 });
 
+// Gjestebok med vri: korte hilsener som vises på storskjermen
+app.post('/api/greeting', (req, res) => {
+  const b = req.body || {};
+  const limit = checkLimits(clean(b.deviceId, 64) || req.ip, { budget: false });
+  if (limit) return res.status(429).json({ error: limit });
+  const text = clean(b.text, 200);
+  if (text.length < 2) return res.status(400).json({ error: 'Skriv litt først 😊' });
+  const prompt = PARTY.greetingPrompts.find((g) => g.id === b.prompt) || PARTY.greetingPrompts[0] || { name: 'Hilsen', emoji: '💌' };
+  const job = newJob('greeting', { status: 'done', guest: clean(b.name, 40), label: prompt.name, emoji: prompt.emoji, text });
+  res.json({ id: job.id });
+});
+
+// Quiz om bursdagsbarnet
+app.get('/api/quiz', (req, res) => {
+  const deviceId = clean(req.query.deviceId, 64);
+  const mine = state.quiz.find((e) => e.deviceId === deviceId);
+  res.json({
+    questions: PARTY.quiz.questions.map(({ q, options }) => ({ q, options })),
+    closed: !!state.quizClosed,
+    mine: mine ? { name: mine.name, answers: mine.answers } : null,
+  });
+});
+
+app.post('/api/quiz', (req, res) => {
+  const b = req.body || {};
+  if (state.quizClosed) return res.status(409).json({ error: 'Quizen er avsluttet, vinneren er trukket! 🏆' });
+  const deviceId = clean(b.deviceId, 64);
+  const name = clean(b.name, 40);
+  if (!deviceId || !name) return res.status(400).json({ error: 'Skriv navnet ditt, så vi vet hvem som vinner!' });
+  const qs = PARTY.quiz.questions;
+  const answers = qs.map((q, i) => {
+    const a = Number(Array.isArray(b.answers) ? b.answers[i] : NaN);
+    return Number.isInteger(a) && a >= 0 && a < q.options.length ? a : null;
+  });
+  if (answers.some((a) => a === null)) return res.status(400).json({ error: 'Svar på alle spørsmålene først!' });
+  const entry = { deviceId, name, answers, score: party.scoreQuiz(qs, answers), at: Date.now() };
+  state.quiz = state.quiz.filter((e) => e.deviceId !== deviceId).concat(entry);
+  save();
+  res.json({ ok: true, count: state.quiz.length });
+});
+
+// Felles høydepunkt: storskjermen tar over (kaketid, quiz-trekning, hilsener høyt)
+function takeoverView() {
+  const t = state.takeover;
+  if (!t) return null;
+  if (t.mode === 'quiz') {
+    return {
+      ...t,
+      answers: PARTY.quiz.questions.map((q) => ({ q: q.q, a: q.options[q.correct] })),
+    };
+  }
+  if (t.mode === 'greetings') {
+    const list = [...jobs.values()].filter((j) => j.type === 'greeting' && !j.hidden).sort((a, b) => a.createdAt - b.createdAt).map(publicJob);
+    return { ...t, greetings: list };
+  }
+  return t;
+}
+
 // Admin: skjul upassende ting fra skjermen, eller flytt sanger
 function requireAdmin(req, res, next) {
   if (!ADMIN_KEY) return res.status(403).json({ error: 'Sett ADMIN_KEY for å bruke admin.' });
@@ -470,6 +558,33 @@ function requireAdmin(req, res, next) {
 app.get('/api/admin/jobs', requireAdmin, (req, res) => {
   const list = [...jobs.values()].sort((a, b) => b.createdAt - a.createdAt).map((j) => ({ ...publicJob(j), hidden: !!j.hidden, error: j.error }));
   res.json({ jobs: list, queue: state.queue, nowPlaying: state.nowPlaying });
+});
+
+app.get('/api/admin/party', requireAdmin, (req, res) => {
+  const top = [...state.quiz].sort((a, b) => b.score - a.score || a.at - b.at).slice(0, 10).map(({ name, score }) => ({ name, score }));
+  res.json({
+    takeover: state.takeover ? state.takeover.mode : null,
+    quiz: { count: state.quiz.length, max: PARTY.quiz.questions.length, top, example: PARTY.quiz.example, closed: !!state.quizClosed },
+    nostalgia: nostalgiaFiles().length,
+    playlist: playlistFiles().length,
+  });
+});
+
+app.post('/api/admin/takeover', requireAdmin, (req, res) => {
+  const mode = (req.body || {}).mode;
+  if (mode === 'off') state.takeover = null;
+  else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: (PARTY.schedule.find((p) => p.highlight) || {}).title || 'Kaketid!' };
+  else if (mode === 'greetings') state.takeover = { mode, at: Date.now() };
+  else if (mode === 'quiz') {
+    const winner = party.drawWinner(state.quiz);
+    const names = [...new Set(state.quiz.map((e) => e.name))].sort(() => Math.random() - 0.5).slice(0, 40);
+    state.takeover = { mode, at: Date.now(), winner: winner && { name: winner.name, score: winner.score }, max: PARTY.quiz.questions.length, count: state.quiz.length, names };
+    state.quizClosed = true;
+  } else if (mode === 'reopen-quiz') {
+    state.quizClosed = false;
+  } else return res.status(400).json({ error: 'Ukjent modus' });
+  save();
+  res.json({ ok: true });
 });
 
 app.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {

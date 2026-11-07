@@ -64,11 +64,37 @@
   .queue li b { color: var(--yellow); font-size: 1.3vw; width: 1.6vw; }
   .queue li small { display: block; color: var(--muted); font-size: .9vw; }
   .muted { color: var(--muted); font-size: 1.1vw; }
-  .working { margin-top: auto; font-size: 1.2vw; color: var(--muted); }
+  .working { margin-top: auto; margin-bottom: .4vw; font-size: 1.2vw; color: var(--muted); }
   .working b { color: var(--cyan); }
 
   .toast { position: fixed; top: 2vw; left: 50%; transform: translate(-50%, -200%); z-index: 20; background: linear-gradient(90deg, var(--pink), var(--violet)); padding: 1vw 2vw; border-radius: 999px; font-size: 1.8vw; font-weight: 800; transition: transform .5s cubic-bezier(.2,1.4,.4,1); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
   .toast.show { transform: translate(-50%, 0); }
+
+  .quote { position: relative; z-index: 1; max-width: 70%; text-align: center; padding: 3vw; }
+  .quote .prompt { font-size: 1.8vw; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--yellow); }
+  .quote blockquote { margin: 1.5vw 0; font-size: 4vw; font-weight: 800; line-height: 1.15; }
+  .quote .from { font-size: 2vw; color: var(--muted); }
+  .greet-bg { position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, rgba(255,79,163,.45), transparent 60%), radial-gradient(circle at 80% 90%, rgba(62,230,216,.35), transparent 60%), var(--bg-2); }
+  .year-tag { position: absolute; top: 3vw; right: 3vw; z-index: 2; font-size: 5vw; font-weight: 800; color: var(--yellow); text-shadow: 0 4px 30px rgba(0,0,0,.8); }
+  .program { list-style: none; margin: 0; padding: 0; display: grid; gap: .3vw; font-size: 1.05vw; }
+  .program li { display: flex; gap: .6vw; color: var(--muted); }
+  .program li.now { color: var(--text); font-weight: 800; }
+  .program li.past { opacity: .45; }
+  .program li b { width: 3.4vw; flex: none; }
+  .countdown { margin-top: .6vw; font-size: 1.3vw; font-weight: 800; color: var(--yellow); }
+
+  .takeover { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; text-align: center; padding: 4vw;
+    background: radial-gradient(circle at 50% 30%, rgba(255,79,163,.5), transparent 60%), radial-gradient(circle at 50% 100%, rgba(155,107,255,.5), transparent 60%), var(--bg); animation: fadein .8s ease; }
+  .takeover[hidden] { display: none; }
+  @keyframes fadein { from { opacity: 0; } }
+  .takeover .huge { font-size: 14vw; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
+  .takeover h1 { font-size: 6vw; margin: 1vw 0; }
+  .takeover p { font-size: 2.2vw; color: var(--muted); margin: 0; }
+  .takeover .spin-name { font-size: 7vw; font-weight: 800; min-height: 1.2em; }
+  .takeover .winner { font-size: 8vw; font-weight: 800; animation: pop .8s cubic-bezier(.2,1.6,.4,1); }
+  .fasit { display: grid; grid-template-columns: 1fr 1fr; gap: .6vw 2vw; text-align: left; margin-top: 2vw; font-size: 1.3vw; max-width: 80vw; }
+  .fasit div { background: rgba(255,255,255,.07); border-radius: .8vw; padding: .6vw 1vw; }
+  .fasit b { color: var(--cyan); display: block; }
 
   .start { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; text-align: center; background: rgba(18,10,36,.92); cursor: pointer; }
   .start h1 { font-size: 5vw; }
@@ -106,10 +132,17 @@
     </div>
 
     <div class="working" id="working"></div>
+
+    <div id="programBox" hidden>
+      <h2>Program</h2>
+      <ul class="program" id="program"></ul>
+      <div class="countdown" id="countdown"></div>
+    </div>
   </aside>
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="takeover" id="takeover" hidden></div>
 <audio id="audio" preload="auto"></audio>
 
 <div class="start" id="start">
@@ -134,7 +167,9 @@
   fetch('/api/qr-info').then((r) => r.json()).then((i) => { document.getElementById('url').textContent = i.base.replace(/^https?:\/\//, ''); });
 
   // ---------------------------------------------------------------- data
-  let data = { gallery: [], queue: [], played: [], nowPlaying: null, working: 0 };
+  let data = { gallery: [], nostalgia: [], playlist: [], schedule: [], queue: [], played: [], nowPlaying: null, working: 0, takeover: null };
+  let birthdayName = 'bursdagsbarnet';
+  Party.config().then((c) => { birthdayName = c.birthdayName; });
   const seen = new Set();
   const priority = [];
   let firstLoad = true;
@@ -149,7 +184,7 @@
         seen.add(item.id);
         if (!firstLoad) {
           priority.push(item);
-          toast(`${item.emoji || '✨'} Nytt fra ${item.guest || 'en gjest'}!`);
+          toast(item.type === 'greeting' ? `💌 Ny hilsen${item.guest ? ' fra ' + item.guest : ''}!` : `${item.emoji || '✨'} Nytt fra ${item.guest || 'en gjest'}!`);
         }
       }
     }
@@ -160,17 +195,19 @@
       }
     }
     firstLoad = false;
-    document.getElementById('empty').style.display = data.gallery.length ? 'none' : '';
+    const hasSlides = data.gallery.length || data.nostalgia.length;
+    document.getElementById('empty').style.display = hasSlides ? 'none' : '';
     renderSide();
-    if (!showing && data.gallery.length) next();
+    renderTakeover();
+    if (!showing && hasSlides) next();
     if (SOUND && started && fallback && data.queue.length) playNext(null); // ny sang i kø: avbryt reprise
   }
 
   // ---------------------------------------------------------------- galleri
-  let showing = false, idx = 0, timer = null;
+  let showing = false, idx = 0, nIdx = 0, slideNo = 0, timer = null;
   function next() {
     clearTimeout(timer);
-    if (!data.gallery.length) { showing = false; return; }
+    if (!data.gallery.length && !data.nostalgia.length) { showing = false; return; }
     showing = true;
     let item, isNew = false;
     while (priority.length && !item) {
@@ -178,7 +215,29 @@
       item = data.gallery.find((g) => g.id === p.id);
       isNew = !!item;
     }
+    slideNo++;
+    // Nostalgivegg: hvert tredje lysbilde (eller alle, hvis ingen har laget noe ennå)
+    if (!item && data.nostalgia.length && (slideNo % 3 === 0 || !data.gallery.length)) {
+      item = data.nostalgia[nIdx % data.nostalgia.length]; nIdx++;
+    }
     if (!item) { item = data.gallery[idx % data.gallery.length]; idx++; }
+
+    if (item.type === 'greeting') {
+      const layer = layers[1 - active];
+      layer.innerHTML = `<div class="greet-bg"></div><div class="quote"><div class="prompt">${esc(item.emoji)} ${esc(item.label)}</div>
+        <blockquote>«${esc(item.text)}»</blockquote><div class="from">${item.guest ? '– ' + esc(item.guest) : ''}</div></div>` + (isNew ? '<div class="badge-new">NYTT! 🎉</div>' : '');
+      timer = setTimeout(next, 9000);
+      return swap(layer);
+    }
+    if (item.type === 'nostalgia') {
+      const layer = layers[1 - active];
+      const url = item.result.imageUrl;
+      layer.innerHTML = `<div class="bg" style="background-image:url('${esc(url)}')"></div><img class="kb" src="${esc(url)}" alt="">` +
+        (/^\d{4}$/.test(item.label) ? `<div class="year-tag">${esc(item.label)}</div>` : '') +
+        (item.guest ? `<div class="caption"><span class="em">🕰️</span><div>${esc(item.guest)}</div></div>` : '');
+      timer = setTimeout(next, 8000);
+      return swap(layer);
+    }
 
     const layer = layers[1 - active];
     const r = item.result || {};
@@ -197,6 +256,10 @@
       layer.innerHTML = bg + `<img class="kb" src="${esc(src)}" alt="">` + caption + badge;
       timer = setTimeout(next, 9000);
     }
+    swap(layer);
+  }
+
+  function swap(layer) {
     layer.classList.add('on');
     layers[active].classList.remove('on');
     const old = layers[active];
@@ -221,8 +284,15 @@
     if (now) {
       fallback = false;
       start(now);
+    } else if (data.playlist.length) {
+      // Køen er tom: årsspillelisten 1986 → i dag, kronologisk
+      fallback = true;
+      let i = Number(store('bursdag-pl')) || 0;
+      if (i >= data.playlist.length) i = 0;
+      store('bursdag-pl', String(i + 1));
+      start({ ...data.playlist[i], kind: 'playlist' });
     } else if (data.played.length) {
-      // Køen er tom: spill tidligere sanger om igjen til noen lager en ny
+      // Ingen årsspilleliste: spill gjestenes sanger om igjen til noen lager en ny
       fallback = true;
       const pick = data.played[Math.floor(Math.random() * data.played.length)];
       start(pick);
@@ -236,8 +306,8 @@
 
   function start(song) {
     current = song;
-    audio.src = song.result.audioUrl;
-    audio.play().catch(() => {});
+    audio.src = song.kind === 'playlist' ? song.url : song.result.audioUrl;
+    if (!data.takeover) audio.play().catch(() => {});
     renderSide();
   }
 
@@ -249,10 +319,18 @@
   });
 
   // ---------------------------------------------------------------- sidepanel
+  function store(k, v) {
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; }
+  }
+
   function renderSide() {
     const song = SOUND ? current : data.nowPlaying;
     const now = document.getElementById('now');
-    if (song) {
+    if (song && song.kind === 'playlist') {
+      now.innerHTML = `<div class="row2"><div class="cover" style="font-size:1.8vw;font-weight:800">${esc(song.year || '🕰️')}</div>
+        <div><div class="title"><span class="eq"><i></i><i></i><i></i></span>${esc(song.title)}</div>
+        <div class="by">Årsspillelisten · én låt for hvert år</div></div></div><div class="bar"><div></div></div>`;
+    } else if (song) {
       const r = song.result || {};
       now.innerHTML = `<div class="row2"><div class="cover">${r.imageUrl ? `<img src="${esc(r.imageUrl)}" alt="">` : '🎵'}</div>
         <div><div class="title"><span class="eq"><i></i><i></i><i></i></span>${esc(r.title || song.label)}</div>
@@ -263,9 +341,79 @@
     }
     const q = document.getElementById('queue');
     q.innerHTML = data.queue.length
-      ? data.queue.slice(0, 6).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
+      ? data.queue.slice(0, 4).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
       : '<li class="muted">Tom kø. Skann og lag en sang!</li>';
+    renderProgram();
     document.getElementById('working').innerHTML = data.working ? `⚙️ <b>${data.working}</b> kreasjon${data.working === 1 ? '' : 'er'} lages akkurat nå …` : '';
+  }
+
+  // ---------------------------------------------------------------- program
+  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+  function renderProgram() {
+    const box = document.getElementById('programBox');
+    if (!data.schedule.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const d = new Date();
+    const nowMin = d.getHours() * 60 + d.getMinutes();
+    let cur = -1;
+    data.schedule.forEach((p, i) => { if (toMin(p.time) <= nowMin) cur = i; });
+    document.getElementById('program').innerHTML = data.schedule.map((p, i) =>
+      `<li class="${i === cur ? 'now' : i < cur ? 'past' : ''}"><b>${esc(p.time)}</b><span>${esc(p.emoji)} ${esc(p.title)}</span></li>`).join('');
+    const hl = data.schedule.find((p) => p.highlight && toMin(p.time) > nowMin);
+    const left = hl ? toMin(hl.time) - nowMin : null;
+    document.getElementById('countdown').textContent = hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
+  }
+
+  // ---------------------------------------------------------------- felles høydepunkt
+  let shownTakeover = null, greetTimer = null;
+  function renderTakeover() {
+    const t = data.takeover;
+    const el = document.getElementById('takeover');
+    const key = t ? t.mode + t.at : null;
+    if (key === shownTakeover) return;
+    shownTakeover = key;
+    clearInterval(greetTimer);
+    if (!t) {
+      el.hidden = true; el.innerHTML = '';
+      if (SOUND && started && current) audio.play().catch(() => {});
+      return;
+    }
+    audio.pause();
+    el.hidden = false;
+    if (t.mode === 'cake') {
+      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Samle dere rundt kaka, så synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
+      Party.confetti(150);
+    } else if (t.mode === 'greetings') {
+      const list = t.greetings || [];
+      if (!list.length) { el.innerHTML = '<div><div class="huge">💌</div><h1>Ingen hilsener ennå</h1></div>'; return; }
+      let i = 0;
+      const show = () => {
+        const g = list[i % list.length]; i++;
+        el.innerHTML = `<div class="quote" style="max-width:85vw"><div class="prompt">${esc(g.emoji)} ${esc(g.label)} · ${i} av ${list.length}</div><blockquote>«${esc(g.text)}»</blockquote><div class="from">${g.guest ? '– ' + esc(g.guest) : ''}</div></div>`;
+      };
+      show();
+      greetTimer = setInterval(show, 12000);
+    } else if (t.mode === 'quiz') {
+      if (!t.winner) { el.innerHTML = '<div><div class="huge">🧠</div><h1>Ingen har svart på quizen ennå!</h1></div>'; return; }
+      el.innerHTML = `<div><div class="huge">🥁</div><h1>Quiz-vinneren er …</h1><div class="spin-name" id="spinName"></div><p>${t.count} deltakere</p></div>`;
+      const names = t.names.length ? t.names : [t.winner.name];
+      let n = 0, delay = 60;
+      const spin = () => {
+        const sp = document.getElementById('spinName');
+        if (!sp) return;
+        sp.textContent = names[n++ % names.length];
+        delay *= 1.12;
+        if (delay < 650) setTimeout(spin, delay);
+        else setTimeout(reveal, 500);
+      };
+      const reveal = () => {
+        el.innerHTML = `<div><div class="huge">🏆</div><div class="winner gradient-text">${esc(t.winner.name)}</div>
+          <p>${t.winner.score} av ${t.max} riktige!</p>
+          <div class="fasit">${t.answers.map((a, i) => `<div>${i + 1}. ${esc(a.q)}<b>${esc(a.a)}</b></div>`).join('')}</div></div>`;
+        Party.confetti(200);
+      };
+      spin();
+    }
   }
 
   // ---------------------------------------------------------------- toast

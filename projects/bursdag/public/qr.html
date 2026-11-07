@@ -52,12 +52,19 @@
     { path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', text: 'Tegn noe, ta bilde av det, og se det bli levende på storskjermen', grad: 'linear-gradient(135deg,#ffd23f,#ff9f1c)' },
     { path: '/sang', emoji: '🎤', title: 'Lag en sang', text: 'Velg tema og sjanger. Sangen din legges i spillelisten på festen!', grad: 'linear-gradient(135deg,#ff4fa3,#9b6bff)' },
     { path: '/selfie', emoji: '🤳', title: 'Selfie med effekt', text: 'Få en tiger til å gå rundt deg, bli et spøkelse eller fly som en superhelt', grad: 'linear-gradient(135deg,#3ee6d8,#3a86ff)' },
+    { path: '/quiz', emoji: '🧠', title: 'Quiz om bursdagsbarnet', text: 'Hvor godt kjenner du bursdagsbarnet? Vinneren trekkes ved kaka!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
+    { path: '/hilsen', emoji: '💌', title: 'Gjestebok med vri', text: 'Gi 40-åringen ett råd, eller gjett hva bursdagsbarnet gjorde som 20-åring', grad: 'linear-gradient(135deg,#ff4fa3,#ffd23f)' },
+    { path: '/selfie?effekt=attitall', emoji: '📼', title: 'Fotohjørnet: 1986', text: 'Ta på deg 80-tallsrekvisittene, ta en selfie og bli en del av en 80-tallsvideo!', grad: 'linear-gradient(135deg,#ff4fa3,#3ee6d8)' },
     { path: '/selfie?effekt=tiger', emoji: '🐯', title: 'Tiger-hjørnet', text: 'Still deg her, ta en selfie, og se en tiger gå rundt deg!', grad: 'linear-gradient(135deg,#ff9f1c,#ff4f4f)' },
     { path: '/selfie?effekt=spokelse', emoji: '👻', title: 'Spøkelseshjørnet', text: 'Ta en selfie og forsvinn som et spøkelse …', grad: 'linear-gradient(135deg,#b8c1ff,#5b4bdb)' },
   ];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-  fetch('/api/qr-info').then((r) => r.json()).then((info) => {
+  Promise.all([fetch('/api/qr-info').then((r) => r.json()), fetch('/api/config').then((r) => r.json())]).then(([info, cfg]) => {
+    for (const p of POSTERS) {
+      p.title = p.title.replace('bursdagsbarnet', cfg.birthdayName);
+      p.text = p.text.replace(/bursdagsbarnet/g, cfg.birthdayName);
+    }
     if (info.local) {
       document.getElementById('warn').innerHTML = `<div class="warn">⚠️ QR-kodene peker nå til <code>${esc(info.base)}</code>, som telefoner ikke når. Åpne denne siden via nettverksadressen (${info.lan.map((u) => `<a href="${esc(u)}/qr">${esc(u)}</a>`).join(', ') || 'ingen funnet'}) eller start serveren med <code>PUBLIC_URL=https://din-adresse</code>.</div>`;
     }

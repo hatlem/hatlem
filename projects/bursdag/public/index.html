@@ -33,10 +33,28 @@
       <div><h2>Selfie med effekt</h2><p>En tiger rundt deg, bli et spøkelse og mer</p></div>
     </a>
   </nav>
+
+  <h3 class="more-title">Mer moro</h3>
+  <nav class="more">
+    <a href="/quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
+    <a href="/hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
+  </nav>
+
+  <p class="program" id="program" hidden></p>
 </main>
 <script src="/common.js"></script>
 <script>
-  Party.config().then((c) => { document.getElementById('title').textContent = c.partyTitle; document.title = c.partyTitle; });
+  Party.config().then((c) => {
+    document.getElementById('title').textContent = c.partyTitle;
+    document.title = c.partyTitle;
+    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
+    const hl = (c.schedule || []).find((p) => p.highlight);
+    if (hl) {
+      const el = document.getElementById('program');
+      el.textContent = `${hl.emoji} Kl. ${hl.time}: ${hl.title}`;
+      el.hidden = false;
+    }
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Quiz</title>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><a class="back" href="/">‹ Tilbake</a></div>
+  <h1>🧠 Quiz om <span class="bname">bursdagsbarnet</span></h1>
+  <p class="hint" id="intro">Hvor godt kjenner du bursdagsbarnet? Vinneren trekkes ved kaka!</p>
+
+  <form id="f" hidden>
+    <div id="qs"></div>
+    <div class="card">
+      <div class="step">Til slutt · Hvem er du?</div>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name" required>
+    </div>
+    <button class="btn" id="go" type="submit">🏆 Send inn svarene</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+
+  <div class="card done-box" id="done" hidden>
+    <div class="big">🎟️</div>
+    <h2>Svarene er levert!</h2>
+    <p class="hint" id="doneText">Vinneren trekkes på storskjermen ved kaka.</p>
+    <p><button class="btn secondary" id="change" type="button">✏️ Endre svarene</button></p>
+    <a class="btn secondary" href="/">🏠 Forsiden</a>
+  </div>
+</main>
+<script src="/common.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  const show = (id) => { form.hidden = id !== 'f'; document.getElementById('done').hidden = id !== 'done'; };
+  Party.rememberName(document.getElementById('name'));
+
+  Promise.all([Party.config(), fetch('/api/quiz?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json())]).then(([c, quiz]) => {
+    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
+    const hl = (c.schedule || []).find((p) => p.highlight);
+    if (hl) document.getElementById('doneText').textContent = 'Vinneren trekkes på storskjermen kl. ' + hl.time + ' 🎂';
+    document.getElementById('qs').innerHTML = quiz.questions.map((q, i) =>
+      '<div class="card"><div class="step">Spørsmål ' + (i + 1) + ' av ' + quiz.questions.length + '</div><h3>' + Party.esc(q.q) + '</h3><div id="q' + i + '"></div></div>').join('');
+    quiz.questions.forEach((q, i) => {
+      const letters = 'ABCD';
+      Party.chips(document.getElementById('q' + i), 'q' + i, q.options.map((o, j) => ({ id: String(j), name: o, emoji: letters[j] || '•' })), { list: true, checked: -1 });
+    });
+    if (quiz.closed) {
+      document.getElementById('intro').textContent = 'Quizen er avsluttet og vinneren er trukket. Takk for at du var med! 🏆';
+      return;
+    }
+    if (quiz.mine) {
+      quiz.mine.answers.forEach((a, i) => { const el = form.querySelector('input[name=q' + i + '][value="' + a + '"]'); if (el) el.checked = true; });
+      show('done');
+    } else show('f');
+    document.getElementById('change').onclick = () => show('f');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('err').textContent = '';
+      const answers = quiz.questions.map((q, i) => { const el = form.querySelector('input[name=q' + i + ']:checked'); return el ? Number(el.value) : null; });
+      const missing = answers.indexOf(null);
+      if (missing >= 0) {
+        document.getElementById('err').textContent = 'Du mangler svar på spørsmål ' + (missing + 1) + '!';
+        document.getElementById('q' + missing).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      go.disabled = true;
+      try {
+        await Party.submit('/api/quiz', { answers, name: form.name.value, deviceId: Party.deviceId() });
+        Party.confetti(60);
+        show('done');
+        scrollTo(0, 0);
+      } catch (err) {
+        document.getElementById('err').textContent = err.message;
+      }
+      go.disabled = false;
+    });
+  });
+</script>
+</body>
+</html>
