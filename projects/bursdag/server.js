@@ -80,6 +80,7 @@ const state = {
   finaleId: null,
   kahoot: null,
   plan: null,
+  help: [],
   // Én lydkilde: siden som sist trykket «Start» med lyd. Admin fjernstyrer den.
   player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
 };
@@ -456,6 +457,9 @@ r.get('/api/config', (req, res) => {
     songMoods: SONG_MOODS,
     schedule: PARTY.schedule,
     greetingPrompts: PARTY.greetingPrompts,
+    songIdeas: PARTY.songIdeas,
+    drawingIdeas: PARTY.drawingIdeas,
+    helpPlaces: PARTY.helpPlaces,
     age: PARTY.birthYear ? new Date().getFullYear() - PARTY.birthYear : null,
     demo: { video: !useHiggsfield, song: !useSuno },
   });
@@ -756,6 +760,32 @@ r.post('/api/hooks/:provider', (req, res) => {
   pollJob(job).catch((err) => console.warn('[hook]', err.message));
 });
 
+// --- «Jeg trenger hjelp»: gjesten roper på en hjelper, verten ser det i admin ---
+r.post('/api/help', (req, res) => {
+  const b = req.body || {};
+  const deviceId = clean(b.deviceId, 64);
+  if (!deviceId) return res.status(400).end();
+  state.help = (state.help || []).filter((h) => Date.now() - h.at < 6 * 3600 * 1000);
+  // Én åpen forespørsel per enhet (oppdateres hvis de trykker igjen)
+  let h = state.help.find((x) => x.deviceId === deviceId && x.status !== 'done');
+  if (!h) {
+    h = { id: crypto.randomBytes(5).toString('base64url'), deviceId, status: 'open' };
+    state.help.push(h);
+  }
+  Object.assign(h, { name: clean(b.name, 40), place: clean(b.place, 40), page: clean(b.page, 20), what: clean(b.what, 120), at: Date.now() });
+  save();
+  res.json({ id: h.id, status: h.status });
+});
+r.get('/api/help/:id', (req, res) => {
+  const h = (state.help || []).find((x) => x.id === req.params.id);
+  res.json(h ? { status: h.status } : { status: 'done' });
+});
+r.post('/api/help/:id/cancel', (req, res) => {
+  const h = (state.help || []).find((x) => x.id === req.params.id);
+  if (h && h.deviceId === clean((req.body || {}).deviceId, 64)) { h.status = 'done'; save(); }
+  res.json({ ok: true });
+});
+
 // Gjestebok med vri: korte hilsener som vises på storskjermen
 r.post('/api/greeting', (req, res) => {
   const b = req.body || {};
@@ -824,6 +854,7 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
       return f ? { status: f.status, lipsync: !!(f.result && f.result.lipsync), note: f.note || null, error: f.error || null } : null;
     })(),
     lipsyncConfigured: higgsfield.lipsyncConfigured(),
+    help: (state.help || []).filter((h) => h.status !== 'done').map(({ id, name, place, page, what, at, status }) => ({ id, name, place, page, what, at, status })),
     songs: [...jobs.values()].filter((j) => j.type === 'song' && j.status === 'done' && !j.hidden).map((j) => ({ id: j.id, title: (j.result && j.result.title) || j.label, guest: j.guest })),
     videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'done' && !j.hidden && j.result && j.result.videoUrl).map((j) => ({ id: j.id, label: j.label, guest: j.guest })),
     nostalgia: nostalgiaFiles().length,
@@ -967,6 +998,14 @@ r.post('/api/admin/plan', requireAdmin, (req, res) => {
   state.plan = plan;
   save();
   res.json({ plan });
+});
+
+r.post('/api/admin/help/:id', requireAdmin, (req, res) => {
+  const h = (state.help || []).find((x) => x.id === req.params.id);
+  if (!h) return res.status(404).end();
+  if (['coming', 'done'].includes((req.body || {}).status)) h.status = req.body.status;
+  save();
+  res.json({ ok: true });
 });
 
 r.post('/api/admin/settings', requireAdmin, (req, res) => {

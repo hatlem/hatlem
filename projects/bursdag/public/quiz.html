@@ -31,13 +31,14 @@
   .me { text-align: center; color: var(--muted); font-weight: 700; margin-top: 18px; }
 </style>
 </head>
-<body>
+<body data-help="quiz">
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Tilbake</a><span class="hint" id="meName"></span></div>
   <div id="view" class="qz" aria-live="polite"></div>
   <p class="me" id="me"></p>
 </main>
 <script src="common.js"></script>
+<script src="help.js"></script>
 <script>
 (function () {
   const esc = Party.esc;

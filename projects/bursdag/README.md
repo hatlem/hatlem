@@ -13,6 +13,24 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 - 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
+## Hjelp til de som står fast
+
+- **Sang:**
+  - Idéforslag fra `party.json` → `sangideer`.
+  - «✍️ Hjelp meg å skrive» stiller tre korte spørsmål (ett ord om bursdagsbarnet, noe hen alltid sier, et minne) og lager teksten.
+  - «🎲 Overrask meg» velger tema, sjanger og stemning.
+- **Tegning:**
+  - «✏️ Tegn på mobilen» er en tegneflate med farger, penselstørrelser og angre, for de uten papirtegning.
+  - «💡 Gi meg en idé» henter forslag fra `tegneideer`. Idéen brukes også som beskrivelse til AI-en.
+- **Selfie:**
+  - «🙋 Noen tar bildet av meg» åpner bakkameraet.
+  - «🖼️ Bruk et bilde jeg har» åpner kamerarullen.
+  - «🎲 Velg for meg» velger en tilfeldig effekt.
+- **«🙋 Hjelp» på alle gjestesider:**
+  - Viser enkle tips for siden.
+  - «Rop på en hjelper» sender navn og sted (fra `hjelpesteder`) til admin. Admin piper og vibrerer, og har knappene «🏃 Jeg kommer» og «✅ Ferdig».
+  - Gjesten ser «En hjelper er på vei!».
+
 ## Forhåndsvisning: «Slik kan det bli»
 
 På tegne- og selfiesiden ser gjesten stilen før de bestiller:

@@ -18,6 +18,9 @@ function loadConfig(file, name) {
     birthYear: Number(raw.fodselsar) || null,
     schedule: (raw.program || []).map((p) => ({ time: p.tid, title: fill(p.tittel), emoji: p.emoji || '⭐', highlight: !!p.hoydepunkt })),
     greetingPrompts: (raw.hilsen || []).map((g) => ({ id: g.id, name: fill(g.tekst), emoji: g.emoji || '💌' })),
+    songIdeas: (raw.sangideer || []).map(fill),
+    drawingIdeas: (raw.tegneideer || []).map(fill),
+    helpPlaces: raw.hjelpesteder || ['Tegnebordet', 'Fotohjørnet', 'Ved storskjermen', 'Annet'],
     quiz: {
       example: quiz.eksempel !== false,
       questions: (quiz.sporsmal || []).map((q) => ({ q: fill(q.q), options: q.alt.map(fill), correct: Number(q.riktig) })),

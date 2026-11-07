@@ -40,28 +40,35 @@
     }
   }
 
+  /** Vis et valgt/tegnet bilde i bildefeltet (<label class="photo-drop">). */
+  function showPhoto(root, file) {
+    let img = root.querySelector('img');
+    if (!img) {
+      img = document.createElement('img');
+      img.alt = 'Ditt bilde';
+      root.prepend(img);
+    }
+    img.src = URL.createObjectURL(file);
+    if (!root.querySelector('.retake')) {
+      const r = document.createElement('span');
+      r.className = 'retake';
+      r.textContent = '📷 Ta nytt';
+      root.append(r);
+    }
+  }
+
   /** Kobler en <label class="photo-drop"> med <input type=file> til forhåndsvisning. */
   function photoPicker(root, onChange) {
     const input = root.querySelector('input[type=file]');
     input.addEventListener('change', () => {
       const file = input.files && input.files[0];
       if (!file) return;
-      let img = root.querySelector('img');
-      if (!img) {
-        img = document.createElement('img');
-        img.alt = 'Ditt bilde';
-        root.prepend(img);
-      }
-      img.src = URL.createObjectURL(file);
-      if (!root.querySelector('.retake')) {
-        const r = document.createElement('span');
-        r.className = 'retake';
-        r.textContent = '📷 Ta nytt';
-        root.append(r);
-      }
+      showPhoto(root, file);
       onChange(file);
     });
   }
+
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
   function chips(container, name, items, { checked = 0, small = false, list = false } = {}) {
     container.classList.add('chips');
@@ -116,5 +123,5 @@
     }
   }
 
-  window.Party = { deviceId, config, esc, shrinkImage, photoPicker, chips, rememberName, submit, confetti, demoBanner };
+  window.Party = { deviceId, config, esc, shrinkImage, photoPicker, showPhoto, pick, chips, rememberName, submit, confetti, demoBanner };
 })();

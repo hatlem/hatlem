@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Bursdagsmoro</title>
 </head>
-<body>
+<body data-help="forside">
 <main class="wrap">
   <section class="hero">
     <div class="cake" aria-hidden="true">🎂</div>
@@ -43,6 +43,7 @@
   <p class="program" id="program" hidden></p>
 </main>
 <script src="common.js"></script>
+<script src="help.js"></script>
 <script>
   Party.config().then((c) => {
     document.getElementById('title').textContent = c.partyTitle;

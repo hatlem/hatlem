@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Selfie med effekt</title>
 </head>
-<body>
+<body data-help="selfie">
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🤳 Selfie med effekt</h1>
@@ -22,6 +22,7 @@
     <div class="card">
       <div class="step">1 · Velg effekt</div>
       <div id="effects"></div>
+      <div class="assist"><button type="button" id="randomEff">🎲 Velg for meg</button></div>
     </div>
 
     <div class="card">
@@ -29,8 +30,12 @@
       <p class="hint" style="margin-top:0">Tips: Ha litt luft rundt deg i bildet, så får tigeren plass 🐯</p>
       <label class="photo-drop" id="drop">
         <div><div class="big">🤳</div><strong>Trykk for å ta selfie</strong></div>
-        <input type="file" name="image" accept="image/*" capture="user" required>
+        <input type="file" name="image" accept="image/*" capture="user">
       </label>
+      <div class="src-btns">
+        <label>🙋 Noen tar bildet av meg<input type="file" accept="image/*" capture="environment" data-src></label>
+        <label>🖼️ Bruk et bilde jeg har<input type="file" accept="image/*" data-src></label>
+      </div>
     </div>
 
     <div class="card" id="pvCard">
@@ -49,6 +54,7 @@
   </form>
 </main>
 <script src="common.js"></script>
+<script src="help.js"></script>
 <script src="preview.js"></script>
 <script>
   const form = document.getElementById('f');
@@ -65,7 +71,25 @@
     sync();
   });
   const pv = Party.preview(document.getElementById('pvCard'), 'selfie');
-  Party.photoPicker(document.getElementById('drop'), (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); });
+  const drop = document.getElementById('drop');
+  const useFile = (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); };
+  Party.photoPicker(drop, useFile);
+  // Alternativer for de som ikke vil/får til selfie
+  document.querySelectorAll('input[data-src]').forEach((inp) => inp.addEventListener('change', () => {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    Party.showPhoto(drop, f);
+    useFile(f);
+  }));
+  document.getElementById('randomEff').addEventListener('click', () => {
+    const list = [...form.querySelectorAll('input[name=effect]')];
+    const cur = list.find((x) => x.checked);
+    let r = Party.pick(list);
+    if (list.length > 1) while (r === cur) r = Party.pick(list);
+    r.checked = true;
+    r.dispatchEvent(new Event('change', { bubbles: true }));
+    r.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

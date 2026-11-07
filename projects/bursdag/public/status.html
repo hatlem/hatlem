@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
 <title>Lager magi</title>
 </head>
-<body>
+<body data-help="status">
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Forsiden</a></div>
   <div id="box" class="card status-box">
@@ -26,6 +26,7 @@
   </div>
 </main>
 <script src="common.js"></script>
+<script src="help.js"></script>
 <script>
   const id = location.pathname.split('/').pop();
   const box = document.getElementById('box');

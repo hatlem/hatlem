@@ -25,6 +25,14 @@
   .pend q { display: block; font-size: 18px; margin-top: 6px; }
   .link { background: none; border: 0; color: var(--cyan); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
   .hl-btns button:disabled { opacity: .4; cursor: not-allowed; }
+  .help-admin { border: 2px solid var(--yellow); background: rgba(255,210,63,.1); animation: help-glow 1.6s ease-in-out infinite; }
+  .help-admin .step { color: var(--yellow); font-size: 16px; }
+  .hreq { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
+  .hreq:last-child { border-bottom: 0; }
+  .hreq .who { flex: 1; font-size: 18px; }
+  .hreq .who small { display: block; color: var(--muted); font-size: 14px; }
+  .hreq button { font: inherit; font-weight: 800; border: 0; border-radius: 12px; padding: 10px 12px; cursor: pointer; background: var(--card); color: var(--text); }
+  .hreq button.go { background: var(--yellow); color: #2a0b2b; }
   .item q { display: block; margin-top: 4px; font-style: italic; }
   .s-failed { color: var(--danger); } .s-waiting { color: var(--muted); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
 </style>
@@ -35,6 +43,10 @@
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
 
   <div id="panel" hidden>
+    <section class="card help-admin" id="helpBox" hidden>
+      <div class="step">🙋 Noen trenger hjelp</div>
+      <div id="helpList"></div>
+    </section>
     <nav class="choices" style="margin:0 0 16px">
       <a class="choice c-song" href="admin/musikk">
         <div class="icon" aria-hidden="true">🎵</div>
@@ -181,6 +193,7 @@
     const p = await r.json();
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     renderQuiz(p.kahoot);
+    renderHelp(p.help || []);
     const exName = { drawing: 'Tegnestiler', selfie: 'Selfie-effekter' };
     document.getElementById('exStatus').textContent = p.examples.filter((e) => e.total).map((e) =>
       `${exName[e.kind]}: ${e.done} ferdig${e.working ? `, ${e.working} lages` : ''}${e.failed ? `, ${e.failed} feilet` : ''}`).join(' · ');
@@ -243,6 +256,36 @@
   }
   document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
   document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
+  // --- Hjelpeforespørsler fra gjester ---
+  const PAGE = { forside: 'forsiden', tegning: 'tegning', sang: 'sang', selfie: 'selfie', quiz: 'quiz', hilsen: 'hilsen', status: 'venter på resultat' };
+  let seenHelp = null;
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18].forEach((t) => { const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = 880; g.gain.value = 0.15; o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.12); });
+    } catch {}
+    if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+  }
+  function renderHelp(list) {
+    const ids = list.map((h) => h.id);
+    if (seenHelp && ids.some((id) => !seenHelp.includes(id))) beep();
+    seenHelp = ids;
+    document.title = list.length ? `🙋 (${list.length}) Admin` : 'Admin';
+    document.getElementById('helpBox').hidden = !list.length;
+    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'nå' : m + ' min siden'; };
+    document.getElementById('helpList').innerHTML = list.map((h) => `<div class="hreq"><div class="who"><b>${esc(h.name || 'En gjest')}</b> · ${esc(h.place || '?')}
+      <small>${esc(PAGE[h.page] || h.page || '')} · ${ago(h.at)}${h.status === 'coming' ? ' · 🏃 hjelper er på vei' : ''}</small></div>
+      ${h.status === 'open' ? `<button class="go" data-help="${esc(h.id)}" data-st="coming">🏃 Jeg kommer</button>` : ''}
+      <button data-help="${esc(h.id)}" data-st="done">✅ Ferdig</button></div>`).join('');
+  }
+  document.getElementById('helpList').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-help]');
+    if (!b) return;
+    b.disabled = true;
+    await api('api/admin/help/' + b.dataset.help, { method: 'POST', body: JSON.stringify({ status: b.dataset.st }) });
+    loadParty();
+  });
+
   document.querySelectorAll('[data-ex]').forEach((b) => b.addEventListener('click', async () => {
     const kind = b.dataset.ex;
     const file = document.getElementById(kind === 'selfie' ? 'exSelfie' : 'exDrawing').files[0];
