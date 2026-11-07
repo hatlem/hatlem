@@ -94,7 +94,7 @@ h1, h2, h3 { line-height: 1.05; margin: 0 0 0.4em; letter-spacing: -0.01em; }
 .step { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--yellow); margin-bottom: 8px; }
 
 label { display: block; font-weight: 700; margin: 12px 0 6px; }
-input[type=text], textarea, select {
+input[type=text], input[type=number], textarea, select {
   width: 100%; font: inherit; font-size: 17px; color: var(--text);
   background: rgba(0, 0, 0, 0.25); border: 1px solid var(--card-border);
   border-radius: 14px; padding: 12px 14px;

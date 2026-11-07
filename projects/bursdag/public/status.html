@@ -54,9 +54,10 @@
       return;
     }
     if (job.status === 'waiting' && job.waitPosition) {
+      const studio = job.type === 'song' ? 'lydstudioet 🎙️' : 'filmstudioet 🎬';
       msg.textContent = job.waitPosition === 1
-        ? 'Du er neste i køen hos filmstudioet 🎬'
-        : 'Du er nr. ' + job.waitPosition + ' i køen hos filmstudioet 🎬 (ca. ' + job.waitMinutes + ' min)';
+        ? 'Du er neste i køen hos ' + studio
+        : 'Du er nr. ' + job.waitPosition + ' i køen hos ' + studio + ' (ca. ' + job.waitMinutes + ' min)';
       bar.style.width = '4%';
       return;
     }

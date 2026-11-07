@@ -15,19 +15,29 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
 ## Skjermer og lyd
 
-Én datamaskin med to skjermer, og høyttaleren koblet til maskinen:
+To skjermer, og **lyden går fra en mobil koblet til høyttaleren** (Bluetooth eller kabel):
 
-| Skjerm | Adresse | Viser |
+| Enhet | Adresse | Viser / gjør |
 |---|---|---|
-| 1 | `/skjerm` | Galleri, «Nå spilles», program og QR. Under høydepunktet viser den kake, live-quiz, hilsener og finale. **Ingen lyd** (unntatt finalen). |
-| 2 | `/musikk` | Stor «Nå spilles» med cover og sangtekst, køen og en QR-kode til «Lag din egen sang». **Spiller musikken.** |
+| Skjerm 1 | `/skjerm` | Galleri, «Nå spilles», program og QR. Under høydepunktet viser den kake, live-quiz, hilsener og finale. Stum. |
+| Skjerm 2 | `/musikk` | Stor «Nå spilles» med cover og sangtekst, køen og en QR-kode til «Lag din egen sang». Stum: følger mobilen. |
+| Mobil ved høyttaleren | `/lyd` | **Spiller all musikken.** Store knapper for pause og neste sang. QR-kode til siden finnes i admin. |
 
-- **Bare én kilde spiller lyd.** Siden som sist trykket «Start» tar over, og andre blir stille. Har du bare én skjerm, bruk `/skjerm?lyd=pa`.
+- **Bare én enhet spiller lyd.** Den som sist trykket «Start» tar over, og de andre blir stille. Uten mobil kan du bruke `/musikk?lyd=pa` eller `/skjerm?lyd=pa`.
+- **Mobilen holder skjermen våken** (Wake Lock). Hold den på lading og ikke lås den, for nettlesere kan stoppe lyden når skjermen er låst.
+- **Låseskjermen og knappene på høyttaleren** (pause/neste) fungerer, og viser tittel og cover.
+- **iPhone:** volum og demping styres via Web Audio, siden iPhone ikke lar nettsider sette volumet. Slå av lydløs-bryteren. På iOS 17+ spiller den likevel.
 - **Musikken går hele tiden.** Rekkefølgen er gjestesanger i kø, så årsspillelisten (kronologisk), så reprise. En ny gjestesang avbryter årsspillelisten.
-- **Under kake, hilsener og finale** settes musikken på pause automatisk. Under quizen dempes den til en firedel.
+- **Under kake og hilsener** settes musikken på pause automatisk. Under quizen dempes den til en firedel.
+- **Finalen:** storskjermen viser videoen stumt, og mobilen spiller lyden. Begge starter på en felles starttid og holdes i takt. Er mobilen ikke på, spiller storskjermen lyden selv.
 
 Sider for verten:
 
+- `/admin/plan`: **kjøreplan og handleliste**.
+  - Oppgi antall voksne og barn, og velg inne, ute eller begge.
+  - Tidsplanen regnes ut fra programmet i `party.json`: rigg, start lyd, åpne quiz-lobby, kaketid, påfyll og nedlasting.
+  - Handlelisten regnes ut fra antall gjester: pølser, wraps, suppe, kake, drikke, engangsutstyr, stasjoner, teknikk og ute-utstyr.
+  - Avkrysning deles mellom alle i admin. Du kan legge til egne punkter, og siden kan skrives ut.
 - `/admin`: godkjenning, felles høydepunkt (🎂 kake, 💌 hilsener, 🎬 finale), live-quiz med én «Neste»-knapp, og forbruk.
 - `/admin/musikk`: fjernkontroll i Spotify-stil.
   - Nå spilles med ⏯️, ⏭️ og volum.
@@ -137,6 +147,10 @@ API-klienten i `lib/higgsfield.js` følger den offisielle SDK-en `higgsfield-cli
 - Status: `GET /requests/<id>/status`
 
 Standardmodellen er `higgsfield-ai/dop/standard`. Sjekk modellnavn og parametere i Higgsfield-konsollen, og bytt med `HF_VIDEO_MODEL`, `HF_VIDEO_EXTRA`, `HF_IMAGE_FIELD` og `HF_PROMPT_FIELD` uten å endre kode.
+
+### Køer hos Higgsfield og Suno
+
+Sanger har sin egen kø med `SUNO_MAX_CONCURRENT` (standard 5). Den virker på samme måte som videokøen under, og gjesten ser «nr. 3 i køen hos lydstudioet».
 
 ### Kø hos Higgsfield
 

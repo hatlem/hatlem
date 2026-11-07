@@ -48,6 +48,9 @@ const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MIN || 25) * 60 * 1000;
 const HF_MAX_CONCURRENT = Math.max(1, Number(process.env.HF_MAX_CONCURRENT || 8));
 const VIDEO_TYPES = new Set(['drawing', 'selfie']);
 const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidsestimat
+// Hvor mange sanger Suno-kontoen kan lage samtidig. Resten venter i appens kø.
+const SUNO_MAX_CONCURRENT = Math.max(1, Number(process.env.SUNO_MAX_CONCURRENT || 5));
+const AVG_SONG_MIN = Number(process.env.AVG_SONG_MIN || 3);
 const FINALE_SECONDS = Number(process.env.FINALE_SECONDS || 60); // finalen kuttes til så mange sekunder (sparer kreditter)
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
@@ -76,6 +79,7 @@ const state = {
   moderation: /^(1|on|ja|true)$/i.test(process.env.GODKJENNING || ''),
   finaleId: null,
   kahoot: null,
+  plan: null,
   // Én lydkilde: siden som sist trykket «Start» med lyd. Admin fjernstyrer den.
   player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
 };
@@ -174,7 +178,8 @@ async function mirror(url, fallbackType) {
 function publicJob(job) {
   if (!job) return null;
   const pos = job.type === 'song' ? state.queue.indexOf(job.id) : -1;
-  const wait = job.status === 'waiting' ? videoWaitList().indexOf(job) : -1;
+  const lane = laneOf(job);
+  const wait = job.status === 'waiting' && lane ? waitList(lane).indexOf(job) : -1;
   return {
     id: job.id,
     type: job.type,
@@ -190,7 +195,7 @@ function publicJob(job) {
     demo: !!job.demo,
     queuePosition: pos >= 0 ? pos + 1 : null,
     waitPosition: wait >= 0 ? wait + 1 : null,
-    waitMinutes: wait >= 0 ? Math.max(1, Math.ceil(((Math.floor(wait / HF_MAX_CONCURRENT) + 1) * AVG_VIDEO_MIN))) : null,
+    waitMinutes: wait >= 0 ? Math.max(1, Math.ceil((Math.floor(wait / lane.max) + 1) * lane.avgMin)) : null,
     nowPlaying: state.nowPlaying === job.id,
     pending: job.approved === false && !job.hidden,
   };
@@ -212,38 +217,50 @@ function checkLimits(deviceId, { budget = true } = {}) {
   return null;
 }
 
-// --- Videokø: maks HF_MAX_CONCURRENT jobber hos Higgsfield samtidig -------------
-function videoWaitList() {
-  return [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
+// --- Køer: maks antall samtidige jobber hos hver AI-tjeneste ------------------
+// Higgsfield (video) og Suno (sang) har hver sin grense. Resten venter i appens egen kø.
+const LANES = {
+  video: { types: VIDEO_TYPES, max: HF_MAX_CONCURRENT, avgMin: AVG_VIDEO_MIN, start: (j) => startVideoJob(j), name: 'Higgsfield' },
+  song: { types: new Set(['song']), max: SUNO_MAX_CONCURRENT, avgMin: AVG_SONG_MIN, start: (j) => startSongJob(j), name: 'Suno' },
+};
+const laneOf = (job) => Object.values(LANES).find((l) => l.types.has(job.type));
+function waitList(lane) {
+  return [...jobs.values()].filter((j) => lane.types.has(j.type) && j.status === 'waiting').sort((a, b) => a.createdAt - b.createdAt);
 }
-function activeVideoCount() {
-  return [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && (j.status === 'processing' || j.status === 'starting')).length;
+function activeCount(lane) {
+  return [...jobs.values()].filter((j) => lane.types.has(j.type) && (j.status === 'processing' || j.status === 'starting')).length;
 }
+const videoWaitList = () => waitList(LANES.video);
+const activeVideoCount = () => activeCount(LANES.video);
+const slots = (lane) => ({ active: activeCount(lane), max: lane.max, waiting: waitList(lane).length });
 
-/** Legg videojobben i kø. Bildet ligger allerede på disk (inputUrl), så køen overlever omstart. */
-function enqueueVideo(job, contentType, prompt) {
-  updateJob(job, { status: 'waiting', input: { ...job.input, prompt, contentType } });
+/** Legg jobben i kø. Alt den trenger ligger i jobben/på disk, så køen overlever omstart. */
+function enqueue(job, input) {
+  updateJob(job, { status: 'waiting', input: { ...job.input, ...input } });
   pumpVideos();
 }
+const enqueueVideo = (job, contentType, prompt) => enqueue(job, { prompt, contentType });
 
 let pumping = false;
 async function pumpVideos() {
   if (pumping) return;
   pumping = true;
   try {
-    for (const job of videoWaitList()) {
-      if (activeVideoCount() >= HF_MAX_CONCURRENT) break;
-      if (job.retryAt && Date.now() < job.retryAt) continue;
-      updateJob(job, { status: 'starting', startedAt: Date.now() });
-      startVideoJob(job).catch((err) => {
-        // Kontoen er full (eller midlertidig feil hos Higgsfield): tilbake i køen og prøv igjen litt senere.
-        if (/429|concurren|too many|rate.?limit|limit.*(reached|exceeded)|queue.*full/i.test(err.message) && (job.retries || 0) < 20) {
-          console.warn(`[video ${job.id}] Higgsfield er fullt, venter litt:`, err.message.slice(0, 120));
-          updateJob(job, { status: 'waiting', retryAt: Date.now() + 20000, retries: (job.retries || 0) + 1 });
-        } else {
-          fail(job, friendly(err));
-        }
-      });
+    for (const lane of Object.values(LANES)) {
+      for (const job of waitList(lane)) {
+        if (activeCount(lane) >= lane.max) break;
+        if (job.retryAt && Date.now() < job.retryAt) continue;
+        updateJob(job, { status: 'starting', startedAt: Date.now() });
+        lane.start(job).catch((err) => {
+          // Kontoen er full (eller midlertidig feil hos tjenesten): tilbake i køen og prøv igjen litt senere.
+          if (/429|concurren|too many|rate.?limit|limit.*(reached|exceeded)|queue.*full|frequen/i.test(err.message) && (job.retries || 0) < 20) {
+            console.warn(`[${lane.name} ${job.id}] fullt, venter litt:`, err.message.slice(0, 120));
+            updateJob(job, { status: 'waiting', retryAt: Date.now() + 20000, retries: (job.retries || 0) + 1 });
+          } else {
+            fail(job, friendly(err));
+          }
+        });
+      }
     }
   } finally {
     pumping = false;
@@ -263,7 +280,8 @@ async function startVideoJob(job) {
   updateJob(job, { status: 'processing', provider: { name: 'higgsfield', requestId } });
 }
 
-async function startSongJob(job, prompt) {
+async function startSongJob(job) {
+  const prompt = job.input.prompt;
   if (!useSuno) {
     updateJob(job, { status: 'processing', demo: true, provider: { name: 'demo', readyAt: Date.now() + demo.SONG_DELAY_MS } });
     return;
@@ -313,7 +331,7 @@ function fail(job, message) {
   console.warn(`[job ${job.id}] feilet: ${message}`);
   if (job.type === 'finale') return finaleFallback(job, message);
   updateJob(job, { status: 'failed', error: message });
-  if (VIDEO_TYPES.has(job.type)) setImmediate(pumpVideos);
+  if (laneOf(job)) setImmediate(pumpVideos);
 }
 
 const lastPoll = new Map();
@@ -377,7 +395,7 @@ setInterval(pollAll, 3000);
 for (const job of jobs.values()) {
   if (job.status === 'queued') fail(job, 'Serveren ble startet på nytt. Prøv igjen!');
   // Stoppet midt i innsendingen: vi vet ikke om Higgsfield fikk den, så send på nytt.
-  if (job.status === 'starting' && VIDEO_TYPES.has(job.type)) updateJob(job, { status: 'waiting' });
+  if (job.status === 'starting' && laneOf(job)) updateJob(job, { status: 'waiting' });
   if (job.status === 'starting' && job.type === 'finale') setImmediate(() => finaleFallback(job, 'serveren startet på nytt'));
 }
 
@@ -509,7 +527,7 @@ r.post('/api/song', async (req, res) => {
   const job = newJob('song', { guest: from, label: `${genre} til ${to}`, emoji: '🎵', input: { to, about, genre, mood } });
 
   res.json({ id: job.id });
-  startSongJob(job, prompt).catch((err) => fail(job, friendly(err)));
+  enqueue(job, { prompt });
 });
 
 function friendly(err) {
@@ -555,13 +573,15 @@ r.get('/api/screen', (req, res) => {
     schedule: PARTY.schedule,
     takeover: takeoverView(),
     playing: playerReport(),
+    serverNow: Date.now(),
     gallery,
     nowPlaying: state.nowPlaying && !jobs.get(state.nowPlaying)?.hidden ? publicJob(jobs.get(state.nowPlaying)) : null,
     queue: songs(state.queue),
     played: songs(state.played).slice(-30),
     working,
     making,
-    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
+    videoSlots: slots(LANES.video),
+    songSlots: slots(LANES.song),
   });
 });
 
@@ -627,9 +647,20 @@ r.post('/api/player/claim', (req, res) => {
   res.json({ ok: true });
 });
 
+function finaleForPlayer() {
+  const t = state.takeover;
+  if (!t || t.mode !== 'finale') return null;
+  const f = jobs.get(state.finaleId);
+  if (!f || f.status !== 'done') return null;
+  // Med lipsync ligger lyden i videoen (den spilles som lyd på mobilen); uten lipsync spilles sangen.
+  return { key: String(t.at), url: f.result.lipsync ? f.result.videoUrl : f.result.audioUrl, startAt: t.startAt };
+}
+
 r.get('/api/player', (req, res) => {
   const p = state.player;
   res.json({
+    serverNow: Date.now(),
+    finale: finaleForPlayer(),
     active: !!p.id && req.query.playerId === p.id,
     paused: p.paused,
     volume: p.volume,
@@ -650,8 +681,21 @@ r.post('/api/player/report', (req, res) => {
     position: Number(b.position) || 0,
     duration: Number(b.duration) || 0,
     paused: !!b.paused,
+    source: clean(b.source, 20) || 'skjerm',
   };
   res.json({ active: true });
+});
+
+// Låseskjerm/Bluetooth-knapper på mobilen (Media Session) styrer det samme som admin
+r.post('/api/player/control', (req, res) => {
+  const b = req.body || {};
+  if (!state.player.id || b.playerId !== state.player.id) return res.status(403).json({ active: false });
+  if (b.action === 'pause') state.player.paused = true;
+  else if (b.action === 'play') state.player.paused = false;
+  else if (b.action === 'skip') sendCommand({ type: 'skip' });
+  else return res.status(400).end();
+  save();
+  res.json({ ok: true });
 });
 
 // --- Kahoot-quiz --------------------------------------------------------------
@@ -707,7 +751,8 @@ function takeoverView() {
   if (!t) return null;
   if (t.mode === 'finale') {
     const f = jobs.get(state.finaleId);
-    return { ...t, finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
+    // Lyden går fra mobilen hvis den er på, ellers fra storskjermen
+    return { ...t, audioOnScreen: !playerReport(), finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
   }
   if (t.mode === 'greetings') {
     const list = [...jobs.values()].filter((j) => j.type === 'greeting' && !j.hidden).sort((a, b) => a.createdAt - b.createdAt).map(publicJob);
@@ -737,7 +782,8 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
     quiz: { example: PARTY.quiz.example, questions: PARTY.quiz.questions.length },
     kahoot: kahoot.adminView(),
     player: { online: !!playerReport(), ...playerReport() },
-    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
+    videoSlots: slots(LANES.video),
+    songSlots: slots(LANES.song),
     usage: {
       videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type)).length,
       songs: [...jobs.values()].filter((j) => j.type === 'song').length,
@@ -765,7 +811,8 @@ r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   else if (mode === 'finale') {
     const f = jobs.get(state.finaleId);
     if (!f || f.status !== 'done') return res.status(409).json({ error: 'Finalen er ikke klar ennå.' });
-    state.takeover = { mode, at: Date.now() };
+    // Felles starttid, så storskjermen (video) og mobilen (lyd) starter i takt
+    state.takeover = { mode, at: Date.now(), startAt: Date.now() + 6000 };
   }
   else return res.status(400).json({ error: 'Ukjent modus' });
   if (mode !== 'off' && kahoot.state.phase) kahoot.end(); // noe annet tar over skjermen
@@ -876,6 +923,24 @@ r.post('/api/admin/queue', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// --- Kjøreplan og handleliste (delt mellom alle som er logget inn i admin) ---
+r.get('/api/admin/plan', requireAdmin, (req, res) => {
+  res.json({ plan: state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] }, schedule: PARTY.schedule, birthdayName: BIRTHDAY_NAME });
+});
+r.post('/api/admin/plan', requireAdmin, (req, res) => {
+  const b = req.body || {};
+  const plan = state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] };
+  if (b.adults != null) plan.adults = Math.max(0, Math.min(500, Math.round(Number(b.adults) || 0)));
+  if (b.kids != null) plan.kids = Math.max(0, Math.min(500, Math.round(Number(b.kids) || 0)));
+  if (['inne', 'ute', 'begge'].includes(b.venue)) plan.venue = b.venue;
+  if (typeof b.check === 'string') plan.checked[b.check.slice(0, 80)] = !!b.value;
+  if (typeof b.addItem === 'string' && b.addItem.trim()) plan.extra = [...(plan.extra || []), clean(b.addItem, 80)].slice(0, 100);
+  if (typeof b.removeItem === 'string') plan.extra = (plan.extra || []).filter((x) => x !== b.removeItem);
+  state.plan = plan;
+  save();
+  res.json({ plan });
+});
+
 r.post('/api/admin/settings', requireAdmin, (req, res) => {
   const b = req.body || {};
   if (typeof b.moderation === 'boolean') {
@@ -961,6 +1026,8 @@ r.post('/api/admin/finale', requireAdmin, videoUpload.single('video'), async (re
 r.get('/galleri', page('galleri'));
 r.get('/musikk', page('musikk'));
 r.get('/admin/musikk', page('admin-musikk'));
+r.get('/admin/plan', page('admin-plan'));
+r.get('/lyd', page('lyd'));
 
 // «Last ned alt» som én zip-fil
 r.get('/api/gallery/zip', async (req, res) => {
@@ -1009,7 +1076,8 @@ r.get('/api/health', (req, res) => {
     suno: useSuno ? 'på' : 'demo',
     lipsync: higgsfield.lipsyncConfigured(),
     publicUrl: PUBLIC_URL || null,
-    videoSlots: { active: activeVideoCount(), max: HF_MAX_CONCURRENT, waiting: videoWaitList().length },
+    videoSlots: slots(LANES.video),
+    songSlots: slots(LANES.song),
     jobs: jobs.size,
   });
 });
@@ -1027,6 +1095,6 @@ app.listen(PORT, () => {
   console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}${BASE_PATH}/`);
   for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}${BASE_PATH}/`);
   console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, maks ${HF_MAX_CONCURRENT} samtidig`);
-  console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}`);
+  console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}, maks ${SUNO_MAX_CONCURRENT} samtidig`);
   if (!PUBLIC_URL) console.log('   Tips: sett PUBLIC_URL slik at QR-kodene peker til riktig adresse.\n');
 });

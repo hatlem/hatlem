@@ -7,6 +7,7 @@
   const SOUND = /^(pa|på|1|ja)$/i.test(params.get('lyd') || '');
   const player = SOUND ? Party.player({ onIntro: () => {} }) : null;
   if (SOUND) $('startHint').textContent = 'Starter fullskjerm og musikk fra denne skjermen.';
+  else $('startHint').textContent = 'Starter fullskjerm. Musikken spilles fra mobilen ved høyttaleren (/lyd).';
 
   const layers = [$('l0'), $('l1')];
   let active = 0;
@@ -26,13 +27,16 @@
   let firstLoad = true;
   let failures = 0;
   let lastPlayingId = null;
+  let serverOffset = 0;
 
   async function refresh() {
     try {
+      const t0 = Date.now();
       const r = await fetch('api/screen');
       if (!r.ok) throw new Error(r.status);
       data = await r.json();
       fetchedAt = Date.now();
+      if (data.serverNow) serverOffset = data.serverNow + (fetchedAt - t0) / 2 - fetchedAt;
       failures = 0;
       $('offline').hidden = true;
     } catch {
@@ -144,7 +148,7 @@
         <div class="by">${by}</div></div></div><div class="bar"><div id="nowBar"></div></div>`;
       tickBar();
     } else {
-      el.innerHTML = '<p class="muted">Ingen musikk ennå. Start <b>/musikk</b> på musikkskjermen 🎵</p>';
+      el.innerHTML = '<p class="muted">Ingen musikk ennå. Start <b>/lyd</b> på mobilen ved høyttaleren 🎵</p>';
     }
     $('queue').innerHTML = data.queue.length
       ? data.queue.slice(0, 4).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
@@ -236,23 +240,43 @@
     const title = (f.song && f.song.result && f.song.result.title) || 'Bursdagssangen';
     el.innerHTML = `<div><div class="huge">🎬</div><h1 class="gradient-text">Verdenspremiere!</h1><p>${esc(birthdayName)} synger «${esc(title)}»${f.song && f.song.guest ? `, laget av ${esc(f.song.guest)}` : ''}</p></div>`;
     const key = shownTakeover;
+    const startAt = t.startAt || Date.now() + 4000;
+    const elapsed = () => (Date.now() + serverOffset - startAt) / 1000;
+    // Lyden spilles fra mobilen ved høyttaleren; storskjermen viser videoen stumt og holder seg i takt.
+    // Er mobilen ikke på, spiller storskjermen lyden selv.
+    const soundHere = !!t.audioOnScreen;
+    let syncTimer = null;
     const end = () => {
+      clearInterval(syncTimer);
       if (shownTakeover !== key) return;
       el.innerHTML = `<div><div class="huge">🎉</div><h1 class="gradient-text">Gratulerer med dagen, ${esc(birthdayName)}!</h1></div>`;
       Party.confetti(220);
     };
-    setTimeout(() => {
+    const begin = () => {
       if (shownTakeover !== key) return;
-      el.innerHTML = `<video class="finale-video" src="${esc(f.videoUrl)}" playsinline ${f.lipsync ? '' : 'muted loop'}></video>`;
+      el.innerHTML = `<video class="finale-video" src="${esc(f.videoUrl)}" playsinline muted ${f.lipsync ? '' : 'loop'}></video>`;
       const v = el.querySelector('video');
-      if (f.lipsync) v.addEventListener('ended', end);
-      else if (f.audioUrl) {
-        finaleAudio = new Audio(f.audioUrl);
-        finaleAudio.addEventListener('ended', () => { v.pause(); end(); });
-        finaleAudio.play().catch(() => {});
+      const seek = (target) => { try { if (Math.abs(v.currentTime - target) > 0.35) v.currentTime = target; } catch {} };
+      if (f.lipsync) {
+        v.muted = !soundHere;
+        v.addEventListener('loadedmetadata', () => seek(Math.max(0, elapsed())), { once: true });
+        v.addEventListener('ended', end);
+        syncTimer = setInterval(() => { if (shownTakeover !== key) return clearInterval(syncTimer); if (!v.ended) seek(elapsed()); }, 1000);
+      } else {
+        if (soundHere && f.audioUrl) {
+          finaleAudio = new Audio(f.audioUrl);
+          finaleAudio.addEventListener('loadedmetadata', () => { try { finaleAudio.currentTime = Math.max(0, elapsed()); } catch {} }, { once: true });
+          finaleAudio.addEventListener('ended', () => { v.pause(); end(); });
+          finaleAudio.play().catch(() => {});
+        } else {
+          const dur = f.song && f.song.result && f.song.result.duration;
+          if (dur) syncTimer = setInterval(() => { if (elapsed() >= dur) { v.pause(); end(); } }, 500);
+        }
       }
       v.play().catch(() => {});
-    }, 4000);
+    };
+    const wait = Math.max(0, startAt - (Date.now() + serverOffset));
+    setTimeout(begin, wait);
   }
 
   // ------------------------------------------------------------------ live-quiz

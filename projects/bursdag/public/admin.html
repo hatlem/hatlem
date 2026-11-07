@@ -35,10 +35,20 @@
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
 
   <div id="panel" hidden>
-    <a class="choice c-song" href="admin/musikk" style="margin-bottom:16px">
-      <div class="icon" aria-hidden="true">🎵</div>
-      <div><h2>Musikk</h2><p id="musicLine">Kø, spill av, pause, hopp over og volum</p></div>
-    </a>
+    <nav class="choices" style="margin:0 0 16px">
+      <a class="choice c-song" href="admin/musikk">
+        <div class="icon" aria-hidden="true">🎵</div>
+        <div><h2>Musikk</h2><p id="musicLine">Kø, spill av, pause, hopp over og volum</p></div>
+      </a>
+      <a class="choice c-drawing" href="admin/plan">
+        <div class="icon" aria-hidden="true">📋</div>
+        <div><h2>Kjøreplan</h2><p>Tidsplan for dagen og handleliste</p></div>
+      </a>
+    </nav>
+    <section class="card" style="display:flex;gap:14px;align-items:center">
+      <img src="qr.svg?path=/lyd" alt="QR-kode til lydkilden" style="width:110px;height:110px;background:#fff;border-radius:12px;padding:6px;flex:none">
+      <div><div class="step">🔊 Lydkilde på mobilen</div><p class="hint" style="margin:0">Skann med mobilen ved høyttaleren, eller åpn <a href="lyd">/lyd</a>. Den spiller all musikken.</p><p id="sourceLine" style="margin:6px 0 0;font-weight:700"></p></div>
+    </section>
     <section class="card">
       <div class="step">Status</div>
       <div id="partyWarn"></div>
@@ -162,7 +172,8 @@
     document.querySelectorAll('.hl-btns button').forEach((b) => b.classList.toggle('on', b.dataset.mode === p.takeover || (b.dataset.mode === 'off' && !p.takeover)));
     renderQuiz(p.kahoot);
     const now = p.player && p.player.now;
-    document.getElementById('musicLine').textContent = !p.player.online ? '🔴 Musikkskjermen er ikke startet' : now ? '🔊 ' + now.title : 'Kø, spill av, pause, hopp over og volum';
+    document.getElementById('musicLine').textContent = !p.player.online ? '🔴 Ingen lydkilde er startet' : now ? '🔊 ' + now.title : 'Kø, spill av, pause, hopp over og volum';
+    document.getElementById('sourceLine').textContent = p.player.online ? `🟢 Spiller fra ${p.player.source === 'mobil' ? 'mobilen' : 'en skjerm'}` : '🔴 Ikke startet';
     document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
     const used = p.usage.videos + p.usage.songs;
     document.getElementById('usage').innerHTML = `💳 Brukt: <b>${p.usage.videos}</b> videoer og <b>${p.usage.songs}</b> sanger (${used} av maks ${p.usage.max})`;

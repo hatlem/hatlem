@@ -101,14 +101,14 @@
 
   function renderNow() {
     const p = d.player;
-    $('online').innerHTML = p.online ? '🟢 Musikkskjermen er på' : '🔴 Musikkskjermen er ikke startet';
+    $('online').innerHTML = p.online ? `🟢 Spiller fra ${p.report.source === 'mobil' ? 'mobilen' : 'en skjerm'}` : '🔴 Start /lyd på mobilen';
     const now = p.report && p.report.now;
     if (now) {
       $('npArt').outerHTML = art(now).replace('class="art', 'id="npArt" class="art');
       $('npTitle').textContent = now.title;
       $('npBy').textContent = now.kind === 'playlist' ? 'Årsspillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}${now.guest || 'anonym'}${now.label ? ' · ' + now.label : ''}`;
     } else {
-      $('npTitle').textContent = p.online ? 'Ingenting spilles' : 'Start /musikk på musikkskjermen';
+      $('npTitle').textContent = p.online ? 'Ingenting spilles' : 'Start /lyd på mobilen ved høyttaleren';
       $('npBy').textContent = '';
     }
     $('toggle').textContent = p.paused || p.forcePause ? '▶️' : '⏸️';
