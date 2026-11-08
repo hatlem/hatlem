@@ -1,5 +1,5 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quiz-spørsmålene er eksempler om verden i 1986: bytt ut eller legg til egne, og sett \"eksempel\": false når quizen er ferdig. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quizen: de tre første spørsmålene handler om bursdagsbarnet, resten om verden i 1986. Legg til, bytt ut eller fjern som du vil (2–4 svaralternativer per spørsmål, «riktig» teller fra 0). «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
@@ -51,8 +51,35 @@
     }
   ],
   "quiz": {
-    "eksempel": true,
+    "eksempel": false,
     "sporsmal": [
+      {
+        "q": "Hva heter radiokanalen som nå er tilbake på lufta, og som var {navn} sin første betalte jobb?",
+        "alt": [
+          "Radio 3",
+          "Radio Sarpsborg",
+          "Mesterbakeren"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilket land har {navn} tilbrakt sommeren i mer enn 18 ganger?",
+        "alt": [
+          "Spania",
+          "Finland",
+          "Kroatia"
+        ],
+        "riktig": 2
+      },
+      {
+        "q": "Hvis {navn} ikke hadde fått navnet {navn}, hvilket annet navn var på blokka?",
+        "alt": [
+          "Kristian",
+          "Karl",
+          "David"
+        ],
+        "riktig": 0
+      },
       {
         "q": "{navn} ble født i 1986. Hvilken stor ulykke skjedde i Ukraina i april det året?",
         "alt": [
