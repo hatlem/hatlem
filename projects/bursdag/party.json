@@ -1,5 +1,5 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quizen: de tre første spørsmålene handler om bursdagsbarnet, resten om verden i 1986. Legg til, bytt ut eller fjern som du vil (2–4 svaralternativer per spørsmål, «riktig» teller fra 0). «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quizen: de første spørsmålene handler om bursdagsbarnet, resten om verden i 1986. Legg til, bytt ut eller fjern som du vil (2–4 svaralternativer per spørsmål, «riktig» teller fra 0). «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
@@ -53,6 +53,15 @@
   "quiz": {
     "eksempel": false,
     "sporsmal": [
+      {
+        "q": "Hvilken dato har {navn} bursdag?",
+        "alt": [
+          "14. november",
+          "17. november",
+          "29. november"
+        ],
+        "riktig": 1
+      },
       {
         "q": "Hva heter radiokanalen som nå er tilbake på lufta, og som var {navn} sin første betalte jobb?",
         "alt": [

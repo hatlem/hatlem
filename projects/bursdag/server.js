@@ -26,6 +26,7 @@ const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt
 const { imageSize, nearestAspect } = require('./lib/imagesize');
 const { widen } = require('./lib/widen');
 const mine = require('./lib/mine');
+const teaser = require('./lib/teaser');
 const pingpong = require('./lib/pingpong');
 const clip = require('./lib/clip');
 const party = require('./lib/party');
@@ -63,7 +64,8 @@ const SUNO_MAX_CONCURRENT = Math.max(1, Number(process.env.SUNO_MAX_CONCURRENT |
 const AVG_SONG_MIN = Number(process.env.AVG_SONG_MIN || 3);
 const FINALE_SECONDS = Number(process.env.FINALE_SECONDS || 60); // finalen kuttes til så mange sekunder (sparer kreditter)
 // «Kommer snart»: før festen viser alle gjestesider en teaser. Admin, helsesjekk og stilark virker som før.
-const TEASER = /^(1|on|ja|true)$/i.test(process.env.TEASER || '');
+const teaserConfig = { teaser: process.env.TEASER, openAt: teaser.parseOpenAt(process.env.OPEN_AT) };
+const teaserOn = () => teaser.teaserActive(teaserConfig); // sjekkes per forespørsel, så siden åpner av seg selv ved OPEN_AT
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
@@ -567,10 +569,10 @@ const page = (name) => (req, res) => {
   res.type('html').setHeader('Cache-Control', 'no-cache');
   res.send(html);
 };
-if (TEASER) {
+if (teaserConfig.teaser) {
   const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
   const isAdmin = (req) => ADMIN_KEY && (req.get('x-admin-key') || req.query.admin) === ADMIN_KEY;
-  r.use((req, res, next) => (open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
+  r.use((req, res, next) => (!teaserOn() || open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
 r.get('/', page('index'));
 r.get('/tegning', page('tegning'));
@@ -1630,7 +1632,8 @@ r.get('/api/gallery', (req, res) => {
 function health(req, res) {
   res.json({
     ok: true,
-    teaser: TEASER,
+    teaser: teaserOn(),
+    opensAt: teaserConfig.openAt ? new Date(teaserConfig.openAt).toISOString() : null,
     videoProvider: MCP_MODE ? 'mcp' : useHiggsfield ? 'higgsfield' : 'demo',
     higgsfield: useHiggsfield ? 'på' : 'demo',
     imageFix: useImageFix,
