@@ -39,6 +39,12 @@
     ],
     status: [
       ['⏳', 'Den lages nå. Du kan legge bort mobilen. Resultatet kommer på skjermen.'],
+      ['🗂️', 'Alt du lager finner du igjen under «Mine ting» på forsiden.'],
+    ],
+    mine: [
+      ['📺', 'Trykk «Vis på skjermen» for å få filmen opp som neste lysbilde.'],
+      ['🔊', 'Trykk «Spill på høyttaleren» for å legge sangen i køen igjen.'],
+      ['📱', 'Listen følger denne mobilen. Bytter du telefon, finner du alt i galleriet.'],
     ],
   };
 

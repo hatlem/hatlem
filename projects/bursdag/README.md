@@ -14,6 +14,10 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 - 🧠 **Live-quiz** (`/quiz`), med spørsmål om ting i verden som har med bursdagsbarnet å gjøre (eksemplene handler om 1986): gjestene melder seg på når de kommer. Kl. 17 styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
+## Mine ting
+
+`/mine` viser alt gjesten har laget på sin mobil (koblet til `deviceId` i localStorage). Ferdige filmer og hilsener kan sendes til skjermen som neste lysbilde («Vis på skjermen», `POST /api/mine/:id/screen` → `state.featured`, skjermen kvitterer med `POST /api/screen/shown`), og sanger kan legges i køen igjen («Spill på høyttaleren», `POST /api/mine/:id/play`).
+
 ## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake
 
 Alle bildene tas inne i festlokalet, en tømmerhytte med ujevnt lys. Derfor går hver selfie gjennom to steg hos Higgsfield:

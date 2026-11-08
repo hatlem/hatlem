@@ -25,6 +25,7 @@ const demo = require('./lib/demo');
 const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
 const { imageSize, nearestAspect } = require('./lib/imagesize');
 const { widen } = require('./lib/widen');
+const mine = require('./lib/mine');
 const pingpong = require('./lib/pingpong');
 const clip = require('./lib/clip');
 const party = require('./lib/party');
@@ -102,6 +103,7 @@ const state = {
   program: null, // { schedule, note, venue } – endringer fra admin underveis (ellers party.json)
   help: [],
   votes: {}, // jobId -> [deviceId]
+  featured: [], // jobId-er gjestene har bedt om å få vist på skjermen nå («Mine ting»)
   film: null, // { status, progress, url, seconds, error, at }
   // Én lydkilde: siden som sist trykket «Start» med lyd. Admin fjernstyrer den.
   player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
@@ -224,6 +226,9 @@ function publicJob(job) {
     nowPlaying: state.nowPlaying === job.id,
     pending: job.approved === false && !job.hidden,
     votes: ((state.votes || {})[job.id] || []).length,
+    shownAt: job.shownAt || null,
+    featured: (state.featured || []).includes(job.id),
+    played: job.type === 'song' && state.played.includes(job.id),
   };
 }
 
@@ -563,7 +568,7 @@ const page = (name) => (req, res) => {
   res.send(html);
 };
 if (TEASER) {
-  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine)$|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
   const isAdmin = (req) => ADMIN_KEY && (req.get('x-admin-key') || req.query.admin) === ADMIN_KEY;
   r.use((req, res, next) => (open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
@@ -578,6 +583,7 @@ r.get('/admin', page('admin'));
 r.get('/quiz', page('quiz'));
 r.get('/hilsen', page('hilsen'));
 r.get('/klipp', page('klipp'));
+r.get('/mine', page('mine'));
 r.use(express.static(path.join(__dirname, 'public'), { index: false }));
 r.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
 r.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
@@ -753,7 +759,9 @@ r.get('/api/screen', (req, res) => {
     const { year, title } = party.parseName(f);
     return { id: 'p:' + f, year, title, url: 'spilleliste/' + encodeURIComponent(f) };
   });
+  const featured = (state.featured || []).map((id) => jobs.get(id)).filter((j) => j && onScreen(j) && j.status === 'done').map(publicJob);
   res.json({
+    featured,
     nostalgia,
     playlist,
     schedule: schedule(),
@@ -1038,6 +1046,46 @@ r.post('/api/vote', (req, res) => {
 r.get('/api/votes/mine', (req, res) => {
   const dev = clean(req.query.deviceId, 64);
   res.json({ ids: Object.entries(state.votes || {}).filter(([, l]) => l.includes(dev)).map(([id]) => id) });
+});
+
+// --- Mine ting: gjesten ser alt sitt og kan sende film til skjermen eller sang til høyttaleren -------
+// Skjermen kvitterer for hvert lysbilde, så gjesten ser «Vist på skjermen kl. …».
+r.post('/api/screen/shown', (req, res) => {
+  const job = jobs.get(String((req.body || {}).id || ''));
+  if (job) {
+    mine.markShown(state, job);
+    save();
+  }
+  res.json({ ok: true });
+});
+const ownJob = (req) => {
+  const dev = clean((req.body || {}).deviceId || req.query.deviceId, 64);
+  const job = jobs.get(String(req.params.id));
+  return dev && job && job.deviceId === dev && !job.hidden ? job : null;
+};
+r.get('/api/mine', (req, res) => {
+  const dev = clean(req.query.deviceId, 64);
+  const list = dev
+    ? [...jobs.values()].filter((j) => j.deviceId === dev && !j.hidden).sort((a, b) => b.createdAt - a.createdAt).map(publicJob)
+    : [];
+  res.json({ jobs: list });
+});
+r.post('/api/mine/:id/screen', (req, res) => {
+  const job = ownJob(req);
+  if (!job || !(SHOWN_VIDEO_TYPES.has(job.type) || job.type === 'greeting')) return res.status(404).json({ error: 'Fant ikke denne' });
+  if (job.status !== 'done' || !onScreen(job)) return res.status(409).json({ error: 'Den er ikke klar for skjermen ennå' });
+  const r = mine.requestFeature(state, job);
+  if (!r.ok) return res.status(429).json({ error: `Den ble nettopp vist. Prøv igjen om ${r.waitSeconds} sekunder`, ...r });
+  save();
+  res.json({ ...r, job: publicJob(job) });
+});
+r.post('/api/mine/:id/play', (req, res) => {
+  const job = ownJob(req);
+  if (!job || job.type !== 'song') return res.status(404).json({ error: 'Fant ikke denne' });
+  if (job.status !== 'done' || !onScreen(job)) return res.status(409).json({ error: 'Sangen er ikke klar ennå' });
+  const r = mine.requeueSong(state, job);
+  save();
+  res.json({ ...r, job: publicJob(job) });
 });
 
 // Gjestebok med vri: korte hilsener som vises på skjermen

@@ -30,8 +30,8 @@
   <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
   <div id="react"></div>
   <div id="actions" class="row" hidden>
-    <a class="btn secondary" href="./">🏠 Forsiden</a>
     <a class="btn secondary" id="again" href="./">🔁 Lag en til</a>
+    <a class="btn secondary" href="mine">🗂️ Mine ting</a>
   </div>
 </main>
 <script src="common.js"></script>
@@ -98,7 +98,7 @@
       if (job.pending) html += '<div class="queue-badge">👀 Legges i køen når verten har hørt på den</div>';
       else if (job.nowPlaying) html += '<div class="queue-badge">🔊 Spilles nå!</div>';
       else if (job.queuePosition) html += '<div class="queue-badge">Nr. ' + job.queuePosition + ' i køen 🎶</div>';
-      else html += '<p class="hint">Sangen er lagt i spillelisten.</p>';
+      else html += '<p class="hint">Sangen er lagt i spillelisten. Under «Mine ting» kan du spille den igjen senere.</p>';
     } else if (r.videoUrl) {
       html += '<video class="result-media" src="' + Party.esc(r.videoUrl) + '" autoplay loop muted playsinline controls></video>';
       if (job.type === 'clip' && r.trimmed) html += '<p class="hint">Klippet ble kuttet til 15 sekunder.</p>';
@@ -110,7 +110,7 @@
     }
     html += job.pending && job.type !== 'song'
       ? '<p class="hint">Vises på skjermen så snart verten har sett på den 👀</p>'
-      : '<p class="hint">Se etter den på skjermen 📺</p>';
+      : '<p class="hint">Se etter den på skjermen 📺 Under «Mine ting» kan du sende den opp igjen senere.</p>';
     box.innerHTML = html;
     document.getElementById('actions').hidden = false;
   }

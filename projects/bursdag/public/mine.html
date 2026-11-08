@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗂️</text></svg>">
+<title>Mine ting</title>
+<style>
+  .mine-item { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; }
+  .mine-item .thumb { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; background: #000; display: grid; place-items: center; font-size: 40px; border: 1px solid var(--card-border); text-decoration: none; }
+  .mine-item .thumb img, .mine-item .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mine-item .thumb.greet { background: linear-gradient(135deg, rgba(255,79,163,.35), rgba(62,230,216,.25)); font-size: 13px; padding: 8px; text-align: center; font-weight: 700; }
+  .mine-item .thumb.song { background: linear-gradient(135deg, var(--pink), var(--violet)); }
+  .mine-item h3 { margin: 0; font-size: 19px; line-height: 1.2; }
+  .mine-item .meta { color: var(--muted); font-size: 14px; margin: 2px 0 8px; }
+  .mine-item .state { display: inline-block; font-size: 14px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); margin-bottom: 10px; }
+  .mine-item .state.live { background: linear-gradient(90deg, var(--pink), var(--violet)); color: #fff; }
+  .mine-item .state.ok { background: rgba(62,230,216,.18); color: #3ee6d8; }
+  .mine-item .state.warn { background: rgba(255,210,63,.15); color: var(--yellow); }
+  .mine-item .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mine-item .acts .btn { font-size: 16px; padding: 10px 14px; flex: 1 1 auto; }
+  .mine-item .acts .btn.secondary { flex: 0 0 auto; }
+  .mine-item audio { width: 100%; margin-top: 8px; }
+  .mine-empty { text-align: center; padding: 30px 10px; }
+  .mine-empty .big { font-size: 64px; }
+  .mine-note { color: var(--muted); font-size: 14px; text-align: center; margin: 18px 0 0; }
+  .flash { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 999px; font-weight: 800; opacity: 0; transition: .25s; pointer-events: none; z-index: 40; max-width: 92vw; text-align: center; }
+  .flash.show { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body data-help="mine">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Forsiden</a><a class="back" href="galleri">Galleri ›</a></div>
+  <section class="hero">
+    <div class="cake" aria-hidden="true">🗂️</div>
+    <h1><span class="gradient-text">Mine ting</span></h1>
+    <p>Alt du har laget på denne mobilen</p>
+  </section>
+  <div id="list"><div class="card status-box"><div class="spinner" aria-hidden="true">🗂️</div><div class="status-msg">Henter …</div></div></div>
+  <p class="mine-note">Listen følger denne mobilen. Alt som er laget på festen finner du i <a href="galleri">galleriet</a>.</p>
+</main>
+<div class="flash" id="flash" role="status" aria-live="polite"></div>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script>
+(function () {
+  const esc = Party.esc;
+  const list = document.getElementById('list');
+  const dev = Party.deviceId();
+  const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang', clip: 'klipp', greeting: 'hilsen' };
+  const KIND = { drawing: 'Tegning', selfie: 'Selfie', song: 'Sang', clip: 'Klipp', greeting: 'Hilsen' };
+  const time = (t) => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+  let jobs = [];
+
+  function thumb(j) {
+    const r = j.result || {};
+    const href = j.status === 'done' || j.status === 'failed' ? (r.videoUrl || r.audioUrl || r.imageUrl || j.inputUrl || '#') : 'status/' + j.id;
+    if (j.type === 'greeting') return '<div class="thumb greet">' + esc(j.emoji) + ' ' + esc((j.text || '').slice(0, 60)) + '</div>';
+    if (j.type === 'song') return '<a class="thumb song" href="' + esc(href) + '" target="_blank" rel="noopener">' + (r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="">' : '🎵') + '</a>';
+    const inner = r.videoUrl
+      ? '<video src="' + esc(r.videoUrl) + '#t=0.5" muted playsinline preload="metadata"></video>'
+      : (r.imageUrl || j.inputUrl) ? '<img src="' + esc(r.imageUrl || j.inputUrl) + '" alt="">' : esc(j.emoji || '✨');
+    return '<a class="thumb" href="' + esc(href) + '" target="_blank" rel="noopener">' + inner + '</a>';
+  }
+
+  function stateOf(j) {
+    if (j.status === 'failed') return ['warn', '😵 Gikk galt'];
+    if (j.status !== 'done') return ['live', j.status === 'waiting' && j.waitPosition ? '⏳ Nr. ' + j.waitPosition + ' i køen' : '⏳ Lages nå'];
+    if (j.pending) return ['warn', '👀 Venter på verten'];
+    if (j.type === 'song') {
+      if (j.nowPlaying) return ['live', '🔊 Spilles nå!'];
+      if (j.queuePosition) return ['ok', '🎶 Nr. ' + j.queuePosition + ' i køen'];
+      if (j.played) return ['ok', '✅ Spilt på festen'];
+      return ['ok', '🎶 Ligger i spillelisten'];
+    }
+    if (j.featured) return ['live', '📺 Står for tur på skjermen'];
+    if (j.shownAt) return ['ok', '✅ Vist på skjermen kl. ' + time(j.shownAt)];
+    return ['ok', '📺 Kommer på skjermen'];
+  }
+
+  function actions(j) {
+    const a = [];
+    if (j.status === 'failed') a.push('<a class="btn secondary" href="' + esc(LINKS[j.type] || './') + '">🔁 Prøv igjen</a>');
+    else if (j.status !== 'done') a.push('<a class="btn secondary" href="status/' + esc(j.id) + '">👀 Følg med</a>');
+    else if (j.pending) a.push('<span class="hint">Vises så snart verten har sett på den.</span>');
+    else if (j.type === 'song') {
+      if (!j.nowPlaying && !j.queuePosition) a.push('<button class="btn" data-act="play" data-id="' + esc(j.id) + '">🔊 ' + (j.played ? 'Spill igjen' : 'Spill på høyttaleren') + '</button>');
+    } else if (!j.featured) {
+      a.push('<button class="btn" data-act="screen" data-id="' + esc(j.id) + '">📺 ' + (j.shownAt ? 'Vis igjen' : 'Vis på skjermen') + '</button>');
+    }
+    if (j.status === 'done' && j.result && (j.result.videoUrl || j.result.audioUrl)) a.push('<a class="btn secondary" href="' + esc(j.result.videoUrl || j.result.audioUrl) + '" download>⬇️</a>');
+    return a.join('');
+  }
+
+  function render() {
+    if (!jobs.length) {
+      list.innerHTML = '<div class="card mine-empty"><div class="big">🎨</div><h2>Ingenting her ennå</h2><p class="hint">Lag en tegning, en sang eller en selfie, så dukker det opp her.</p><div class="row" style="margin-top:14px"><a class="btn" href="selfie">🤳 Selfie</a><a class="btn secondary" href="tegning">🖍️ Tegning</a></div></div>';
+      return;
+    }
+    list.innerHTML = jobs.map((j) => {
+      const [cls, txt] = stateOf(j);
+      const title = j.type === 'song' ? (j.result && j.result.title) || j.label : (j.emoji ? j.emoji + ' ' : '') + j.label;
+      const audio = j.type === 'song' && j.status === 'done' && j.result && j.result.audioUrl ? '<audio controls preload="none" src="' + esc(j.result.audioUrl) + '"></audio>' : '';
+      return '<div class="card mine-item" data-job="' + esc(j.id) + '">' + thumb(j) +
+        '<div><h3>' + esc(title) + '</h3><div class="meta">' + esc(KIND[j.type] || '') + ' · kl. ' + time(j.createdAt) + '</div>' +
+        '<span class="state ' + cls + '">' + txt + '</span><div class="acts">' + actions(j) + '</div>' + audio + '</div></div>';
+    }).join('');
+  }
+
+  async function load() {
+    try {
+      const d = await (await fetch('api/mine?deviceId=' + encodeURIComponent(dev))).json();
+      jobs = d.jobs || [];
+      render();
+    } catch {
+      list.innerHTML = '<div class="card mine-empty"><div class="big">📶</div><p>Fikk ikke kontakt. Prøver igjen …</p></div>';
+    }
+  }
+
+  let flashTimer;
+  function flash(text) {
+    const f = document.getElementById('flash');
+    f.textContent = text;
+    f.classList.add('show');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => f.classList.remove('show'), 3500);
+  }
+
+  list.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      const d = await Party.submit('api/mine/' + encodeURIComponent(btn.dataset.id) + '/' + btn.dataset.act, { deviceId: dev });
+      if (btn.dataset.act === 'screen') { Party.confetti(60); flash('📺 Kommer opp på skjermen om litt!'); }
+      else flash(d.status === 'playing' ? '🔊 Den spilles nå!' : '🎶 Lagt i køen som nr. ' + d.position);
+      if (d.job) { jobs = jobs.map((j) => (j.id === d.job.id ? d.job : j)); render(); }
+    } catch (err) {
+      flash(err.message);
+      btn.disabled = false;
+    }
+  });
+
+  load();
+  setInterval(load, 6000);
+})();
+</script>
+</body>
+</html>

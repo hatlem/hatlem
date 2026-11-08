@@ -22,6 +22,7 @@
   let data = { gallery: [], nostalgia: [], schedule: [], queue: [], played: [], playing: null, working: 0, takeover: null };
   let fetchedAt = Date.now();
   const seen = new Set();
+  const featuredSeen = new Set();
   const knownSongs = new Set();
   const priority = [];
   let firstLoad = true;
@@ -50,6 +51,14 @@
       priority.push(item);
       toast(item.type === 'greeting' ? `💌 Ny hilsen${item.guest ? ' fra ' + item.guest : ''}!` : `${item.emoji || '✨'} Nytt fra ${item.guest || 'en gjest'}!`);
     }
+    // Gjester som trykket «Vis på skjermen» i Mine ting: legges først i køen (én gang per ønske)
+    for (const f of data.featured || []) {
+      if (featuredSeen.has(f.id)) continue;
+      featuredSeen.add(f.id);
+      priority.unshift(f);
+      toast(`📺 ${esc(f.guest || 'En gjest')} viser ${esc(f.label || 'sin kreasjon')} på skjermen!`);
+    }
+    for (const id of featuredSeen) if (!(data.featured || []).some((f) => f.id === id)) featuredSeen.delete(id);
     for (const s of data.queue) {
       if (knownSongs.has(s.id)) continue;
       knownSongs.add(s.id);
@@ -87,8 +96,8 @@
     let item, isNew = false;
     while (priority.length && !item) {
       const p = priority.shift();
-      item = data.gallery.find((g) => g.id === p.id);
-      isNew = !!item;
+      item = data.gallery.find((g) => g.id === p.id) || (p.result ? p : null);
+      isNew = !!item && !p.featured;
     }
     slideNo++;
     // Nostalgivegg: hvert tredje lysbilde (eller alle, hvis ingen har laget noe ennå)
@@ -103,6 +112,7 @@
     const r = item.result || {};
 
     if (item.type === 'greeting') {
+      shown(item);
       layer.innerHTML = `<div class="greet-bg"></div><div class="quote"><div class="prompt">${esc(item.emoji)} ${esc(item.label)}</div>
         <blockquote>«${esc(item.text)}»</blockquote><div class="from">${item.guest ? '– ' + esc(item.guest) : ''}</div></div>` + badge;
       timer = setTimeout(next, 9000);
@@ -117,6 +127,7 @@
       return swap(layer);
     }
 
+    shown(item);
     const src = r.videoUrl || r.imageUrl || item.inputUrl;
     const caption = `<div class="caption"><span class="em">${esc(item.emoji || '✨')}</span><div>${esc(item.label || '')}<small>${item.type === 'drawing' ? 'Tegnet av' : item.type === 'clip' ? 'Filmet av' : 'Med'} ${esc(item.guest || 'en hemmelig gjest')}</small></div></div>`;
     const bg = `<div class="bg" style="background-image:url('${esc(item.inputUrl || r.imageUrl || '')}')"></div>`;
@@ -133,6 +144,10 @@
       timer = setTimeout(next, 9000);
     }
     swap(layer);
+  }
+
+  function shown(item) {
+    fetch('api/screen/shown', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id }) }).catch(() => {});
   }
 
   // ------------------------------------------------------------------ sidepanel
