@@ -84,9 +84,13 @@
       .join('');
   }
 
+  /** Fyller inn navnet fra forrige gang, og husker det mens man skriver og når skjemaet sendes. */
   function rememberName(input) {
-    input.value = store.get('bursdag-name') || '';
-    input.addEventListener('change', () => store.set('bursdag-name', input.value.trim()));
+    if (!input.value) input.value = store.get('bursdag-name') || '';
+    const save = () => { const v = input.value.trim(); if (v) store.set('bursdag-name', v); };
+    input.addEventListener('input', save);
+    input.addEventListener('change', save);
+    if (input.form) input.form.addEventListener('submit', save);
   }
 
   async function submit(url, body) {
