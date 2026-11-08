@@ -7,7 +7,7 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 | 🖍️ **Tegning blir film** | Ta bilde av en tegning, velg stil (magisk, 3D-tegnefilm, anime, blir ekte). Bildet beskjæres først til arket (bord og hender fjernes), så lages videoen av bare tegningen. | Higgsfield (bilde til bilde, så bilde til video) |
 | 🎤 **Lag en sang** | Om hva som helst. Velg tema, sjanger og stemning, og eventuelt hvem den er til. Sangen legges **i kø i spillelisten** på skjermen. | Suno (sunoapi.org / api.box) |
 | 🎥 **Last opp et klipp** | Film maks 15 sekunder selv (eller velg et klipp du har). Ingen AI: klippet kodes om, kuttes til 15 sekunder og vises frem og tilbake. | ffmpeg |
-| 🤳 **Selfie med effekt** | Tiger som går rundt deg, slange rundt halsen, trollmann, spøkelse, superhelt, UFO, drage, disko, is eller konfetti. Bildet fikses først (lys og ny bakgrunn), så lages filmen. | Higgsfield (bilde til bilde, så bilde til video) |
+| 🤳 **Selfie med effekt** | Bli 80 år, bli 5 år igjen, T-rex bak deg, kake i fjeset, troll i skogen, fly bort med ballonger, valpestorm, under vann, tiger rundt deg, slange rundt halsen, trollmann, 1986, spøkelse, superhelt, UFO, drage, disko, is eller konfetti (19 effekter i `lib/catalog.js`). Bildet fikses først (lys og ny bakgrunn), så lages filmen. | Higgsfield (bilde til bilde, så bilde til video) |
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
