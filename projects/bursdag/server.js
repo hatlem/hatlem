@@ -467,8 +467,22 @@ async function pollJob(job) {
         updateJob(job, { fixedImageUrl: s.imageUrl, result: { ...(job.result || {}), fixedImageUrl: local } });
         return videoAfterFix(job, s.imageUrl);
       }
-      if (s.status === 'completed') return videoAfterFix(job, (await wideUrl(job)) || job.hfImageUrl, 'Bildefiks uten bilde i svaret');
-      if (stopped) return videoAfterFix(job, (await wideUrl(job)) || job.hfImageUrl, `Bildefiks ${s.status}`);
+      if (s.status === 'completed' || stopped) {
+        // Bakgrunnsbyttet er det som gir riktig scene og fyller ut til 16:9, så det prøves én gang til
+        // før vi faller tilbake til originalbildet (lagt i en 16:9-ramme).
+        if ((job.fixRetries || 0) < 1 && s.status !== 'nsfw') {
+          const fix = job.input.fix;
+          try {
+            const { requestId } = await higgsfield.submitImageFix({ imageUrl: job.hfImageUrl, prompt: fix.prompt, aspectRatio: fix.aspectRatio, webhookUrl: hookUrl(job) });
+            updateJob(job, { fixRetries: (job.fixRetries || 0) + 1, provider: { name: 'higgsfield', stage: 'image', requestId } });
+            return;
+          } catch (err) {
+            console.warn(`[bildefiks ${job.id}] nytt forsøk feilet:`, err.message.slice(0, 120));
+          }
+        }
+        const why = s.status === 'completed' ? 'Bildefiks uten bilde i svaret' : `Bildefiks ${s.status}`;
+        return videoAfterFix(job, (await wideUrl(job)) || job.hfImageUrl, why);
+      }
       return;
     }
     if (s.status === 'completed') {
