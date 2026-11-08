@@ -16,7 +16,7 @@
   <section class="hero">
     <div class="cake" aria-hidden="true">🎂</div>
     <h1><span class="gradient-text" id="title">Bursdagsmoro</span></h1>
-    <p>Velg hva du vil lage. Resultatet vises på storskjermen!</p>
+    <p>Velg hva du vil lage. Resultatet vises på skjermen!</p>
   </section>
 
   <nav class="choices">
@@ -26,7 +26,7 @@
     </a>
     <a class="choice c-song" href="sang">
       <div class="icon" aria-hidden="true">🎤</div>
-      <div><h2>Lag en sang</h2><p>Din egen låt havner i spillelisten på festen</p></div>
+      <div><h2>Lag en sang</h2><p>Om hva som helst. Låten havner i spillelisten på festen</p></div>
     </a>
     <a class="choice c-selfie" href="selfie">
       <div class="icon" aria-hidden="true">🤳</div>
@@ -69,7 +69,7 @@
     if (s.complete) {
       box.classList.add('complete');
       document.getElementById('stampTitle').textContent = '🎟️ Du er med i trekningen!';
-      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på storskjermen ved kaka. Så langt er ${s.entries} med.`;
+      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på skjermen ved kaka. Så langt er ${s.entries} med.`;
     } else if (n) {
       document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved kaka 🎂`;
     }

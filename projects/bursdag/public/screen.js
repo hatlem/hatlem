@@ -1,9 +1,9 @@
-/* Storskjermen: galleri, «Nå spilles», program og felles høydepunkt (kake, quiz, hilsener, finale). */
+/* Skjermen: galleri, «Nå spilles», program og felles høydepunkt (kake, quiz, hilsener, finale). */
 (function () {
   const esc = Party.esc;
   const $ = (id) => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  // Standard: storskjermen er stille, musikken går fra /musikk. ?lyd=pa gjør denne til lydkilden.
+  // Standard: skjermen er stille, musikken går fra /musikk. ?lyd=pa gjør denne til lydkilden.
   const SOUND = /^(pa|på|1|ja)$/i.test(params.get('lyd') || '');
   const player = SOUND ? Party.player({ onIntro: () => {} }) : null;
   if (SOUND) $('startHint').textContent = 'Starter fullskjerm og musikk fra denne skjermen.';
@@ -249,8 +249,8 @@
     const key = shownTakeover;
     const startAt = t.startAt || Date.now() + 4000;
     const elapsed = () => (Date.now() + serverOffset - startAt) / 1000;
-    // Lyden spilles fra mobilen ved høyttaleren; storskjermen viser videoen stumt og holder seg i takt.
-    // Er mobilen ikke på, spiller storskjermen lyden selv.
+    // Lyden spilles fra mobilen ved høyttaleren; skjermen viser videoen stumt og holder seg i takt.
+    // Er mobilen ikke på, spiller skjermen lyden selv.
     const soundHere = !!t.audioOnScreen;
     let syncTimer = null;
     const end = () => {

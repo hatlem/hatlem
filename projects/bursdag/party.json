@@ -1,5 +1,5 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet vises på storskjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
@@ -132,16 +132,18 @@
     ]
   },
   "sangideer": [
+    "En katt som tror den er en hund",
+    "Fredagstaco som aldri tar slutt",
+    "Sokker som forsvinner i vaskemaskinen",
+    "Den beste sommeren noensinne",
+    "En dinosaur som går på skolen",
+    "Å vente på bussen i regnvær",
+    "Mormors vafler",
+    "En robot som lærer å danse",
+    "Verdens kjedeligste superhelt",
     "Da {navn} prøvde å lage mat og brannalarmen gikk",
-    "{navn} sine elendige ordspill",
-    "Alle gangene {navn} har gått seg vill",
-    "{navn} på hyttetur uten strøm",
-    "{navn} som 80-tallsbarn med walkman og bobledress",
-    "Hvorfor {navn} alltid er sist ut døra",
-    "{navn} sin hemmelige superkraft",
-    "En kjærlighetserklæring til {navn} sin kaffe",
-    "{navn} og den store fotball-drømmen",
-    "{navn} fyller 40, men føler seg som 25"
+    "{navn} fyller 40, men føler seg som 25",
+    "Kjærlighet til kaffe"
   ],
   "tegneideer": [
     "Tegn {navn} som superhelt 🦸",
@@ -158,7 +160,7 @@
   "hjelpesteder": [
     "Tegnebordet",
     "Fotohjørnet",
-    "Ved storskjermen",
+    "Ved skjermen",
     "Ved inngangen",
     "Ved langbordet",
     "Ute"

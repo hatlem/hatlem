@@ -2,7 +2,7 @@
   "name": "bursdag-installasjon",
   "version": "1.0.0",
   "private": true,
-  "description": "Interaktiv bursdagsinstallasjon: tegning til film, egen sang og selfie-effekter, med storskjerm og QR-koder.",
+  "description": "Interaktiv bursdagsinstallasjon: tegning til film, egen sang og selfie-effekter, med skjerm og QR-koder.",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Live-quiz i Kahoot-stil. Verten styrer tempoet fra admin, storskjermen viser
+ * Live-quiz i Kahoot-stil. Verten styrer tempoet fra admin, skjermen viser
  * spørsmålet, og telefonene er fargede svarknapper. Poeng for riktig svar,
  * flere jo raskere du svarer (1000 → 500).
  *

@@ -15,7 +15,7 @@
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🎥 Last opp et klipp</h1>
-  <p class="hint">Film noe gøy, <strong>maks <span class="maxsec">15</span> sekunder</strong>. Klippet vises frem og tilbake på storskjermen, så det blir litt levende av seg selv.</p>
+  <p class="hint">Film noe gøy, <strong>maks <span class="maxsec">15</span> sekunder</strong>. Klippet vises frem og tilbake på skjermen, så det blir litt levende av seg selv.</p>
 
   <form id="f">
     <div class="card">
@@ -35,8 +35,8 @@
       <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
     </div>
 
-    <p class="hint" style="text-align:center">Klippet lagres på festens server og vises på storskjermen og i galleriet. Ingen AI, bare deg.</p>
-    <button class="btn" id="go" type="submit" disabled>🎬 Send til storskjermen!</button>
+    <p class="hint" style="text-align:center">Klippet lagres på festens server og vises på skjermen og i galleriet. Ingen AI, bare deg.</p>
+    <button class="btn" id="go" type="submit" disabled>🎬 Send til skjermen!</button>
     <div class="error" id="err" role="alert"></div>
   </form>
 </main>
@@ -125,7 +125,7 @@
       location.href = 'status/' + id;
     } catch (ex) {
       err.textContent = ex.message;
-      go.disabled = false; go.textContent = '🎬 Send til storskjermen!';
+      go.disabled = false; go.textContent = '🎬 Send til skjermen!';
     }
   });
 </script>

@@ -23,9 +23,9 @@
       <li data-s="image"><i></i><b>Fikser lys og bakgrunn</b><small>ca. 20 sekunder</small></li>
       <li data-s="video"><i></i><b>Lager filmen</b><small>2–4 minutter, AI-en tegner hvert bilde</small></li>
       <li data-s="finishing"><i></i><b>Klipper frem og tilbake</b><small>noen sekunder</small></li>
-      <li data-s="done"><i></i><b>Klar på storskjermen</b></li>
+      <li data-s="done"><i></i><b>Klar på skjermen</b></li>
     </ol>
-    <p class="hint" id="waitHint">Filmen tar noen minutter å lage. Du kan lukke siden, legge bort mobilen og kikke på storskjermen. Vi sier fra her når den er klar.</p>
+    <p class="hint" id="waitHint">Filmen tar noen minutter å lage. Du kan lukke siden, legge bort mobilen og kikke på skjermen. Vi sier fra her når den er klar.</p>
   </div>
   <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
   <div id="react"></div>
@@ -46,12 +46,12 @@
   const again = document.getElementById('again');
   const MSGS = {
     drawing: ['Kunstneren studerer tegningen din …', 'Fargene begynner å bevege seg …', 'Regissøren roper ACTION! 🎬', 'Legger på litt magisk støv ✨', 'Snart premiere …'],
-    selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Nesten klar for storskjermen …'],
+    selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Nesten klar for skjermen …'],
     image: ['Ordner lyset 💡', 'Bytter ut tømmerhytta med noe bedre 🌍', 'Pusser opp bakgrunnen …'],
     paper: ['Klipper bort bordet ✂️', 'Retter opp arket 📄', 'Bare tegningen igjen …'],
-    video: ['Regissøren roper ACTION! 🎬', 'Effekten varmer opp …', 'Filmer siste scene …', 'Nesten klar for storskjermen …'],
+    video: ['Regissøren roper ACTION! 🎬', 'Effekten varmer opp …', 'Filmer siste scene …', 'Nesten klar for skjermen …'],
     finishing: ['Klipper filmen frem og tilbake ⏪⏩', 'Siste finpuss …'],
-    clip: ['Pakker ut klippet 🎥', 'Gjør det klart for storskjermen …', 'Klipper det frem og tilbake ⏪⏩'],
+    clip: ['Pakker ut klippet 🎥', 'Gjør det klart for skjermen …', 'Klipper det frem og tilbake ⏪⏩'],
     song: ['Skriver tekst på rim …', 'Stemmer gitaren 🎸', 'Vokalisten varmer opp 🎤', 'Mikser refrenget …', 'Trykker på REC …'],
   };
   const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang', clip: 'klipp' };
@@ -109,8 +109,8 @@
       if (job.demo) html += '<p class="hint">Demo: med Higgsfield-nøkkel blir dette en film.</p>';
     }
     html += job.pending && job.type !== 'song'
-      ? '<p class="hint">Vises på storskjermen så snart verten har sett på den 👀</p>'
-      : '<p class="hint">Se etter den på storskjermen 📺</p>';
+      ? '<p class="hint">Vises på skjermen så snart verten har sett på den 👀</p>'
+      : '<p class="hint">Se etter den på skjermen 📺</p>';
     box.innerHTML = html;
     document.getElementById('actions').hidden = false;
   }

@@ -87,7 +87,7 @@
     if (player.finale) {
       $('art').className = 'art'; $('art').innerHTML = '🎬';
       $('title').textContent = player.finale === 'playing' ? 'Finalen spilles!' : 'Finalen er ferdig';
-      $('by').textContent = player.finale === 'playing' ? 'Lyden går i takt med videoen på storskjermen' : 'Musikken fortsetter når verten går tilbake til vanlig';
+      $('by').textContent = player.finale === 'playing' ? 'Lyden går i takt med videoen på skjermen' : 'Musikken fortsetter når verten går tilbake til vanlig';
     } else if (!s) {
       $('art').className = 'art'; $('art').innerHTML = '🎵';
       $('title').textContent = 'Venter på musikk …';

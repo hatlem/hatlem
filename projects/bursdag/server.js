@@ -3,9 +3,9 @@
 /**
  * Bursdagsinstallasjon
  *  - /tegning : ta bilde av en tegning -> Higgsfield lager en film
- *  - /sang    : lag en sang -> Suno (sunoapi.org / api.box) -> legges i kø på storskjermen
+ *  - /sang    : lag en sang -> Suno (sunoapi.org / api.box) -> legges i kø på skjermen
  *  - /selfie  : ta en selfie -> Higgsfield-effekt (tiger, spøkelse, ...)
- *  - /skjerm  : storskjerm med galleri + musikk-kø
+ *  - /skjerm  : skjerm med galleri + musikk-kø
  *  - /qr      : utskriftsvennlige QR-plakater til lokalet
  *
  * Uten API-nøkler kjører alt i demomodus, så du kan teste flyten før festen.
@@ -102,7 +102,7 @@ const state = {
   player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
 };
 
-/** Vises på storskjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
+/** Vises på skjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
 const onScreen = (j) => !j.hidden && j.approved !== false;
 /** Når godkjenning er på, må verten godkjenne ferdige ting før de vises. */
 const reviewFlag = () => (state.moderation ? { approved: false } : {});
@@ -637,20 +637,22 @@ r.post('/api/song', async (req, res) => {
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
 
-  const to = clean(b.to, 40) || BIRTHDAY_NAME;
-  const about = clean(b.about, 220);
+  // Sangen kan handle om hva som helst. «Til» er valgfritt: da synges navnet i refrenget.
+  const to = clean(b.to, 40);
+  // «En sang om hunden min.» → «hunden min» (unngår «om: En sang om …» og doble punktum)
+  const about = clean(b.about, 220).replace(/^(en\s+)?(sang|låt)\s+om\s+/i, '').replace(/[\s.!]+$/, '');
   const genre = SONG_GENRES.includes(b.genre) ? b.genre : SONG_GENRES[0];
   const mood = SONG_MOODS.includes(b.mood) ? b.mood : SONG_MOODS[0];
   const from = clean(b.name, 40);
 
   // sunoapi.org (ikke-custom modus) tillater maks 500 tegn i prompt.
   const prompt = clean(
-    `En ${mood.toLowerCase()} ${genre.toLowerCase()}-låt på norsk til bursdagen til ${to}.` +
-      (about ? ` Sangen handler om: ${about}.` : '') +
-      ` Fengende refreng der navnet ${to} synges.`,
+    `En ${mood.toLowerCase()} ${genre.toLowerCase()}-låt på norsk` +
+      (about ? ` om: ${about}.` : ' om noe morsomt og overraskende.') +
+      (to ? ` Sangen er til ${to}, og navnet ${to} synges i et fengende refreng.` : ' Med et fengende refreng.'),
     490,
   );
-  const job = newJob('song', { deviceId: clean(b.deviceId, 64), guest: from, label: `${genre} til ${to}`, emoji: '🎵', input: { to, about, genre, mood } });
+  const job = newJob('song', { deviceId: clean(b.deviceId, 64), guest: from, label: to ? `${genre} til ${to}` : `${genre}: ${about ? about.slice(0, 40) + (about.length > 40 ? '…' : '') : 'overraskelse'}`, emoji: '🎵', input: { to, about, genre, mood } });
 
   res.json({ id: job.id });
   enqueue(job, { prompt });
@@ -690,7 +692,7 @@ r.get('/api/jobs/:id', (req, res) => {
   res.json(publicJob(job));
 });
 
-// Storskjerm
+// Skjerm
 r.get('/api/screen', (req, res) => {
   const visible = [...jobs.values()].filter(onScreen);
   const gallery = visible
@@ -908,7 +910,7 @@ r.post('/api/help/:id/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
-// --- Emoji-reaksjoner fra mobilen til storskjermen --------------------------
+// --- Emoji-reaksjoner fra mobilen til skjermen --------------------------
 const REACTIONS = ['❤️', '😂', '🔥', '🎉', '😮', '👏', '🥳', '😍'];
 const reactions = []; // { seq, e }
 let reactSeq = 0;
@@ -977,7 +979,7 @@ r.get('/api/votes/mine', (req, res) => {
   res.json({ ids: Object.entries(state.votes || {}).filter(([, l]) => l.includes(dev)).map(([id]) => id) });
 });
 
-// Gjestebok med vri: korte hilsener som vises på storskjermen
+// Gjestebok med vri: korte hilsener som vises på skjermen
 r.post('/api/greeting', (req, res) => {
   const b = req.body || {};
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip, { budget: false });
@@ -1029,13 +1031,13 @@ async function finishClip(job) {
   await completeVideo(job, videoUrl);
 }
 
-// Felles høydepunkt: storskjermen tar over (kaketid, quiz-trekning, hilsener høyt)
+// Felles høydepunkt: skjermen tar over (kaketid, quiz-trekning, hilsener høyt)
 function takeoverView() {
   const t = state.takeover;
   if (!t) return null;
   if (t.mode === 'finale') {
     const f = jobs.get(state.finaleId);
-    // Lyden går fra mobilen hvis den er på, ellers fra storskjermen
+    // Lyden går fra mobilen hvis den er på, ellers fra skjermen
     return { ...t, audioOnScreen: !playerReport(), finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
   }
   if (t.mode === 'film') {
@@ -1119,7 +1121,7 @@ r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   } else if (mode === 'finale') {
     const f = jobs.get(state.finaleId);
     if (!f || f.status !== 'done') return res.status(409).json({ error: 'Finalen er ikke klar ennå.' });
-    // Felles starttid, så storskjermen (video) og mobilen (lyd) starter i takt
+    // Felles starttid, så skjermen (video) og mobilen (lyd) starter i takt
     state.takeover = { mode, at: Date.now(), startAt: Date.now() + 6000 };
   }
   else return res.status(400).json({ error: 'Ukjent modus' });
@@ -1205,7 +1207,7 @@ r.post('/api/admin/kahoot', requireAdmin, (req, res) => {
   if (action === 'next') kahoot.next();
   else if (action === 'end') kahoot.end();
   else return res.status(400).json({ error: 'Ukjent handling' });
-  // Quizen tar over storskjermen så lenge den pågår
+  // Quizen tar over skjermen så lenge den pågår
   if (kahoot.state.phase) state.takeover = { mode: 'kahoot', at: (state.takeover && state.takeover.mode === 'kahoot' && state.takeover.at) || Date.now() };
   else if (state.takeover && state.takeover.mode === 'kahoot') state.takeover = null;
   save();

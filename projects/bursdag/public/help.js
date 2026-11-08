@@ -6,7 +6,7 @@
       ['🖍️', 'Har du tegnet noe? Velg «Tegning blir film». Ingen tegning? Du kan tegne rett på mobilen.'],
       ['🎤', '«Lag en sang»: skriv et lite minne, eller trykk «Overrask meg». AI-en skriver og synger.'],
       ['🤳', '«Selfie med effekt»: velg en effekt og ta et bilde. Noen andre kan gjerne ta det for deg.'],
-      ['📺', 'Alt du lager dukker opp på storskjermen.'],
+      ['📺', 'Alt du lager dukker opp på skjermen.'],
     ],
     tegning: [
       ['📸', 'Legg tegningen på bordet, hold mobilen rett over og trykk på det store feltet for å ta bilde.'],
@@ -15,7 +15,7 @@
       ['🎬', 'Velg en stil, og trykk «Lag filmen!». Filmen er klar på et par minutter.'],
     ],
     sang: [
-      ['💡', 'Trykk på et forslag, eller «Hjelp meg å skrive» og svar på tre korte spørsmål.'],
+      ['💡', 'Sangen kan handle om hva som helst. Trykk på et forslag, eller «Hjelp meg å skrive» og svar på tre korte spørsmål.'],
       ['🎲', '«Overrask meg» velger tema, sjanger og stemning for deg.'],
       ['🎶', 'Trykk «Lag sangen!». Den spilles på festen når den er klar.'],
     ],
@@ -28,17 +28,17 @@
     klipp: [
       ['🎥', 'Trykk på det store feltet og film maks 15 sekunder. Si hei, dans eller vis et triks.'],
       ['📁', 'Har du et klipp fra før? Velg «Velg et klipp jeg har». Er det over 15 sekunder, må du korte det ned i kamerarullen først.'],
-      ['⏪', 'Klippet vises frem og tilbake på storskjermen, så det ser ut som det lever.'],
+      ['⏪', 'Klippet vises frem og tilbake på skjermen, så det ser ut som det lever.'],
     ],
     quiz: [
       ['✍️', 'Skriv navnet ditt og trykk «Bli med».'],
-      ['📺', 'Spørsmålene kommer på storskjermen. Trykk på fargen med riktig svar på mobilen.'],
+      ['📺', 'Spørsmålene kommer på skjermen. Trykk på fargen med riktig svar på mobilen.'],
     ],
     hilsen: [
       ['💌', 'Velg et tema, skriv noen ord og trykk «Send hilsen».'],
     ],
     status: [
-      ['⏳', 'Den lages nå. Du kan legge bort mobilen. Resultatet kommer på storskjermen.'],
+      ['⏳', 'Den lages nå. Du kan legge bort mobilen. Resultatet kommer på skjermen.'],
     ],
   };
 
@@ -59,7 +59,7 @@
   sheet.setAttribute('aria-modal', 'true');
   document.body.append(sheet);
 
-  let reqId = store.get('bursdag-help'), pollTimer = null, places = ['Tegnebordet', 'Fotohjørnet', 'Ved storskjermen', 'Annet'];
+  let reqId = store.get('bursdag-help'), pollTimer = null, places = ['Tegnebordet', 'Fotohjørnet', 'Ved skjermen', 'Annet'];
   if (window.Party && Party.config) Party.config().then((c) => { if (c.helpPlaces && c.helpPlaces.length) places = c.helpPlaces; });
 
   function render(status) {

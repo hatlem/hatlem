@@ -2,7 +2,7 @@
 
 /**
  * Egne klipp fra gjestene: maks MAX_CLIP_SECONDS, gjøres om til H.264 mp4 (mobilvideo er ofte HEVC,
- * som storskjermen ikke kan spille) og får et stillbilde til bakgrunn og galleri. Krever ffmpeg.
+ * som skjermen ikke kan spille) og får et stillbilde til bakgrunn og galleri. Krever ffmpeg.
  */
 
 const { spawn, spawnSync } = require('child_process');
@@ -48,7 +48,7 @@ function transcodeArgs(input, output, seconds) {
   ];
 }
 
-/** Stillbilde fra ett sekund inn i klippet (bakgrunn på storskjermen og celle i galleriet). */
+/** Stillbilde fra ett sekund inn i klippet (bakgrunn på skjermen og celle i galleriet). */
 function posterArgs(input, output) {
   return ['-y', '-hide_banner', '-loglevel', 'error', '-ss', '1', '-i', input, '-frames:v', '1', '-q:v', '3', output];
 }

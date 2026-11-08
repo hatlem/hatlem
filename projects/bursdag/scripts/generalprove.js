@@ -120,7 +120,7 @@ async function testSong() {
       if (s.failed) return bad('Sangen feilet: ' + (s.message || 'ukjent feil'));
       if (s.done && s.track) {
         ok(`Sang ferdig på ${mins(Date.now() - t0)}: «${s.track.title}» ${s.track.audioUrl}`);
-        s.track.lyrics ? ok('Sangteksten kom med (vises på storskjermen)') : warn('Ingen sangtekst i svaret: storskjermen viser bare tittel');
+        s.track.lyrics ? ok('Sangteksten kom med (vises på skjermen)') : warn('Ingen sangtekst i svaret: skjermen viser bare tittel');
         return Date.now() - t0;
       }
       if (Date.now() - t0 > 15 * 60000) return bad('Sangen brukte over 15 min (siste status: ' + s.status + ')');

@@ -19,26 +19,27 @@
 
   <form id="f">
     <div class="card">
-      <div class="step">1 · Hvem er sangen til?</div>
-      <input type="text" id="to" name="to" maxlength="40" placeholder="Bursdagsbarnet">
-      <label for="about">Hva skal den handle om?</label>
-      <textarea id="about" name="about" maxlength="220" placeholder="Et morsomt minne, en rar vane, den gangen på hytta …"></textarea>
+      <div class="step">1 · Hva skal sangen handle om?</div>
+      <textarea id="about" name="about" maxlength="220" placeholder="Hva som helst! Katten din, fredagstaco, en drøm, et minne, sokker som forsvinner …"></textarea>
       <div class="assist">
         <button type="button" class="primary" id="guideBtn">✍️ Hjelp meg å skrive</button>
         <button type="button" id="surprise">🎲 Overrask meg</button>
       </div>
       <div class="guide" id="guide" hidden>
         <div class="idea-box" style="font-size:16px">Svar kort, så lager vi teksten for deg:</div>
-        <label for="g1">Ett ord som beskriver <span class="bname">bursdagsbarnet</span></label>
-        <input type="text" id="g1" maxlength="30" placeholder="F.eks. sprudlende, sta, morsom">
-        <label for="g2">Noe <span class="bname">bursdagsbarnet</span> alltid sier eller gjør</label>
-        <input type="text" id="g2" maxlength="60" placeholder="F.eks. «Det ordner seg!»">
-        <label for="g3">Et minne dere har sammen (valgfritt)</label>
-        <input type="text" id="g3" maxlength="90" placeholder="F.eks. da vi bommet på ferja til Danmark">
+        <label for="g1">Hva eller hvem handler den om?</label>
+        <input type="text" id="g1" maxlength="40" placeholder="F.eks. hunden min, mormor, en gammel bil">
+        <label for="g2">Hva er morsomt, rart eller fint med det?</label>
+        <input type="text" id="g2" maxlength="80" placeholder="F.eks. den spiser sokker">
+        <label for="g3">Hvor eller når skjer det? (valgfritt)</label>
+        <input type="text" id="g3" maxlength="60" placeholder="F.eks. hver lørdag på hytta">
         <p></p><button type="button" class="btn secondary" id="guideDone">✨ Lag teksten</button>
       </div>
       <label style="margin-top:14px">💡 Eller trykk på en idé</label>
       <div class="ideas" id="ideas"></div>
+      <label for="to">Til noen? (valgfritt)</label>
+      <input type="text" id="to" name="to" maxlength="40" placeholder="F.eks. mormor eller bursdagsbarnet">
+      <p class="hint" style="margin:6px 0 0">Skriver du et navn, synges det i refrenget.</p>
     </div>
 
     <div class="card">
@@ -68,8 +69,6 @@
   let cfg = null;
   Party.config().then((c) => {
     cfg = c;
-    form.to.value = c.birthdayName;
-    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
     Party.chips(document.getElementById('genres'), 'genre', c.songGenres, { small: true });
     Party.chips(document.getElementById('moods'), 'mood', c.songMoods, { small: true });
     document.getElementById('ideas').innerHTML = (c.songIdeas || []).map((i) => '<button type="button" class="idea-chip">' + Party.esc(i) + '</button>').join('');
@@ -88,14 +87,13 @@
     if (!g.hidden) document.getElementById('g1').focus();
   });
   document.getElementById('guideDone').addEventListener('click', () => {
-    const name = form.to.value || (cfg && cfg.birthdayName) || 'bursdagsbarnet';
     const [a, b, m] = ['g1', 'g2', 'g3'].map((id) => document.getElementById(id).value.trim());
-    if (!a && !b && !m) return document.getElementById('g1').focus();
-    const parts = [];
-    if (a) parts.push(`${name} er ${a.toLowerCase()}`);
-    if (b) parts.push(`${parts.length ? 'og' : name} sier alltid «${b.replace(/^[«"]|[»"]$/g, '')}»`);
-    let text = parts.join(' ') + (parts.length ? '.' : '');
-    if (m) text += ` Husker du ${m.charAt(0).toLowerCase() + m.slice(1)}?`;
+    if (!a && !b) return document.getElementById('g1').focus();
+    const lc = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+    let text = a ? `En sang om ${lc(a)}` : 'En sang';
+    if (b) text += a ? `, som ${lc(b).replace(/^som\s+/, '')}` : ` om noe som ${lc(b)}`;
+    if (m) text += ` ${lc(m)}`;
+    text += '.';
     about.value = text.trim().slice(0, 220);
     document.getElementById('guide').hidden = true;
     flash(about);
@@ -118,7 +116,7 @@
     document.getElementById('err').textContent = '';
     try {
       const { id } = await Party.submit('api/song', {
-        to: form.to.value, about: form.about.value, genre: form.genre.value, mood: form.mood.value,
+        to: form.to.value.trim(), about: form.about.value, genre: form.genre.value, mood: form.mood.value,
         name: form.name.value, deviceId: Party.deviceId(),
       });
       location.href = 'status/' + id;

@@ -1,9 +1,9 @@
-/* Emoji-reaksjoner: trykk på mobilen, så flyr emojien opp over storskjermen. */
+/* Emoji-reaksjoner: trykk på mobilen, så flyr emojien opp over skjermen. */
 (function () {
   const EMOJIS = ['❤️', '😂', '🔥', '🎉', '😮', '👏', '🥳', '😍'];
   function mount(el) {
     el.classList.add('react-bar');
-    el.innerHTML = '<div class="react-title">Send en reaksjon til storskjermen</div><div class="react-row">' +
+    el.innerHTML = '<div class="react-title">Send en reaksjon til skjermen</div><div class="react-row">' +
       EMOJIS.map((e) => `<button type="button" aria-label="Send ${e}">${e}</button>`).join('') + '</div>';
     el.addEventListener('click', async (ev) => {
       const b = ev.target.closest('button');

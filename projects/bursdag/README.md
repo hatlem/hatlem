@@ -5,13 +5,13 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 | | Hva skjer | API |
 |---|---|---|
 | 🖍️ **Tegning blir film** | Ta bilde av en tegning, velg stil (magisk, 3D-tegnefilm, anime, blir ekte). Bildet beskjæres først til arket (bord og hender fjernes), så lages videoen av bare tegningen. | Higgsfield (bilde til bilde, så bilde til video) |
-| 🎤 **Lag en sang** | Velg hvem den er til, tema, sjanger og stemning. Sangen legges **i kø i spillelisten** på storskjermen. | Suno (sunoapi.org / api.box) |
+| 🎤 **Lag en sang** | Om hva som helst. Velg tema, sjanger og stemning, og eventuelt hvem den er til. Sangen legges **i kø i spillelisten** på skjermen. | Suno (sunoapi.org / api.box) |
 | 🎥 **Last opp et klipp** | Film maks 15 sekunder selv (eller velg et klipp du har). Ingen AI: klippet kodes om, kuttes til 15 sekunder og vises frem og tilbake. | ffmpeg |
 | 🤳 **Selfie med effekt** | Tiger som går rundt deg, slange rundt halsen, trollmann, spøkelse, superhelt, UFO, drage, disko, is eller konfetti. Bildet fikses først (lys og ny bakgrunn), så lages filmen. | Higgsfield (bilde til bilde, så bilde til video) |
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
-- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
+- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
 ## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake
@@ -28,22 +28,22 @@ Hver effekt har et rammekrav som styrer kamerasteget på mobilen (`lib/catalog.j
 
 **Tegninger** går gjennom samme bildefiks, men med en annen jobb: bildet beskjæres og rettes opp så bare A4-arket fyller rammen, og bord, hender, penner og skygger fjernes. Streken endres ikke. Videoprompten sier også at bare det som er på arket skal animeres.
 
-**Egne klipp** (`/klipp`): gjesten filmer maks 15 sekunder, eller velger et klipp fra kamerarullen. Lengden sjekkes i nettleseren før opplasting (for lange klipp avvises med beskjed), og på serveren kodes klippet om til H.264 mp4 (mobilvideo er ofte HEVC, som storskjermen ikke kan spille), kuttes til 15 sekunder som sikkerhetsnett, skaleres til maks 1280 px og får et stillbilde til bakgrunn og galleri. Maks 200 MB per fil. Klippene kan få hjerter, er med i kveldens film og i zip-fila (`klipp/`).
+**Egne klipp** (`/klipp`): gjesten filmer maks 15 sekunder, eller velger et klipp fra kamerarullen. Lengden sjekkes i nettleseren før opplasting (for lange klipp avvises med beskjed), og på serveren kodes klippet om til H.264 mp4 (mobilvideo er ofte HEVC, som skjermen ikke kan spille), kuttes til 15 sekunder som sikkerhetsnett, skaleres til maks 1280 px og får et stillbilde til bakgrunn og galleri. Maks 200 MB per fil. Klippene kan få hjerter, er med i kveldens film og i zip-fila (`klipp/`).
 
-Ferdige filmer gjøres om til en **frem-og-tilbake-versjon** med ffmpeg (originalen, så den samme i revers), så korte klipp lever lenger på storskjermen, i galleriet og på statussiden. Originalen beholdes (`result.originalUrl`) og brukes i kveldens film. `PINGPONG=0` skrur det av, og uten ffmpeg vises originalen i vanlig loop.
+Ferdige filmer gjøres om til en **frem-og-tilbake-versjon** med ffmpeg (originalen, så den samme i revers), så korte klipp lever lenger på skjermen, i galleriet og på statussiden. Originalen beholdes (`result.originalUrl`) og brukes i kveldens film. `PINGPONG=0` skrur det av, og uten ffmpeg vises originalen i vanlig loop.
 
 ## Mer moro: reaksjoner, stempelkort, hjerter og kveldens film
 
 - **Emoji-reaksjoner:** på forsiden og statussiden trykker gjestene ❤️😂🔥🎉 og mer, og emojiene flyr opp over begge skjermene. Maks 15 per 10 sekunder per mobil.
-- **Stempelkort:** forsiden viser 🖍️ 🎤 🤳. Med alle tre er man med i trekningen. Admin → «🎟️ Trekk stempelkort» ruller navnene på storskjermen og viser vinneren.
-- **Hjerter:** i galleriet kan man gi ❤️ til filmer og selfies, ett per mobil. Admin → «❤️ Kveldens favoritter» viser topp 3 på storskjermen (nr. 3, så 2, så 1 med konfetti).
-- **Kveldens film:** Admin → «🎞️ Lag kveldens film» syr sammen opptil 40 klipp à 5 sekunder (1280×720) med gjestesangene under, og toner ut på slutten. Vis den med «🎞️ Vis kveldens film». Mobilen spiller lyden i takt med storskjermen. Filmen ligger øverst i galleriet og i zip-fila. Den krever ffmpeg, som `nixpacks.toml` installerer på Railway.
+- **Stempelkort:** forsiden viser 🖍️ 🎤 🤳. Med alle tre er man med i trekningen. Admin → «🎟️ Trekk stempelkort» ruller navnene på skjermen og viser vinneren.
+- **Hjerter:** i galleriet kan man gi ❤️ til filmer og selfies, ett per mobil. Admin → «❤️ Kveldens favoritter» viser topp 3 på skjermen (nr. 3, så 2, så 1 med konfetti).
+- **Kveldens film:** Admin → «🎞️ Lag kveldens film» syr sammen opptil 40 klipp à 5 sekunder (1280×720) med gjestesangene under, og toner ut på slutten. Vis den med «🎞️ Vis kveldens film». Mobilen spiller lyden i takt med skjermen. Filmen ligger øverst i galleriet og i zip-fila. Den krever ffmpeg, som `nixpacks.toml` installerer på Railway.
 
 ## Hjelp til de som står fast
 
 - **Sang:**
   - Idéforslag fra `party.json` → `sangideer`.
-  - «✍️ Hjelp meg å skrive» stiller tre korte spørsmål (ett ord om bursdagsbarnet, noe hen alltid sier, et minne) og lager teksten.
+  - «✍️ Hjelp meg å skrive» stiller tre korte spørsmål (hva den handler om, hva som er morsomt med det, hvor eller når) og lager teksten. Sangen kan handle om hva som helst, og «Til noen?» er valgfritt.
   - «🎲 Overrask meg» velger tema, sjanger og stemning.
 - **Tegning:**
   - «✏️ Tegn på mobilen» er en tegneflate med farger, penselstørrelser og angre, for de uten papirtegning.
@@ -82,7 +82,7 @@ To skjermer, og **lyden går fra en mobil koblet til høyttaleren** (Bluetooth e
 - **iPhone:** volum og demping styres via Web Audio, siden iPhone ikke lar nettsider sette volumet. Slå av lydløs-bryteren. På iOS 17+ spiller den likevel.
 - **Musikken går hele tiden.** Rekkefølgen er gjestesanger i kø, så årsspillelisten (kronologisk), så reprise. En ny gjestesang avbryter årsspillelisten.
 - **Under kake og hilsener** settes musikken på pause automatisk. Under quizen dempes den til en firedel.
-- **Finalen:** storskjermen viser videoen stumt, og mobilen spiller lyden. Begge starter på en felles starttid og holdes i takt. Er mobilen ikke på, spiller storskjermen lyden selv.
+- **Finalen:** skjermen viser videoen stumt, og mobilen spiller lyden. Begge starter på en felles starttid og holdes i takt. Er mobilen ikke på, spiller skjermen lyden selv.
 
 Sider for verten:
 
@@ -147,7 +147,7 @@ Skriptet leser `.env`. Den ekte testen viser:
 - **Godkjenn før visning** (`GODKJENNING=1`, eller bryteren i `/admin`): nye filmer, sanger og hilsener vises først i admin med forhåndsvisning og knappene ✅ Vis og 🚫 Avvis.
   - Gjesten ser fortsatt resultatet sitt på telefonen.
   - Skrur du godkjenningen av, slippes alt som venter gjennom.
-- **Sangintro og sangtekst:** før hver gjestesang viser storskjermen «🎤 Neste sang: tittel, laget av Per». Mens sangen spilles, vises teksten linje for linje i «Nå spilles».
+- **Sangintro og sangtekst:** før hver gjestesang viser skjermen «🎤 Neste sang: tittel, laget av Per». Mens sangen spilles, vises teksten linje for linje i «Nå spilles».
 - **Finale** (i `/admin`): velg en gjestesang og last opp en kort video av bursdagsbarnet (5–15 sekunder, ansiktet rett mot kamera), eller bruk en ferdig selfievideo.
   - Higgsfield lipsync (`HF_LIPSYNC_MODEL`) får munnen til å synge sangen. Sangen kuttes til `FINALE_SECONDS` for å spare kreditter.
   - Trykk «🎬 Vis finalen» ved kaka. Skjermen viser «Verdenspremiere!», så musikkvideoen, så konfetti.
@@ -172,7 +172,7 @@ Vil du heller ha et subdomene (`bursdag.andreashatlem.no`), legg det til som ege
 2. Legg til et **volum** montert på `/data`, og sett `DATA_DIR=/data`. Da overlever bilder, sanger og køen en omstart.
 3. Sett variablene fra `.env.example`, med `PUBLIC_URL` lik Railway-adressen.
 4. Legg nostalgibilder og årsspilleliste i `/data/nostalgi` og `/data/spilleliste`, for eksempel med `railway run` eller ved å laste dem opp før festen.
-5. Ha en mobil klar som hotspot til storskjermen. Hvis skjermen mister kontakten, viser den et rødt varsel og prøver igjen av seg selv.
+5. Ha en mobil klar som hotspot til skjermen. Hvis skjermen mister kontakten, viser den et rødt varsel og prøver igjen av seg selv.
 
 ## Nettverk på festen
 
@@ -210,7 +210,7 @@ Sanger har sin egen kø med `SUNO_MAX_CONCURRENT` (standard 5). Den virker på s
 Higgsfield-kontoen har en grense for hvor mange videoer som kan lages samtidig (Creator-pakken: 8). Appen sender aldri flere enn `HF_MAX_CONCURRENT` (standard 8). Resten venter i appens egen kø og starter automatisk når en plass blir ledig.
 
 - Gjesten ser «Du er nr. 3 i køen hos filmstudioet (ca. 2 min)».
-- Storskjermen viser «Lages nå».
+- Skjermen viser «Lages nå».
 - Admin viser hvor mange av de 8 plassene som er i bruk.
 - Køen overlever en omstart av serveren.
 - Hvis Higgsfield likevel svarer at kontoen er full, legges jobben tilbake i køen og prøves på nytt.

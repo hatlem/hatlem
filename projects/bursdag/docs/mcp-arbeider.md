@@ -12,7 +12,7 @@ higgsfield.ai-kontoen. Arbeideren må kjøre så lenge festen varer.
 | `POST /api/admin/mcp/jobs/:id/claim` | Marker at du har tatt jobben (`{ "worker": "mac" }`). Jobber med `claimedAt` eldre enn 10 min kan tas på nytt. |
 | `POST /api/admin/mcp/jobs/:id/result` | `{ "imageUrl": … }` når `stage` er `image` (jobben går til `video`), `{ "videoUrl": … }` når filmen er klar, eller `{ "error": "…" }`. |
 
-Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser filmen på storskjermen.
+Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser filmen på skjermen.
 
 ## Én jobb, steg for steg
 
