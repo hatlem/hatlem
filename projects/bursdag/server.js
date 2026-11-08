@@ -1438,7 +1438,10 @@ r.get('/api/health', (req, res) => {
 });
 
 app.use(BASE_PATH || '/', r);
-if (BASE_PATH) app.get('/', (req, res) => res.redirect(BASE_PATH + '/'));
+if (BASE_PATH) {
+  app.get('/', (req, res) => res.redirect(BASE_PATH + '/'));
+  app.get('/api/health', (req, res) => res.redirect(307, BASE_PATH + '/api/health')); // Railway-helsesjekken bruker rotstien
+}
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Filen er for stor. Prøv igjen!' });
