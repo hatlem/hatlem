@@ -16,7 +16,7 @@ Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser film
 
 ## Én jobb, steg for steg
 
-1. `curl -s -H "x-admin-key: $ADMIN_KEY" $PUBLIC_URL/api/admin/mcp/jobs`
+1. `scripts/mcp-ko.sh liste` (eller `curl -s -H "x-admin-key: …" …/api/admin/mcp/jobs`). Skriptet trenger BURSDAG_ADMIN_KEY i miljøet; de andre kommandoene er `hent`, `claim`, `bilde`, `film`, `feil`.
 2. Claim jobben.
 3. Last ned `inputUrl` (eller `fixedImageUrl` hvis `stage` er `video`) til scratchpad.
 4. `media_upload` (filnavn med riktig endelse) → `curl -X PUT …` → `media_confirm` (type image).
