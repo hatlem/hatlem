@@ -88,7 +88,7 @@
     const S = schedule.length ? toMin(schedule[0].time) : 14 * 60;
     const hl = schedule.find((p) => p.highlight);
     const H = hl ? toMin(hl.time) : 17 * 60;
-    const after = schedule.find((p) => toMin(p.time) > H && !/takk/i.test(p.title));
+    const after = schedule.find((p) => toMin(p.time) > H && !/takk|stenger|slutt/i.test(p.title));
     const T3 = after ? toMin(after.time) : H + 60;
     const E = schedule.length ? toMin(schedule[schedule.length - 1].time) : 20 * 60;
     const kids = plan.kids > 0, ute = plan.venue !== 'inne';

@@ -4,8 +4,8 @@
   "program": [
     {
       "tid": "14:00",
-      "tittel": "Barnefamilietid",
-      "emoji": "🧸"
+      "tittel": "Dørene åpner",
+      "emoji": "🚪"
     },
     {
       "tid": "17:00",
@@ -20,7 +20,7 @@
     },
     {
       "tid": "20:00",
-      "tittel": "Takk for i dag!",
+      "tittel": "Dørene stenger",
       "emoji": "👋"
     }
   ],
