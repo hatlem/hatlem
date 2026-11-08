@@ -16,11 +16,18 @@ function loadConfig(file, name) {
   const quiz = raw.quiz || { sporsmal: [] };
   return {
     birthYear: Number(raw.fodselsar) || null,
+    venue: {
+      name: (raw.sted && raw.sted.navn) || '',
+      date: (raw.sted && raw.sted.dato) || '',
+      day: (raw.sted && raw.sted.dag) || '', // ÅÅÅÅ-MM-DD: «nå»/«ferdig» markeres bare denne dagen
+      time: (raw.sted && raw.sted.tid) || '',
+    },
+    allDay: (raw.hele_dagen || []).map(fill),
     schedule: (raw.program || []).map((p) => ({ time: p.tid, title: fill(p.tittel), emoji: p.emoji || '⭐', highlight: !!p.hoydepunkt })),
     greetingPrompts: (raw.hilsen || []).map((g) => ({ id: g.id, name: fill(g.tekst), emoji: g.emoji || '💌' })),
     songIdeas: (raw.sangideer || []).map(fill),
     drawingIdeas: (raw.tegneideer || []).map(fill),
-    helpPlaces: raw.hjelpesteder || ['Tegnebordet', 'Fotohjørnet', 'Ved storskjermen', 'Annet'],
+    helpPlaces: raw.hjelpesteder || ['Tegnebordet', 'Fotohjørnet', 'Ved skjermen', 'Annet'],
     quiz: {
       example: quiz.eksempel !== false,
       questions: (quiz.sporsmal || []).map((q) => ({ q: fill(q.q), options: q.alt.map(fill), correct: Number(q.riktig) })),

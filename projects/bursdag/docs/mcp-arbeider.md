@@ -12,7 +12,7 @@ higgsfield.ai-kontoen. Arbeideren må kjøre så lenge festen varer.
 | `POST /api/admin/mcp/jobs/:id/claim` | Marker at du har tatt jobben (`{ "worker": "mac" }`). Jobber med `claimedAt` eldre enn 10 min kan tas på nytt. |
 | `POST /api/admin/mcp/jobs/:id/result` | `{ "imageUrl": … }` når `stage` er `image` (jobben går til `video`), `{ "videoUrl": … }` når filmen er klar, eller `{ "error": "…" }`. |
 
-Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser filmen på storskjermen.
+Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser filmen på skjermen.
 
 ## Én jobb, steg for steg
 
@@ -25,7 +25,7 @@ Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser film
    POST `{ "imageUrl": result_url }`. Jobben er nå `video`; bruk `job_id` fra bildet som `start_image` i neste steg
    (ingen ny opplasting nødvendig).
 6. `stage` = `video`: `generate_video` med `model: kling3_0`, `prompt`, `duration: seconds`, `mode: std`, `sound: off`,
-   `aspect_ratio` 9:16 for stående bilde og 16:9 for liggende, `medias: [{ value: <job_id eller media_id>, role: start_image }]`.
+   `aspect_ratio: videoAspect` (16:9, så filmen fyller skjermen; er den `null`, 9:16 for stående bilde og 16:9 for liggende), `medias: [{ value: <job_id eller media_id>, role: start_image }]`.
    `jobs_wait` (15 s om gangen, 2–4 min totalt). POST `{ "videoUrl": result_url }`.
 7. Feiler noe to ganger: POST `{ "error": "kort forklaring" }`, så får gjesten beskjed og kan prøve igjen.
 

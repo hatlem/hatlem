@@ -3,7 +3,7 @@
  *  - Skjermen holdes våken (Wake Lock), ellers kan mobilen stoppe musikken
  *  - Låseskjerm/høyttalerknapper (Media Session) styrer pause og neste sang
  *  - Volum via Web Audio på iPhone, der nettsider ikke kan sette volumet direkte
- *  - Finalelyden spilles i takt med videoen på storskjermen
+ *  - Finalelyden spilles i takt med videoen på skjermen
  */
 (function () {
   function cleanLyrics(text) {
@@ -188,7 +188,7 @@
       } catch { /* ikke støttet */ }
     }
 
-    // --- finalen: lyden fra mobilen i takt med videoen på storskjermen ------
+    // --- finalen: lyden fra mobilen i takt med videoen på skjermen ------
     const serverNow = () => Date.now() + st.offset;
     function syncFinale(f) {
       if (!st.active) return;

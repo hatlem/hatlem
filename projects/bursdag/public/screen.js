@@ -1,9 +1,9 @@
-/* Storskjermen: galleri, «Nå spilles», program og felles høydepunkt (kake, quiz, hilsener, finale). */
+/* Skjermen: galleri, «Nå spilles», program og felles høydepunkt (kake, quiz, hilsener, finale). */
 (function () {
   const esc = Party.esc;
   const $ = (id) => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  // Standard: storskjermen er stille, musikken går fra /musikk. ?lyd=pa gjør denne til lydkilden.
+  // Standard: skjermen er stille, musikken går fra /musikk. ?lyd=pa gjør denne til lydkilden.
   const SOUND = /^(pa|på|1|ja)$/i.test(params.get('lyd') || '');
   const player = SOUND ? Party.player({ onIntro: () => {} }) : null;
   if (SOUND) $('startHint').textContent = 'Starter fullskjerm og musikk fra denne skjermen.';
@@ -186,6 +186,7 @@
     const box = $('programBox');
     if (!data.schedule.length) { box.hidden = true; return; }
     box.hidden = false;
+    $('allDay').innerHTML = (data.allDay || []).map((x) => `<span>${esc(x)}</span>`).join('');
     const d = new Date();
     const nowMin = d.getHours() * 60 + d.getMinutes();
     let cur = -1;
@@ -194,7 +195,7 @@
       `<li class="${i === cur ? 'now' : i < cur ? 'past' : ''}"><b>${esc(p.time)}</b><span>${esc(p.emoji)} ${esc(p.title)}</span></li>`).join('');
     const hl = data.schedule.find((p) => p.highlight && toMin(p.time) > nowMin);
     const left = hl ? toMin(hl.time) - nowMin : null;
-    $('countdown').textContent = hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
+    $('countdown').textContent = data.programNote ? '📣 ' + data.programNote : hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
   }
 
   // ------------------------------------------------------------------ felles høydepunkt
@@ -213,7 +214,7 @@
     el.hidden = false;
 
     if (t.mode === 'cake') {
-      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Samle dere rundt kaka, så synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
+      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Nå synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
       Party.confetti(150);
     } else if (t.mode === 'greetings') {
       const list = t.greetings || [];
@@ -249,8 +250,8 @@
     const key = shownTakeover;
     const startAt = t.startAt || Date.now() + 4000;
     const elapsed = () => (Date.now() + serverOffset - startAt) / 1000;
-    // Lyden spilles fra mobilen ved høyttaleren; storskjermen viser videoen stumt og holder seg i takt.
-    // Er mobilen ikke på, spiller storskjermen lyden selv.
+    // Lyden spilles fra mobilen ved høyttaleren; skjermen viser videoen stumt og holder seg i takt.
+    // Er mobilen ikke på, spiller skjermen lyden selv.
     const soundHere = !!t.audioOnScreen;
     let syncTimer = null;
     const end = () => {
@@ -351,7 +352,7 @@
       const names = (v.names || []).map((n) => `<span>${esc(n)}</span>`).join('');
       if (changed) {
         el.innerHTML = `<div class="lq"><div class="lq-center">
-          <h1 class="gradient-text">🧠 Quiz om ${esc(birthdayName)}</h1>
+          <h1 class="gradient-text">🧠 Quiz!</h1>
           <div class="lq-join"><img src="qr.svg?path=/quiz" alt="QR-kode til quizen"><div><p>📱 Skann og skriv navnet ditt</p><p style="color:var(--muted)">Svar raskt: jo raskere, jo flere poeng!</p><p><b id="lqPlayers"></b></p></div></div>
           <div class="lq-names" id="lqNames"></div></div></div>`;
       }
@@ -360,7 +361,7 @@
     } else if (v.phase === 'question' || v.phase === 'reveal') {
       if (changed) {
         el.innerHTML = `<div class="lq">
-          <div class="lq-head"><span>Spørsmål ${v.q + 1} av ${v.total}</span><span>${esc(birthdayName)}-quizen 🧠</span></div>
+          <div class="lq-head"><span>Spørsmål ${v.q + 1} av ${v.total}</span><span>Quiz 🧠</span></div>
           <div class="lq-q">${esc(v.question)}</div>
           <div class="lq-mid"><div class="lq-timer" id="lqTimer"><span id="lqSec"></span></div><div class="lq-count" id="lqCount"></div></div>
           <div class="lq-grid">${v.options.map((o, i) => `<div class="lq-opt o${i}" id="lqo${i}"><span class="sym">${SYMS[i]}</span><span>${esc(o)}</span><span class="n" id="lqn${i}"></span></div>`).join('')}</div>

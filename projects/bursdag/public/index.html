@@ -16,7 +16,7 @@
   <section class="hero">
     <div class="cake" aria-hidden="true">🎂</div>
     <h1><span class="gradient-text" id="title">Bursdagsmoro</span></h1>
-    <p>Velg hva du vil lage. Resultatet vises på storskjermen!</p>
+    <p>Velg hva du vil lage. Resultatet vises på skjermen!</p>
   </section>
 
   <nav class="choices">
@@ -26,11 +26,11 @@
     </a>
     <a class="choice c-song" href="sang">
       <div class="icon" aria-hidden="true">🎤</div>
-      <div><h2>Lag en sang</h2><p>Din egen låt havner i spillelisten på festen</p></div>
+      <div><h2>Lag en sang</h2><p>Om hva som helst. Låten havner i spillelisten på festen</p></div>
     </a>
     <a class="choice c-selfie" href="selfie">
       <div class="icon" aria-hidden="true">🤳</div>
-      <div><h2>Selfie med effekt</h2><p>En tiger rundt deg, bli et spøkelse og mer</p></div>
+      <div><h2>Selfie med effekt</h2><p>Bli 80 år, en T-rex bak deg, kake i fjeset og mer</p></div>
     </a>
   </nav>
 
@@ -41,12 +41,12 @@
       <a class="stamp" id="st-song" href="sang" aria-label="Sang">🎤</a>
       <a class="stamp" id="st-selfie" href="selfie" aria-label="Selfie">🤳</a>
     </div>
-    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved kaka!</p>
+    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved quizen!</p>
   </section>
 
   <h3 class="more-title">Mer moro</h3>
   <nav class="more">
-    <a href="quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
+    <a href="quiz"><span aria-hidden="true">🧠</span><em>Quiz kl. 17</em></a>
     <a href="hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
     <a href="klipp" style="grid-column:1/-1"><span aria-hidden="true">🎥</span><em>Last opp et klipp (maks 15 sek)</em></a>
     <a href="galleri" style="grid-column:1/-1"><span aria-hidden="true">📸</span><em>Se alt som er laget, og gi hjerter ❤️</em></a>
@@ -54,7 +54,13 @@
 
   <div id="react"></div>
 
-  <p class="program" id="program" hidden></p>
+  <a class="prog-mini" id="progMini" href="program" hidden>
+    <div class="step">📅 Program</div>
+    <div class="prog-note" id="progNote" hidden></div>
+    <div class="prog-allday" id="progAllDay"></div>
+    <ul id="progList"></ul>
+    <span class="prog-more">Trykk for oppdatert program ›</span>
+  </a>
 </main>
 <script src="common.js"></script>
 <script src="help.js"></script>
@@ -69,22 +75,26 @@
     if (s.complete) {
       box.classList.add('complete');
       document.getElementById('stampTitle').textContent = '🎟️ Du er med i trekningen!';
-      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på storskjermen ved kaka. Så langt er ${s.entries} med.`;
+      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på skjermen ved quizen. Så langt er ${s.entries} med.`;
     } else if (n) {
-      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved kaka 🎂`;
+      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved quizen 🎟️`;
     }
   }).catch(() => {});
   Party.config().then((c) => {
     document.getElementById('title').textContent = c.partyTitle;
     document.title = c.partyTitle;
     document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
-    const hl = (c.schedule || []).find((p) => p.highlight);
-    if (hl) {
-      const el = document.getElementById('program');
-      el.textContent = `${hl.emoji} Kl. ${hl.time}: ${hl.title}`;
-      el.hidden = false;
-    }
   });
+  fetch('api/program').then((r) => r.json()).then((d) => {
+    if (!d.schedule.length) return;
+    document.getElementById('progList').innerHTML = d.schedule.map((p) =>
+      `<li class="${p.highlight ? 'hl' : ''}"><b>${Party.esc(p.time)}</b><span>${Party.esc(p.emoji)} ${Party.esc(p.title)}</span></li>`).join('');
+    const note = document.getElementById('progNote');
+    note.hidden = !d.note;
+    note.textContent = d.note ? '📣 ' + d.note : '';
+    document.getElementById('progAllDay').innerHTML = (d.allDay || []).map((x) => `<span>${Party.esc(x)}</span>`).join('');
+    document.getElementById('progMini').hidden = false;
+  }).catch(() => {});
 </script>
 </body>
 </html>

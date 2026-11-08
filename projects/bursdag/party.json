@@ -1,16 +1,16 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet vises på storskjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quizen: de tre første spørsmålene handler om bursdagsbarnet, resten om verden i 1986. Legg til, bytt ut eller fjern som du vil (2–4 svaralternativer per spørsmål, «riktig» teller fra 0). «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
       "tid": "14:00",
-      "tittel": "Barnefamilietid",
-      "emoji": "🧸"
+      "tittel": "Dørene åpner",
+      "emoji": "🚪"
     },
     {
       "tid": "17:00",
-      "tittel": "Kake, tale og quiz",
-      "emoji": "🎂",
+      "tittel": "Quiz",
+      "emoji": "🧠",
       "hoydepunkt": true
     },
     {
@@ -20,9 +20,13 @@
     },
     {
       "tid": "20:00",
-      "tittel": "Takk for i dag!",
+      "tittel": "Dørene stenger",
       "emoji": "👋"
     }
+  ],
+  "hele_dagen": [
+    "🍢 Tapas og kake hele dagen",
+    "🌭 Pølser til barna"
   ],
   "hilsen": [
     {
@@ -47,101 +51,130 @@
     }
   ],
   "quiz": {
-    "eksempel": true,
+    "eksempel": false,
     "sporsmal": [
       {
-        "q": "Hvilket år ble {navn} født?",
+        "q": "Hva heter radiokanalen som nå er tilbake på lufta, og som var {navn} sin første betalte jobb?",
         "alt": [
-          "1984",
-          "1985",
-          "1986",
-          "1988"
+          "Radio 3",
+          "Radio Sarpsborg",
+          "Mesterbakeren"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilket land har {navn} tilbrakt sommeren i mer enn 18 ganger?",
+        "alt": [
+          "Spania",
+          "Finland",
+          "Kroatia"
         ],
         "riktig": 2
       },
       {
-        "q": "Hva var {navn} sin første jobb?",
+        "q": "Hvis {navn} ikke hadde fått navnet {navn}, hvilket annet navn var på blokka?",
         "alt": [
-          "Avisbud",
-          "Jordbærplukker",
-          "Butikk",
-          "Noe helt annet"
+          "Kristian",
+          "Karl",
+          "David"
         ],
         "riktig": 0
       },
       {
-        "q": "Hva er {navn} sin favorittmat?",
+        "q": "{navn} ble født i 1986. Hvilken stor ulykke skjedde i Ukraina i april det året?",
         "alt": [
-          "Taco",
-          "Pizza",
-          "Fårikål",
-          "Sushi"
+          "Tsjernobyl",
+          "Three Mile Island",
+          "Fukushima",
+          "Seveso"
         ],
         "riktig": 0
       },
       {
-        "q": "Hvilket land har {navn} reist mest til?",
+        "q": "Hvilken norsk by arrangerte Eurovision i 1986?",
         "alt": [
-          "Spania",
-          "Sverige",
-          "Danmark",
-          "Hellas"
+          "Oslo",
+          "Trondheim",
+          "Bergen",
+          "Stavanger"
+        ],
+        "riktig": 2
+      },
+      {
+        "q": "Hvilket land vant fotball-VM i 1986?",
+        "alt": [
+          "Brasil",
+          "Argentina",
+          "Vest-Tyskland",
+          "Italia"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "Hvem ble Norges statsminister i 1986?",
+        "alt": [
+          "Kåre Willoch",
+          "Gro Harlem Brundtland",
+          "Jan P. Syse",
+          "Odvar Nordli"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "Hvilken romferge eksploderte rett etter oppskyting i januar 1986?",
+        "alt": [
+          "Columbia",
+          "Discovery",
+          "Atlantis",
+          "Challenger"
+        ],
+        "riktig": 3
+      },
+      {
+        "q": "Hvilken komet var synlig fra jorda i 1986, for første gang siden 1910?",
+        "alt": [
+          "Halleys komet",
+          "Hale–Bopp",
+          "Kometen Hyakutake",
+          "Shoemaker–Levy"
         ],
         "riktig": 0
       },
       {
-        "q": "Hva ville {navn} bli som liten?",
+        "q": "Hvilket norsk band toppet den amerikanske Billboard-listen med «Take On Me» i 1985?",
         "alt": [
-          "Astronaut",
-          "Fotballspiller",
-          "Dyrlege",
-          "Rockestjerne"
+          "Bobbysocks",
+          "a-ha",
+          "Dum Dum Boys",
+          "DeLillos"
         ],
-        "riktig": 0
+        "riktig": 1
       },
       {
-        "q": "Hvilken 80-tallsfilm har {navn} sett flest ganger?",
+        "q": "Hvilken norsk duo vant Eurovision i 1985, så Norge fikk arrangere i 1986?",
         "alt": [
-          "Tilbake til fremtiden",
-          "Top Gun",
-          "E.T.",
-          "Ghostbusters"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hvor mange søsken har {navn}?",
-        "alt": [
-          "0",
-          "1",
-          "2",
-          "3 eller flere"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hva gjør {navn} helst en søndag?",
-        "alt": [
-          "Tur i skogen",
-          "Sofa og serier",
-          "Trener",
-          "Lager mat"
+          "Bobbysocks",
+          "Secret Garden",
+          "Jahn Teigen og Anita Skorgan",
+          "Ketil Stokkan"
         ],
         "riktig": 0
       }
     ]
   },
   "sangideer": [
+    "En katt som tror den er en hund",
+    "Fredagstaco som aldri tar slutt",
+    "Sokker som forsvinner i vaskemaskinen",
+    "Den beste sommeren noensinne",
+    "En dinosaur som går på skolen",
+    "Å vente på bussen i regnvær",
+    "Mormors vafler",
+    "En robot som lærer å danse",
+    "Verdens kjedeligste superhelt",
     "Da {navn} prøvde å lage mat og brannalarmen gikk",
-    "{navn} sine elendige ordspill",
-    "Alle gangene {navn} har gått seg vill",
-    "{navn} på hyttetur uten strøm",
-    "{navn} som 80-tallsbarn med walkman og bobledress",
-    "Hvorfor {navn} alltid er sist ut døra",
-    "{navn} sin hemmelige superkraft",
-    "En kjærlighetserklæring til {navn} sin kaffe",
-    "{navn} og den store fotball-drømmen",
-    "{navn} fyller 40, men føler seg som 25"
+    "{navn} fyller 40, men føler seg som 25",
+    "Kjærlighet til kaffe"
   ],
   "tegneideer": [
     "Tegn {navn} som superhelt 🦸",
@@ -158,9 +191,16 @@
   "hjelpesteder": [
     "Tegnebordet",
     "Fotohjørnet",
-    "Ved storskjermen",
+    "Ved skjermen",
     "Ved inngangen",
     "Ved langbordet",
     "Ute"
-  ]
+  ],
+  "sted": {
+    "_les_meg": "Vises på /program og «kommer snart». Kan også endres i admin → Program underveis.",
+    "navn": "Rodeløkka Velhus",
+    "dato": "Lørdag 14. november",
+    "dag": "2026-11-14",
+    "tid": "kl. 14–20"
+  }
 }

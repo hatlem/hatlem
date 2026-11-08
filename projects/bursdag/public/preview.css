@@ -117,3 +117,55 @@
 .pv-trollmann .img { animation: pv-breathe 4s ease-in-out infinite; filter: saturate(.9) hue-rotate(-10deg); }
 .pv-trollmann .fx.hat { font-size: 64px; left: 50%; top: 2%; z-index: 3; transform: translateX(-50%); animation: pv-swing 2.4s ease-in-out infinite alternate; }
 .pv-trollmann .fx.sp { font-size: 22px; animation: pv-sparkle 2s ease-in-out infinite; z-index: 3; }
+
+/* ---------- Nye effekter ---------- */
+.pv .fx.age { z-index: 4; top: 10px; right: 12px; font: 800 18px var(--font); color: #2a0b2b; background: var(--yellow); padding: 4px 10px; border-radius: 999px; animation: pv-tagpop 5s ease-in-out infinite; }
+@keyframes pv-tagpop { 0%, 30% { opacity: 0; transform: scale(.5); } 45%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+/* Bli 80 år: bildet blir gråere, mykere og «eldre», briller dukker opp */
+.pv-gammel .img { animation: pv-age 5s ease-in-out infinite; }
+@keyframes pv-age { 0%, 20% { filter: none; } 55%, 90% { filter: grayscale(.85) sepia(.35) contrast(1.15) brightness(1.08) blur(.4px); } 100% { filter: none; } }
+.pv-gammel .fx.gl { font-size: 54px; left: 50%; top: 26%; transform: translateX(-50%); animation: pv-glasses 5s ease-in-out infinite; }
+@keyframes pv-glasses { 0%, 35% { opacity: 0; transform: translate(-50%, -40px); } 50%, 90% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+/* Bli 5 år: lysere, mettere farger og ballonger */
+.pv-barn .img { animation: pv-young 5s ease-in-out infinite; }
+@keyframes pv-young { 0%, 20% { filter: none; transform: none; } 55%, 90% { filter: saturate(1.5) brightness(1.12) contrast(.95); transform: scale(1.08) translateY(3%); } 100% { filter: none; transform: none; } }
+.pv-barn .fx.bl { font-size: 34px; animation: pv-rise 5s linear infinite; }
+/* T-rex: dukker opp bak personen (bak bildelaget), personen skvetter */
+.pv-trex { background: linear-gradient(#5f7d4e, #2c3b22); }
+.pv-trex .img { animation: pv-jump 5s ease-in-out infinite; }
+.pv-trex .fx.rex { z-index: 0; font-size: 210px; right: -18%; bottom: 18%; transform: scaleX(-1); animation: pv-rex 5s ease-in-out infinite; }
+.pv-trex.pv .img { -webkit-mask: radial-gradient(ellipse 45% 70% at 50% 60%, #000 60%, transparent 100%); mask: radial-gradient(ellipse 45% 70% at 50% 60%, #000 60%, transparent 100%); }
+@keyframes pv-rex { 0%, 15% { transform: scaleX(-1) translate(-60%, 40%); opacity: 0; } 45%, 90% { transform: scaleX(-1) translate(20%, 0); opacity: 1; } 100% { opacity: 0; } }
+@keyframes pv-jump { 0%, 52% { transform: none; } 56% { transform: translateY(-6%) rotate(-3deg); } 62%, 100% { transform: none; } }
+/* Kake i fjeset: kaka flyr inn, krem spruter */
+.pv-kake .img { animation: pv-hit 4s ease-in-out infinite; }
+.pv-kake .fx.cake { z-index: 3; font-size: 70px; top: 22%; animation: pv-cakefly 4s ease-in infinite; }
+@keyframes pv-cakefly { 0%, 15% { transform: translate(-120px, 0) rotate(-30deg); opacity: 1; } 40% { transform: translate(140px, 0) rotate(20deg) scale(1.4); opacity: 1; } 42%, 100% { opacity: 0; transform: translate(140px, 0) scale(1.4); } }
+.pv-kake .fx.splat { z-index: 3; left: 30%; top: 15%; width: 40%; height: 35%; border-radius: 45% 55% 50% 50%; background: radial-gradient(circle at 40% 40%, #fffaf0, #fff3d6 55%, rgba(255,240,210,.85) 70%, transparent 72%); opacity: 0; animation: pv-splat 4s ease-out infinite; }
+@keyframes pv-splat { 0%, 39% { opacity: 0; transform: scale(.2); } 43% { opacity: 1; transform: scale(1.15); } 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+@keyframes pv-hit { 0%, 40% { transform: none; } 43% { transform: translateX(3%) rotate(2deg); } 48%, 100% { transform: none; } }
+/* Troll i skogen: trollet titter fram bak trærne */
+.pv-troll { background: linear-gradient(#2f4a3a, #12201a); }
+.pv-troll .img { -webkit-mask: radial-gradient(ellipse 45% 70% at 50% 60%, #000 60%, transparent 100%); mask: radial-gradient(ellipse 45% 70% at 50% 60%, #000 60%, transparent 100%); }
+.pv-troll .fx.tr { z-index: 0; font-size: 140px; right: -5%; top: 5%; animation: pv-peek 6s ease-in-out infinite; }
+.pv-troll .fx.tree { z-index: 2; bottom: -6px; opacity: .9; }
+@keyframes pv-peek { 0%, 20% { transform: translateX(70%); } 45%, 85% { transform: translateX(0) rotate(-6deg); } 65% { transform: translateX(0) rotate(4deg); } 100% { transform: translateX(70%); } }
+/* Ballonger: løftes opp og bort */
+.pv-ballonger { background: linear-gradient(#7cc4ff, #d8f0ff); }
+.pv-ballonger .img { animation: pv-float 5s ease-in infinite; }
+.pv-ballonger .fx.bb { z-index: 3; left: 50%; top: -2%; font-size: 40px; letter-spacing: -14px; transform: translateX(-50%); animation: pv-float2 5s ease-in infinite; }
+@keyframes pv-float { 0%, 25% { transform: none; } 100% { transform: translateY(-110%) rotate(5deg) scale(.6); } }
+@keyframes pv-float2 { 0%, 25% { transform: translateX(-50%); } 100% { transform: translate(-50%, -260%) scale(.6); } }
+/* Valpestorm: valper løper inn, personen velter */
+.pv-valper { background: linear-gradient(#8fd3ff 0 45%, #5cae4a 45%); }
+.pv-valper .img { animation: pv-tip 4s ease-in-out infinite; transform-origin: 50% 100%; }
+.pv-valper .fx.pup { z-index: 3; font-size: 40px; animation: pv-pup 4s ease-out infinite; }
+@keyframes pv-pup { from { left: var(--from); } 60%, to { left: var(--to); } }
+@keyframes pv-tip { 0%, 45% { transform: none; } 65%, 90% { transform: rotate(-14deg) translateY(4%); } 100% { transform: none; } }
+/* Under vann: blått lys, bølgende bilde, bobler og fisk */
+.pv-undervann .img { animation: pv-wave 3s ease-in-out infinite alternate; }
+.pv-undervann::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(0,140,220,.35), rgba(0,40,120,.55)); mix-blend-mode: multiply; }
+.pv-undervann .fx.bub { z-index: 3; animation: pv-rise 4s linear infinite; }
+.pv-undervann .fx.fish { z-index: 3; font-size: 36px; animation: pv-swim 6s linear infinite; }
+@keyframes pv-wave { from { transform: skewX(-1.5deg) scale(1.03); } to { transform: skewX(1.5deg) scale(1.05) translateY(-1%); } }
+@keyframes pv-swim { from { left: 110%; } to { left: -20%; } }

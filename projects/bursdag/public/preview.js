@@ -45,6 +45,17 @@
       case 'magisk': for (let i = 0; i < 10; i++) add(fx('sp', '✨', { left: rnd(5, 90) + '%', top: rnd(5, 85) + '%', animationDelay: -rnd(0, 2.4) + 's' })); break;
       case 'anime': for (let i = 0; i < 8; i++) add(fx('p', '🌸', { left: rnd(20, 110) + '%', animationDelay: -rnd(0, 4) + 's' })); break;
       case 'slange': add(fx('sn', '🐍')); break;
+      case 'gammel': add(fx('gl', '👓'), fx('age', '+40 år')); break;
+      case 'barn': add(fx('age', '5 år!')); for (let i = 0; i < 5; i++) add(fx('bl', '🎈', { left: rnd(0, 90) + '%', animationDelay: -rnd(0, 4) + 's' })); break;
+      case 'trex': add(fx('rex', '🦖')); break;
+      case 'kake': add(fx('cake', '🎂'), fx('splat', '')); break;
+      case 'troll': add(fx('tr', '🧌')); for (let i = 0; i < 3; i++) add(fx('tree', '🌲', { left: [2, 70, 86][i] + '%', fontSize: [70, 60, 80][i] + 'px' })); break;
+      case 'ballonger': add(fx('bb', '🎈🎈🎈')); break;
+      case 'valper': for (let i = 0; i < 6; i++) add(fx('pup', '🐶', { top: rnd(55, 85) + '%', animationDelay: -i * 0.5 + 's', '--from': i % 2 ? '-30%' : '130%', '--to': i % 2 ? '35%' : '55%' })); break;
+      case 'undervann':
+        for (let i = 0; i < 10; i++) add(fx('bub', '🫧', { left: rnd(5, 90) + '%', animationDelay: -rnd(0, 4) + 's', fontSize: rnd(14, 28) + 'px' }));
+        add(fx('fish', '🐠', { top: '30%' }), fx('fish', '🐢', { top: '65%', animationDelay: '-3s', fontSize: '46px' }));
+        break;
       case 'trollmann': add(fx('hat', '🎩')); for (let i = 0; i < 10; i++) add(fx('sp', '✨', { left: rnd(5, 90) + '%', top: rnd(10, 90) + '%', animationDelay: -rnd(0, 2) + 's' })); break;
       default: break;
     }

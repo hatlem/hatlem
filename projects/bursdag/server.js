@@ -3,9 +3,9 @@
 /**
  * Bursdagsinstallasjon
  *  - /tegning : ta bilde av en tegning -> Higgsfield lager en film
- *  - /sang    : lag en sang -> Suno (sunoapi.org / api.box) -> legges i kø på storskjermen
+ *  - /sang    : lag en sang -> Suno (sunoapi.org / api.box) -> legges i kø på skjermen
  *  - /selfie  : ta en selfie -> Higgsfield-effekt (tiger, spøkelse, ...)
- *  - /skjerm  : storskjerm med galleri + musikk-kø
+ *  - /skjerm  : skjerm med galleri + musikk-kø
  *  - /qr      : utskriftsvennlige QR-plakater til lokalet
  *
  * Uten API-nøkler kjører alt i demomodus, så du kan teste flyten før festen.
@@ -24,6 +24,7 @@ const suno = require('./lib/suno');
 const demo = require('./lib/demo');
 const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
 const { imageSize, nearestAspect } = require('./lib/imagesize');
+const { widen } = require('./lib/widen');
 const pingpong = require('./lib/pingpong');
 const clip = require('./lib/clip');
 const party = require('./lib/party');
@@ -53,6 +54,9 @@ const HF_MAX_CONCURRENT = Math.max(1, Number(process.env.HF_MAX_CONCURRENT || 8)
 const VIDEO_TYPES = new Set(['drawing', 'selfie']); // lages av Higgsfield
 const SHOWN_VIDEO_TYPES = new Set([...VIDEO_TYPES, 'clip']); // alt som vises som film (også gjestenes egne klipp)
 const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidsestimat
+// Filmene lages i dette formatet så de fyller skjermen. Bildefiksen lager bildet i samme format,
+// og bilde-til-video følger bildets form. Sett VIDEO_ASPECT=auto for å følge mobilbildet i stedet.
+const VIDEO_ASPECT = process.env.VIDEO_ASPECT || '16:9';
 // Hvor mange sanger Suno-kontoen kan lage samtidig. Resten venter i appens kø.
 const SUNO_MAX_CONCURRENT = Math.max(1, Number(process.env.SUNO_MAX_CONCURRENT || 5));
 const AVG_SONG_MIN = Number(process.env.AVG_SONG_MIN || 3);
@@ -95,6 +99,7 @@ const state = {
   finaleId: null,
   kahoot: null,
   plan: null,
+  program: null, // { schedule, note, venue } – endringer fra admin underveis (ellers party.json)
   help: [],
   votes: {}, // jobId -> [deviceId]
   film: null, // { status, progress, url, seconds, error, at }
@@ -102,7 +107,7 @@ const state = {
   player: { id: null, paused: false, volume: 0.8, seq: 0, cmd: null, report: null },
 };
 
-/** Vises på storskjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
+/** Vises på skjerm/galleri: ikke skjult og ikke ventende på godkjenning. */
 const onScreen = (j) => !j.hidden && j.approved !== false;
 /** Når godkjenning er på, må verten godkjenne ferdige ting før de vises. */
 const reviewFlag = () => (state.moderation ? { approved: false } : {});
@@ -313,7 +318,22 @@ async function startVideoJob(job) {
     updateJob(job, { status: 'processing', provider: { name: 'higgsfield', stage: 'image', requestId } });
     return;
   }
-  await submitVideo(job, job.fixedImageUrl || imageUrl);
+  await submitVideo(job, job.fixedImageUrl || (await wideUrl(job)) || imageUrl);
+}
+
+/**
+ * Uten bildefiks (eller når den feiler) legges originalbildet i en 16:9-ramme med uskarp bakgrunn,
+ * så filmen likevel fyller skjermen. Lastes opp én gang og gjenbrukes ved nye forsøk.
+ */
+async function wideUrl(job) {
+  if (VIDEO_ASPECT !== '16:9') return null;
+  if (job.hfWideUrl) return job.hfWideUrl;
+  const src = path.join(MEDIA_DIR, path.basename(job.inputUrl));
+  const out = widen(src, path.join(MEDIA_DIR, `${job.id}-16x9.jpg`));
+  if (!out) return null;
+  const url = await higgsfield.upload(fs.readFileSync(out), 'image/jpeg');
+  updateJob(job, { hfWideUrl: url });
+  return url;
 }
 
 async function submitVideo(job, imageUrl) {
@@ -447,8 +467,22 @@ async function pollJob(job) {
         updateJob(job, { fixedImageUrl: s.imageUrl, result: { ...(job.result || {}), fixedImageUrl: local } });
         return videoAfterFix(job, s.imageUrl);
       }
-      if (s.status === 'completed') return videoAfterFix(job, job.hfImageUrl, 'Bildefiks uten bilde i svaret');
-      if (stopped) return videoAfterFix(job, job.hfImageUrl, `Bildefiks ${s.status}`);
+      if (s.status === 'completed' || stopped) {
+        // Bakgrunnsbyttet er det som gir riktig scene og fyller ut til 16:9, så det prøves én gang til
+        // før vi faller tilbake til originalbildet (lagt i en 16:9-ramme).
+        if ((job.fixRetries || 0) < 1 && s.status !== 'nsfw') {
+          const fix = job.input.fix;
+          try {
+            const { requestId } = await higgsfield.submitImageFix({ imageUrl: job.hfImageUrl, prompt: fix.prompt, aspectRatio: fix.aspectRatio, webhookUrl: hookUrl(job) });
+            updateJob(job, { fixRetries: (job.fixRetries || 0) + 1, provider: { name: 'higgsfield', stage: 'image', requestId } });
+            return;
+          } catch (err) {
+            console.warn(`[bildefiks ${job.id}] nytt forsøk feilet:`, err.message.slice(0, 120));
+          }
+        }
+        const why = s.status === 'completed' ? 'Bildefiks uten bilde i svaret' : `Bildefiks ${s.status}`;
+        return videoAfterFix(job, (await wideUrl(job)) || job.hfImageUrl, why);
+      }
       return;
     }
     if (s.status === 'completed') {
@@ -529,7 +563,7 @@ const page = (name) => (req, res) => {
   res.send(html);
 };
 if (TEASER) {
-  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|qr(\.svg)?$|api\/(config|screen|examples|reactions|qr-info|stamps|react|votes\/mine)$|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine)$|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
   const isAdmin = (req) => ADMIN_KEY && (req.get('x-admin-key') || req.query.admin) === ADMIN_KEY;
   r.use((req, res, next) => (open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
@@ -561,7 +595,7 @@ r.get('/api/config', (req, res) => {
     maxClipSeconds: clip.MAX_CLIP_SECONDS,
     songGenres: SONG_GENRES,
     songMoods: SONG_MOODS,
-    schedule: PARTY.schedule,
+    schedule: schedule(),
     greetingPrompts: PARTY.greetingPrompts,
     songIdeas: PARTY.songIdeas,
     drawingIdeas: PARTY.drawingIdeas,
@@ -606,6 +640,7 @@ r.post('/api/drawing', upload.single('image'), async (req, res) => {
 function drawingFixFor(buffer) {
   const dim = imageSize(buffer);
   // A4 er 1:1,41; stående ark blir 3:4-ish, liggende 4:3-ish
+  if (VIDEO_ASPECT !== 'auto') return { prompt: drawingImagePrompt(VIDEO_ASPECT), aspectRatio: VIDEO_ASPECT };
   return { prompt: drawingImagePrompt(), aspectRatio: dim && dim.width > dim.height ? '4:3' : '3:4' };
 }
 
@@ -625,8 +660,9 @@ r.post('/api/selfie', upload.single('image'), async (req, res) => {
 
 /** Bildefiksen trenger prompt og et sideforhold som ligner bildet (ellers blir alt kvadratisk). */
 function imageFixFor(effect, buffer) {
-  const prompt = imagePrompt(effect);
+  const prompt = imagePrompt(effect, VIDEO_ASPECT);
   if (!prompt) return null;
+  if (VIDEO_ASPECT !== 'auto') return { prompt, aspectRatio: VIDEO_ASPECT };
   const dim = imageSize(buffer);
   return { prompt, aspectRatio: dim ? nearestAspect(dim.width, dim.height, higgsfield.IMAGE_ASPECTS) : '3:4' };
 }
@@ -637,20 +673,22 @@ r.post('/api/song', async (req, res) => {
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
 
-  const to = clean(b.to, 40) || BIRTHDAY_NAME;
-  const about = clean(b.about, 220);
+  // Sangen kan handle om hva som helst. «Til» er valgfritt: da synges navnet i refrenget.
+  const to = clean(b.to, 40);
+  // «En sang om hunden min.» → «hunden min» (unngår «om: En sang om …» og doble punktum)
+  const about = clean(b.about, 220).replace(/^(en\s+)?(sang|låt)\s+om\s+/i, '').replace(/[\s.!]+$/, '');
   const genre = SONG_GENRES.includes(b.genre) ? b.genre : SONG_GENRES[0];
   const mood = SONG_MOODS.includes(b.mood) ? b.mood : SONG_MOODS[0];
   const from = clean(b.name, 40);
 
   // sunoapi.org (ikke-custom modus) tillater maks 500 tegn i prompt.
   const prompt = clean(
-    `En ${mood.toLowerCase()} ${genre.toLowerCase()}-låt på norsk til bursdagen til ${to}.` +
-      (about ? ` Sangen handler om: ${about}.` : '') +
-      ` Fengende refreng der navnet ${to} synges.`,
+    `En ${mood.toLowerCase()} ${genre.toLowerCase()}-låt på norsk` +
+      (about ? ` om: ${about}.` : ' om noe morsomt og overraskende.') +
+      (to ? ` Sangen er til ${to}, og navnet ${to} synges i et fengende refreng.` : ' Med et fengende refreng.'),
     490,
   );
-  const job = newJob('song', { deviceId: clean(b.deviceId, 64), guest: from, label: `${genre} til ${to}`, emoji: '🎵', input: { to, about, genre, mood } });
+  const job = newJob('song', { deviceId: clean(b.deviceId, 64), guest: from, label: to ? `${genre} til ${to}` : `${genre}: ${about ? about.slice(0, 40) + (about.length > 40 ? '…' : '') : 'overraskelse'}`, emoji: '🎵', input: { to, about, genre, mood } });
 
   res.json({ id: job.id });
   enqueue(job, { prompt });
@@ -690,7 +728,7 @@ r.get('/api/jobs/:id', (req, res) => {
   res.json(publicJob(job));
 });
 
-// Storskjerm
+// Skjerm
 r.get('/api/screen', (req, res) => {
   const visible = [...jobs.values()].filter(onScreen);
   const gallery = visible
@@ -718,7 +756,9 @@ r.get('/api/screen', (req, res) => {
   res.json({
     nostalgia,
     playlist,
-    schedule: PARTY.schedule,
+    schedule: schedule(),
+    programNote: (state.program && state.program.note) || '',
+    allDay: allDay(),
     takeover: takeoverView(),
     playing: playerReport(),
     serverNow: Date.now(),
@@ -781,7 +821,7 @@ function playerReport() {
   return rep && Date.now() - rep.at < 12000 ? rep : null;
 }
 
-/** Under kake, tale og finale stopper musikken; under quizen senkes den. */
+/** Under kaketid (bursdagssang), hilsener og finale stopper musikken; under quizen senkes den. */
 function playerMix() {
   const mode = state.takeover && state.takeover.mode;
   return { forcePause: ['cake', 'greetings', 'finale', 'film'].includes(mode), duck: ['kahoot', 'stamp', 'favorites'].includes(mode) ? 0.25 : 1 };
@@ -882,6 +922,29 @@ r.post('/api/hooks/:provider', (req, res) => {
   pollJob(job).catch((err) => console.warn('[hook]', err.message));
 });
 
+// --- Program (kan oppdateres fra admin underveis) --------------------------------
+function schedule() {
+  return (state.program && state.program.schedule) || PARTY.schedule;
+}
+/** Det som gjelder hele dagen (mat o.l.), uten klokkeslett. */
+function allDay() {
+  return (state.program && state.program.allDay) || PARTY.allDay;
+}
+function venue() {
+  return { ...PARTY.venue, ...((state.program && state.program.venue) || {}) };
+}
+r.get('/api/program', (req, res) => {
+  res.json({
+    schedule: schedule(),
+    allDay: allDay(),
+    note: (state.program && state.program.note) || '',
+    updatedAt: (state.program && state.program.updatedAt) || null,
+    venue: venue(),
+    partyTitle: PARTY_TITLE,
+    serverNow: Date.now(),
+  });
+});
+
 // --- «Jeg trenger hjelp»: gjesten roper på en hjelper, verten ser det i admin ---
 r.post('/api/help', (req, res) => {
   const b = req.body || {};
@@ -908,7 +971,7 @@ r.post('/api/help/:id/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
-// --- Emoji-reaksjoner fra mobilen til storskjermen --------------------------
+// --- Emoji-reaksjoner fra mobilen til skjermen --------------------------
 const REACTIONS = ['❤️', '😂', '🔥', '🎉', '😮', '👏', '🥳', '😍'];
 const reactions = []; // { seq, e }
 let reactSeq = 0;
@@ -977,7 +1040,7 @@ r.get('/api/votes/mine', (req, res) => {
   res.json({ ids: Object.entries(state.votes || {}).filter(([, l]) => l.includes(dev)).map(([id]) => id) });
 });
 
-// Gjestebok med vri: korte hilsener som vises på storskjermen
+// Gjestebok med vri: korte hilsener som vises på skjermen
 r.post('/api/greeting', (req, res) => {
   const b = req.body || {};
   const limit = checkLimits(clean(b.deviceId, 64) || req.ip, { budget: false });
@@ -1019,7 +1082,7 @@ async function finishClip(job) {
   if (useClipTranscode) {
     const base = path.basename(job.sourceUrl, path.extname(job.sourceUrl));
     const out = `${base}-h264.mp4`, poster = `${base}-bilde.jpg`;
-    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster));
+    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster), { wide: VIDEO_ASPECT === '16:9' });
     videoUrl = 'media/' + out;
     extra.seconds = Math.round(r2.seconds * 10) / 10;
     extra.trimmed = r2.trimmed;
@@ -1029,13 +1092,13 @@ async function finishClip(job) {
   await completeVideo(job, videoUrl);
 }
 
-// Felles høydepunkt: storskjermen tar over (kaketid, quiz-trekning, hilsener høyt)
+// Felles høydepunkt: skjermen tar over (kaketid, quiz-trekning, hilsener høyt)
 function takeoverView() {
   const t = state.takeover;
   if (!t) return null;
   if (t.mode === 'finale') {
     const f = jobs.get(state.finaleId);
-    // Lyden går fra mobilen hvis den er på, ellers fra storskjermen
+    // Lyden går fra mobilen hvis den er på, ellers fra skjermen
     return { ...t, audioOnScreen: !playerReport(), finale: f && f.status === 'done' ? { ...f.result, song: publicJob(jobs.get(f.input.songId)) } : null };
   }
   if (t.mode === 'film') {
@@ -1105,7 +1168,7 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
 r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   const mode = (req.body || {}).mode;
   if (mode === 'off') state.takeover = null;
-  else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: (PARTY.schedule.find((p) => p.highlight) || {}).title || 'Kaketid!' };
+  else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: 'Kaketid!' };
   else if (mode === 'greetings') state.takeover = { mode, at: Date.now() };
   else if (mode === 'film') {
     if (!state.film || !state.film.url) return res.status(409).json({ error: 'Kveldens film er ikke laget ennå.' });
@@ -1119,7 +1182,7 @@ r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   } else if (mode === 'finale') {
     const f = jobs.get(state.finaleId);
     if (!f || f.status !== 'done') return res.status(409).json({ error: 'Finalen er ikke klar ennå.' });
-    // Felles starttid, så storskjermen (video) og mobilen (lyd) starter i takt
+    // Felles starttid, så skjermen (video) og mobilen (lyd) starter i takt
     state.takeover = { mode, at: Date.now(), startAt: Date.now() + 6000 };
   }
   else return res.status(400).json({ error: 'Ukjent modus' });
@@ -1142,6 +1205,7 @@ function mcpJobView(req, j) {
     fix: j.input.fix || null,
     prompt: j.input.prompt,
     seconds: higgsfield.VIDEO_SECONDS,
+    videoAspect: VIDEO_ASPECT === 'auto' ? null : VIDEO_ASPECT,
     label: j.label,
     createdAt: j.createdAt,
   };
@@ -1205,7 +1269,7 @@ r.post('/api/admin/kahoot', requireAdmin, (req, res) => {
   if (action === 'next') kahoot.next();
   else if (action === 'end') kahoot.end();
   else return res.status(400).json({ error: 'Ukjent handling' });
-  // Quizen tar over storskjermen så lenge den pågår
+  // Quizen tar over skjermen så lenge den pågår
   if (kahoot.state.phase) state.takeover = { mode: 'kahoot', at: (state.takeover && state.takeover.mode === 'kahoot' && state.takeover.at) || Date.now() };
   else if (state.takeover && state.takeover.mode === 'kahoot') state.takeover = null;
   save();
@@ -1286,7 +1350,7 @@ r.post('/api/admin/queue', requireAdmin, (req, res) => {
 
 // --- Kjøreplan og handleliste (delt mellom alle som er logget inn i admin) ---
 r.get('/api/admin/plan', requireAdmin, (req, res) => {
-  res.json({ plan: state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] }, schedule: PARTY.schedule, birthdayName: BIRTHDAY_NAME });
+  res.json({ plan: state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] }, schedule: schedule(), birthdayName: BIRTHDAY_NAME });
 });
 r.post('/api/admin/plan', requireAdmin, (req, res) => {
   const b = req.body || {};
@@ -1344,6 +1408,30 @@ r.post('/api/admin/film', requireAdmin, async (req, res) => {
     filmBusy = false;
     save();
   }
+});
+
+r.post('/api/admin/program', requireAdmin, (req, res) => {
+  const b = req.body || {};
+  const prog = state.program || {};
+  if (Array.isArray(b.schedule)) {
+    prog.schedule = b.schedule
+      .map((p) => ({ time: clean(p.time, 5), title: clean(p.title, 80), emoji: clean(p.emoji, 8) || '⭐', highlight: !!p.highlight }))
+      .filter((p) => /^\d{1,2}:\d{2}$/.test(p.time) && p.title)
+      .sort((a, c) => a.time.localeCompare(c.time, 'nb', { numeric: true }))
+      .slice(0, 30);
+  }
+  if (typeof b.note === 'string') prog.note = clean(b.note, 200);
+  if (Array.isArray(b.allDay)) prog.allDay = b.allDay.map((x) => clean(x, 80)).filter(Boolean).slice(0, 8);
+  if (b.venue && typeof b.venue === 'object') {
+    prog.venue = {
+      name: clean(b.venue.name, 80), date: clean(b.venue.date, 60), time: clean(b.venue.time, 40), day: /^\d{4}-\d{2}-\d{2}$/.test(b.venue.day || '') ? b.venue.day : PARTY.venue.day,
+    };
+  }
+  if (b.reset) Object.keys(prog).forEach((k) => delete prog[k]);
+  prog.updatedAt = Date.now();
+  state.program = prog;
+  save();
+  res.json({ ok: true });
 });
 
 r.post('/api/admin/settings', requireAdmin, (req, res) => {
@@ -1446,6 +1534,7 @@ r.get('/galleri', page('galleri'));
 r.get('/musikk', page('musikk'));
 r.get('/admin/musikk', page('admin-musikk'));
 r.get('/admin/plan', page('admin-plan'));
+r.get('/program', page('program'));
 r.get('/lyd', page('lyd'));
 
 // «Last ned alt» som én zip-fil

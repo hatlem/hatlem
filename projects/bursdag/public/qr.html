@@ -49,14 +49,15 @@
 <script>
   const POSTERS = [
     { path: '/', emoji: '🎂', title: 'Bursdagsmoro!', text: 'Lag en film av tegningen din, din egen sang eller en selfie med magisk effekt', grad: 'linear-gradient(135deg,#ffd23f,#ff4fa3,#9b6bff)' },
-    { path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', text: 'Tegn noe, ta bilde av det, og se det bli levende på storskjermen', grad: 'linear-gradient(135deg,#ffd23f,#ff9f1c)' },
-    { path: '/sang', emoji: '🎤', title: 'Lag en sang', text: 'Velg tema og sjanger. Sangen din legges i spillelisten på festen!', grad: 'linear-gradient(135deg,#ff4fa3,#9b6bff)' },
+    { path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', text: 'For store og små: tegn noe, ta bilde av det, og se det bli levende på skjermen', grad: 'linear-gradient(135deg,#ffd23f,#ff9f1c)' },
+    { path: '/sang', emoji: '🎤', title: 'Lag en sang', text: 'Om hva som helst, i sjangeren du vil. Sangen din legges i spillelisten på festen!', grad: 'linear-gradient(135deg,#ff4fa3,#9b6bff)' },
     { path: '/selfie', emoji: '🤳', title: 'Selfie med effekt', text: 'Få en tiger til å gå rundt deg, bli et spøkelse eller fly som en superhelt', grad: 'linear-gradient(135deg,#3ee6d8,#3a86ff)' },
-    { path: '/quiz', emoji: '🧠', title: 'Quiz om bursdagsbarnet', text: 'Live-quiz på storskjermen ved kaka. Skann og meld deg på nå!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
+    { path: '/quiz', emoji: '🧠', title: 'Quiz', text: 'Live-quiz på skjermen kl. 17. Skann og meld deg på nå!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
     { path: '/hilsen', emoji: '💌', title: 'Gjestebok med vri', text: 'Gi 40-åringen ett råd, eller gjett hva bursdagsbarnet gjorde som 20-åring', grad: 'linear-gradient(135deg,#ff4fa3,#ffd23f)' },
-    { path: '/klipp', emoji: '🎥', title: 'Film et klipp', text: 'Maks 15 sekunder: en hilsen, en dans eller et trylletriks rett på storskjermen', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
+    { path: '/klipp', emoji: '🎥', title: 'Film et klipp', text: 'Maks 15 sekunder: en hilsen, en dans eller et trylletriks rett på skjermen', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
     { path: '/selfie?effekt=attitall', emoji: '📼', title: 'Fotohjørnet: 1986', text: 'Ta på deg 80-tallsrekvisittene, ta en selfie og bli en del av en 80-tallsvideo!', grad: 'linear-gradient(135deg,#ff4fa3,#3ee6d8)' },
     { path: '/selfie?effekt=tiger', emoji: '🐯', title: 'Tiger-hjørnet', text: 'Still deg her, ta en selfie, og se en tiger gå rundt deg!', grad: 'linear-gradient(135deg,#ff9f1c,#ff4f4f)' },
+    { path: '/selfie?effekt=gammel', emoji: '👴', title: 'Bli 80 år', text: 'Ta en selfie og se hvordan du ser ut om 40 år!', grad: 'linear-gradient(135deg,#c9b8a6,#6b5b8f)' },
     { path: '/selfie?effekt=spokelse', emoji: '👻', title: 'Spøkelseshjørnet', text: 'Ta en selfie og forsvinn som et spøkelse …', grad: 'linear-gradient(135deg,#b8c1ff,#5b4bdb)' },
   ];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

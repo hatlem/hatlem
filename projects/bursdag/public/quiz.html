@@ -54,8 +54,8 @@
 
   function joinForm(v) {
     const name = (() => { try { return localStorage.getItem('bursdag-name') || ''; } catch { return ''; } })();
-    return '<div class="big">🧠</div><h2>Quiz om ' + esc(birthdayName) + '</h2>' +
-      '<p>' + (v.phase ? 'Quizen er i gang. Bli med nå!' : 'Live-quiz på storskjermen' + (highlight ? ' kl. ' + esc(highlight.time) : '') + '. Meld deg på nå, så er du klar!') + '</p>' +
+    return '<div class="big">🧠</div><h2>Quiz</h2>' +
+      '<p>' + (v.phase ? 'Quizen er i gang. Bli med nå!' : 'Live-quiz på skjermen' + (highlight ? ' kl. ' + esc(highlight.time) : '') + '. Meld deg på nå, så er du klar!') + '</p>' +
       '<form id="join" class="card" style="text-align:left;margin-top:10px"><label for="nm">Navnet ditt</label><input type="text" id="nm" maxlength="24" required value="' + esc(name) + '" autocomplete="given-name"><p></p><button class="btn">🙋 Bli med</button><div class="error" id="err"></div></form>';
   }
 
@@ -79,9 +79,9 @@
       return;
     }
     if (!v.phase) {
-      view.innerHTML = '<div class="big">✅</div><h2>Du er med, ' + esc(v.name) + '!</h2><p>Quizen starter på storskjermen' + (highlight ? ' kl. ' + esc(highlight.time) + ' ved kaka 🎂' : '') + '.</p><p>Ha telefonen klar, og svar raskt for flest poeng!</p>';
+      view.innerHTML = '<div class="big">✅</div><h2>Du er med, ' + esc(v.name) + '!</h2><p>Quizen starter på skjermen' + (highlight ? ' kl. ' + esc(highlight.time) + ' 🧠' : '') + '.</p><p>Ha telefonen klar, og svar raskt for flest poeng!</p>';
     } else if (v.phase === 'lobby') {
-      view.innerHTML = '<div class="big">⏳</div><h2>Du er med!</h2><p>Se på storskjermen. Quizen starter straks …</p><p><b>' + v.players + '</b> spillere er klare</p>';
+      view.innerHTML = '<div class="big">⏳</div><h2>Du er med!</h2><p>Se på skjermen. Quizen starter straks …</p><p><b>' + v.players + '</b> spillere er klare</p>';
     } else if (v.phase === 'question') {
       if (v.answered != null) {
         view.innerHTML = '<div class="big">📨</div><h2>Svaret er sendt!</h2><p>Venter på de andre …</p><div class="answers" style="margin-top:14px">' +
@@ -98,7 +98,7 @@
       view.innerHTML = '<div class="result ' + cls + '">' + msg + '<p style="color:#fff;margin-top:10px">Riktig svar: <b>' + esc(v.correctText) + '</b></p></div>';
       if (r.correct) Party.confetti(50);
     } else if (v.phase === 'leaderboard') {
-      view.innerHTML = '<div class="big">🏅</div><h2>Du er på ' + v.rank + '. plass</h2><p>' + v.score + ' poeng. Se topplisten på storskjermen!</p>';
+      view.innerHTML = '<div class="big">🏅</div><h2>Du er på ' + v.rank + '. plass</h2><p>' + v.score + ' poeng. Se topplisten på skjermen!</p>';
     } else if (v.phase === 'podium') {
       const medal = ['🥇', '🥈', '🥉'][v.rank - 1];
       view.innerHTML = '<div class="big">' + (medal || '🎊') + '</div><h2>Du kom på ' + v.rank + '. plass!</h2><p>' + v.score + ' poeng av ' + v.players + ' spillere. Takk for at du var med!</p>';
