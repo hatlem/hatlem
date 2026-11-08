@@ -529,7 +529,7 @@ const page = (name) => (req, res) => {
   res.send(html);
 };
 if (TEASER) {
-  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|qr(\.svg)?$|api\/(config|screen|examples|reactions|qr-info)$|media\/|nostalgi\/|spilleliste\/)/;
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|qr(\.svg)?$|api\/(config|screen|examples|reactions|qr-info|stamps|react|votes\/mine)$|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
   const isAdmin = (req) => ADMIN_KEY && (req.get('x-admin-key') || req.query.admin) === ADMIN_KEY;
   r.use((req, res, next) => (open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
