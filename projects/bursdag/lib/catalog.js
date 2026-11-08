@@ -3,34 +3,37 @@
 // Promptene er på engelsk fordi bilde- og videomodellene forstår det best.
 // Legg gjerne til flere effekter her – de dukker opp automatisk i appen.
 
+/** Tegningene fotograferes på et bord: både bildefiksen og videoen skal bare bry seg om det som er på arket. */
+const PAPER_ONLY = 'The frame shows only the drawing on the sheet of paper, filling the frame; ignore and remove any table, hands, shadows or surroundings.';
+
 const DRAWING_STYLES = [
   {
     id: 'magisk',
     name: 'Magisk liv',
     emoji: '✨',
     prompt: (d) =>
-      `The hand-drawn drawing comes to life: the characters and objects in the drawing start moving, playful and joyful animation, keep the crayon and paper texture and the original colors${d ? `. The drawing shows: ${d}` : ''}. Sparkles and magic dust, gentle camera push-in.`,
+      `${PAPER_ONLY} The hand-drawn drawing comes to life: the characters and objects in the drawing start moving, playful and joyful animation, keep the crayon and paper texture and the original colors${d ? `. The drawing shows: ${d}` : ''}. Sparkles and magic dust, gentle camera push-in.`,
   },
   {
     id: 'tegnefilm',
     name: '3D-tegnefilm',
     emoji: '🎬',
     prompt: (d) =>
-      `Transform this child-like drawing into a colorful 3D animated feature film scene, cute characters faithful to the drawing's shapes and colors${d ? `, the scene shows: ${d}` : ''}, characters move expressively, cinematic lighting, smooth camera movement.`,
+      `${PAPER_ONLY} Transform this child-like drawing into a colorful 3D animated feature film scene, cute characters faithful to the drawing's shapes and colors${d ? `, the scene shows: ${d}` : ''}, characters move expressively, cinematic lighting, smooth camera movement.`,
   },
   {
     id: 'anime',
     name: 'Anime',
     emoji: '🌸',
     prompt: (d) =>
-      `Turn this drawing into a vibrant anime scene with dynamic motion, wind, glowing light and expressive characters faithful to the drawing${d ? `, the scene shows: ${d}` : ''}.`,
+      `${PAPER_ONLY} Turn this drawing into a vibrant anime scene with dynamic motion, wind, glowing light and expressive characters faithful to the drawing${d ? `, the scene shows: ${d}` : ''}.`,
   },
   {
     id: 'ekte',
     name: 'Blir ekte',
     emoji: '🦄',
     prompt: (d) =>
-      `The drawing transforms into a realistic live-action scene: everything drawn becomes real and moves naturally, matching the drawing's composition and colors${d ? `, the scene shows: ${d}` : ''}, cinematic.`,
+      `${PAPER_ONLY} The drawing transforms into a realistic live-action scene: everything drawn becomes real and moves naturally, matching the drawing's composition and colors${d ? `, the scene shows: ${d}` : ''}, cinematic.`,
   },
 ];
 
@@ -104,7 +107,20 @@ function imagePrompt(effect) {
   ].filter(Boolean).join(' ');
 }
 
+/**
+ * Bildefiks for tegninger: beskjær til A4-arket, rett opp perspektivet og fjern bord, hender og skygger,
+ * så videomodellen bare får selve tegningen. Streken endres ikke.
+ */
+function drawingImagePrompt() {
+  return [
+    'Crop and straighten the photo so that only the sheet of paper with the drawing fills the entire frame, seen straight from above.',
+    'Remove everything outside the paper: the table, hands, fingers, pens, shadows and background.',
+    'Keep the drawing exactly as it is: same lines, colors, proportions and crayon or pencil texture; do not redraw, add or remove anything on the paper.',
+    'Even, soft lighting, no glare, no text added, no watermark.',
+  ].join(' ');
+}
+
 const SONG_GENRES = ['Pop', 'Rock', 'Rap', 'Disko', 'Country', 'Metal', 'Reggae', 'EDM', 'Dansband', 'Visesang', 'Punk', 'Opera'];
 const SONG_MOODS = ['Morsom', 'Rørende', 'Episk', 'Rampete', 'Romantisk', 'Kaotisk'];
 
-module.exports = { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, SONG_GENRES, SONG_MOODS };
+module.exports = { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS };

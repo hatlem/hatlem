@@ -42,18 +42,20 @@
     drawing: ['Kunstneren studerer tegningen din …', 'Fargene begynner å bevege seg …', 'Regissøren roper ACTION! 🎬', 'Legger på litt magisk støv ✨', 'Snart premiere …'],
     selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Nesten klar for storskjermen …'],
     image: ['Ordner lyset 💡', 'Bytter ut tømmerhytta med noe bedre 🌍', 'Pusser opp bakgrunnen …'],
+    paper: ['Klipper bort bordet ✂️', 'Retter opp arket 📄', 'Bare tegningen igjen …'],
     video: ['Regissøren roper ACTION! 🎬', 'Effekten varmer opp …', 'Filmer siste scene …', 'Nesten klar for storskjermen …'],
     finishing: ['Klipper filmen frem og tilbake ⏪⏩', 'Siste finpuss …'],
+    clip: ['Pakker ut klippet 🎥', 'Gjør det klart for storskjermen …', 'Klipper det frem og tilbake ⏪⏩'],
     song: ['Skriver tekst på rim …', 'Stemmer gitaren 🎸', 'Vokalisten varmer opp 🎤', 'Mikser refrenget …', 'Trykker på REC …'],
   };
-  const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang' };
-  const EXPECTED = { drawing: 120, selfie: 120, song: 150 };
+  const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang', clip: 'klipp' };
+  const EXPECTED = { drawing: 120, selfie: 120, song: 150, clip: 30 };
   const start = Date.now();
   let i = 0, done = false;
 
   function render(job) {
     again.href = LINKS[job.type] || './';
-    spin.textContent = job.type === 'song' ? '🎵' : job.type === 'selfie' ? (job.emoji || '✨') : '🎨';
+    spin.textContent = job.type === 'song' ? '🎵' : job.type === 'clip' ? '🎥' : job.type === 'selfie' ? (job.emoji || '✨') : '🎨';
     if (job.status === 'failed') {
       done = true;
       box.innerHTML = '<div style="font-size:64px">😵</div><div class="status-msg">' + Party.esc(job.error || 'Noe gikk galt') + '</div>';
@@ -72,7 +74,7 @@
     if (job.status !== 'done') {
       showStages(job);
       const stage = job.stage === 'video-pending' ? 'video' : job.stage;
-      const list = (job.type === 'selfie' && MSGS[stage]) || MSGS[job.type] || MSGS.drawing;
+      const list = (job.type === 'drawing' && stage === 'image' && MSGS.paper) || ((job.type === 'selfie' || job.type === 'drawing') && MSGS[stage]) || MSGS[job.type] || MSGS.drawing;
       const secs = (Date.now() - start) / 1000;
       msg.textContent = list[Math.floor(secs / 7) % list.length];
       bar.style.width = Math.min(92, 5 + (secs / (EXPECTED[job.type] || 120)) * 87) + '%';
@@ -93,7 +95,8 @@
       else html += '<p class="hint">Sangen er lagt i spillelisten.</p>';
     } else if (r.videoUrl) {
       html += '<video class="result-media" src="' + Party.esc(r.videoUrl) + '" autoplay loop muted playsinline controls></video>';
-      if (r.fixedImageUrl) html += '<div class="fixed-shot"><img src="' + Party.esc(r.fixedImageUrl) + '" alt=""><span>Vi fikset lyset og flyttet deg til et sted som passer, før filmen ble laget.</span></div>';
+      if (job.type === 'clip' && r.trimmed) html += '<p class="hint">Klippet ble kuttet til 15 sekunder.</p>';
+      if (r.fixedImageUrl) html += '<div class="fixed-shot"><img src="' + Party.esc(r.fixedImageUrl) + '" alt=""><span>' + (job.type === 'drawing' ? 'Vi klippet bort bordet og beholdt bare arket, før filmen ble laget.' : 'Vi fikset lyset og flyttet deg til et sted som passer, før filmen ble laget.') + '</span></div>';
       html += '<p><a class="btn secondary" href="' + Party.esc(r.videoUrl) + '" download>⬇️ Last ned filmen</a></p>';
     } else if (r.imageUrl) {
       html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
@@ -110,7 +113,7 @@
   function showStages(job) {
     const el = document.getElementById('stages');
     const stage = job.stage === 'video-pending' || job.stage === 'finishing' ? 'video' : job.stage;
-    const show = job.type === 'selfie' && (stage === 'image' || stage === 'video');
+    const show = (job.type === 'selfie' || job.type === 'drawing') && (stage === 'image' || stage === 'video');
     el.hidden = !show;
     if (!show) return;
     el.querySelectorAll('span').forEach((s) => {

@@ -22,9 +22,10 @@ const path = require('path');
 const higgsfield = require('./lib/higgsfield');
 const suno = require('./lib/suno');
 const demo = require('./lib/demo');
-const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
+const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
 const { imageSize, nearestAspect } = require('./lib/imagesize');
 const pingpong = require('./lib/pingpong');
+const clip = require('./lib/clip');
 const party = require('./lib/party');
 const { createKahoot } = require('./lib/kahoot');
 const { writeZip } = require('./lib/zip');
@@ -49,7 +50,8 @@ const MAX_PER_DEVICE = Number(process.env.MAX_PER_DEVICE || 8); // per gjest per
 const JOB_TIMEOUT_MS = Number(process.env.JOB_TIMEOUT_MIN || 25) * 60 * 1000;
 // Hvor mange videoer Higgsfield-kontoen kan lage samtidig (Creator-pakken: 8). Resten venter i vår egen kø.
 const HF_MAX_CONCURRENT = Math.max(1, Number(process.env.HF_MAX_CONCURRENT || 8));
-const VIDEO_TYPES = new Set(['drawing', 'selfie']);
+const VIDEO_TYPES = new Set(['drawing', 'selfie']); // lages av Higgsfield
+const SHOWN_VIDEO_TYPES = new Set([...VIDEO_TYPES, 'clip']); // alt som vises som film (også gjestenes egne klipp)
 const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidsestimat
 // Hvor mange sanger Suno-kontoen kan lage samtidig. Resten venter i appens kø.
 const SUNO_MAX_CONCURRENT = Math.max(1, Number(process.env.SUNO_MAX_CONCURRENT || 5));
@@ -64,12 +66,14 @@ const PLAYLIST_DIR = path.join(DATA_DIR, 'spilleliste');
 const nostalgiaFiles = party.makeFolderScanner(NOSTALGIA_DIR, party.IMAGE);
 const playlistFiles = party.makeFolderScanner(PLAYLIST_DIR, party.AUDIO);
 const AI_TYPES = new Set(['drawing', 'selfie', 'song']);
+const GALLERY_TYPES = new Set([...AI_TYPES, 'clip', 'greeting']);
 
 const useHiggsfield = higgsfield.isConfigured();
 const useImageFix = higgsfield.imageFixConfigured();
 const useSuno = suno.isConfigured();
 // Filmene vises frem og tilbake (ping-pong). Krever ffmpeg; uten den vises originalen i vanlig loop.
 const usePingpong = !/^(0|off|nei|false)$/i.test(process.env.PINGPONG || '') && pingpong.available();
+const useClipTranscode = clip.available();
 
 // ---------------------------------------------------------------------------
 // Lagring (enkel JSON-fil, holder lenge for én fest)
@@ -251,7 +255,6 @@ function enqueue(job, input) {
   updateJob(job, { status: 'waiting', input: { ...job.input, ...input } });
   pumpVideos();
 }
-const enqueueVideo = (job, contentType, prompt) => enqueue(job, { prompt, contentType });
 
 let pumping = false;
 async function pumpVideos() {
@@ -456,7 +459,7 @@ async function pollAll() {
   polling = true;
   try {
     for (const job of jobs.values()) {
-      if (job.status !== 'processing') continue;
+      if (job.status !== 'processing' || job.type === 'clip') continue;
       try {
         await pollJob(job);
       } catch (err) {
@@ -478,6 +481,8 @@ for (const job of jobs.values()) {
   // Stoppet under nedlasting/ffmpeg: hent resultatet fra Higgsfield på nytt
   if (job.status === 'processing' && job.provider && job.provider.stage === 'finishing') updateJob(job, { provider: { ...job.provider, stage: 'video' } });
   if (job.status === 'starting' && job.type === 'finale') setImmediate(() => finaleFallback(job, 'serveren startet på nytt'));
+  // Eget klipp som sto midt i omkodingen: filen ligger på disk, så gjør den ferdig
+  if (job.type === 'clip' && job.status === 'processing') setImmediate(() => finishClip(job).catch((err) => fail(job, 'Klippet kunne ikke brukes: ' + err.message.slice(0, 80))));
 }
 
 // ---------------------------------------------------------------------------
@@ -521,6 +526,7 @@ r.get('/qr', page('qr'));
 r.get('/admin', page('admin'));
 r.get('/quiz', page('quiz'));
 r.get('/hilsen', page('hilsen'));
+r.get('/klipp', page('klipp'));
 r.use(express.static(path.join(__dirname, 'public'), { index: false }));
 r.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
 r.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
@@ -535,6 +541,7 @@ r.get('/api/config', (req, res) => {
     framing: FRAMING,
     videoSeconds: higgsfield.VIDEO_SECONDS,
     imageFix: useImageFix,
+    maxClipSeconds: clip.MAX_CLIP_SECONDS,
     songGenres: SONG_GENRES,
     songMoods: SONG_MOODS,
     schedule: PARTY.schedule,
@@ -575,8 +582,15 @@ r.post('/api/drawing', upload.single('image'), async (req, res) => {
   const job = newJob('drawing', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: style.name, emoji: style.emoji, inputUrl, input: { style: style.id, description } });
 
   res.json({ id: job.id });
-  enqueueVideo(job, req.file.mimetype, prompt);
+  enqueue(job, { prompt, contentType: req.file.mimetype, fix: drawingFixFor(req.file.buffer) });
 });
+
+/** Tegninger beskjæres til arket før videoen, så bordet og hendene ikke blir med. */
+function drawingFixFor(buffer) {
+  const dim = imageSize(buffer);
+  // A4 er 1:1,41; stående ark blir 3:4-ish, liggende 4:3-ish
+  return { prompt: drawingImagePrompt(), aspectRatio: dim && dim.width > dim.height ? '4:3' : '3:4' };
+}
 
 // Selfie -> effekt
 r.post('/api/selfie', upload.single('image'), async (req, res) => {
@@ -663,7 +677,7 @@ r.get('/api/jobs/:id', (req, res) => {
 r.get('/api/screen', (req, res) => {
   const visible = [...jobs.values()].filter(onScreen);
   const gallery = visible
-    .filter((j) => VIDEO_TYPES.has(j.type) || j.type === 'greeting')
+    .filter((j) => SHOWN_VIDEO_TYPES.has(j.type) || j.type === 'greeting')
     .filter((j) => j.status === 'done')
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, 60)
@@ -921,7 +935,7 @@ r.get('/api/stamps', (req, res) => {
 // --- Stem på favoritter (ett hjerte per mobil per kreasjon) -----------------
 function favorites(n) {
   return [...jobs.values()]
-    .filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'done' && onScreen(j))
+    .filter((j) => SHOWN_VIDEO_TYPES.has(j.type) && j.status === 'done' && onScreen(j))
     .map((j) => ({ j, v: ((state.votes || {})[j.id] || []).length }))
     .filter((x) => x.v > 0)
     .sort((a, b) => b.v - a.v || a.j.createdAt - b.j.createdAt)
@@ -957,6 +971,46 @@ r.post('/api/greeting', (req, res) => {
   const job = newJob('greeting', { status: 'done', ...reviewFlag(), deviceId: clean(b.deviceId, 64), guest: clean(b.name, 40), label: prompt.name, emoji: prompt.emoji, text });
   res.json({ id: job.id });
 });
+
+// --- Eget klipp: gjesten filmer maks 15 sekunder selv, uten AI ---------------
+// Mobilvideo er ofte HEVC/.mov, så klippet kodes om til H.264 og kuttes til grensen, får et stillbilde,
+// og vises frem og tilbake som de andre filmene.
+const clipUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => cb(null, /^video\/(mp4|quicktime|webm|x-m4v)$/.test(file.mimetype)),
+});
+const mediaPath = (url) => path.join(MEDIA_DIR, path.basename(url));
+
+r.post('/api/clip', clipUpload.single('video'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fant ikke noe klipp. Velg en video (mp4 eller mov)!' });
+  const limit = checkLimits(clean(req.body.deviceId, 64) || req.ip, { budget: false });
+  if (limit) return res.status(429).json({ error: limit });
+  const type = { 'video/quicktime': 'video/quicktime', 'video/webm': 'video/webm' }[req.file.mimetype] || 'video/mp4';
+  const sourceUrl = saveMedia(req.file.buffer, type);
+  const job = newJob('clip', { status: 'processing', startedAt: Date.now(), deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: 'Eget klipp', emoji: '🎥', inputUrl: sourceUrl, sourceUrl, input: {} });
+  res.json({ id: job.id });
+  finishClip(job).catch((err) => {
+    console.warn(`[clip ${job.id}]`, err.message);
+    fail(job, 'Klippet kunne ikke brukes. Prøv et annet!');
+  });
+});
+
+async function finishClip(job) {
+  let videoUrl = job.sourceUrl;
+  const extra = {};
+  if (useClipTranscode) {
+    const base = path.basename(job.sourceUrl, path.extname(job.sourceUrl));
+    const out = `${base}-h264.mp4`, poster = `${base}-bilde.jpg`;
+    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster));
+    videoUrl = 'media/' + out;
+    extra.seconds = Math.round(r2.seconds * 10) / 10;
+    extra.trimmed = r2.trimmed;
+    if (r2.poster) updateJob(job, { inputUrl: 'media/' + poster }); // stillbilde: bakgrunn på skjermen og celle i galleriet
+  }
+  updateJob(job, { result: { ...(job.result || {}), ...extra } });
+  await completeVideo(job, videoUrl);
+}
 
 // Felles høydepunkt: storskjermen tar over (kaketid, quiz-trekning, hilsener høyt)
 function takeoverView() {
@@ -1025,7 +1079,7 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
     topVotes: favorites(5).map((f) => ({ id: f.id, label: f.label, guest: f.guest, votes: f.votes })),
     help: (state.help || []).filter((h) => h.status !== 'done').map(({ id, name, place, page, what, at, status }) => ({ id, name, place, page, what, at, status })),
     songs: [...jobs.values()].filter((j) => j.type === 'song' && j.status === 'done' && !j.hidden).map((j) => ({ id: j.id, title: (j.result && j.result.title) || j.label, guest: j.guest })),
-    videos: [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'done' && !j.hidden && j.result && j.result.videoUrl).map((j) => ({ id: j.id, label: j.label, guest: j.guest })),
+    videos: [...jobs.values()].filter((j) => SHOWN_VIDEO_TYPES.has(j.type) && j.status === 'done' && !j.hidden && j.result && j.result.videoUrl).map((j) => ({ id: j.id, label: j.label, guest: j.guest })),
     nostalgia: nostalgiaFiles().length,
     playlist: playlistFiles().length,
   });
@@ -1191,7 +1245,7 @@ let filmBusy = false;
 r.post('/api/admin/film', requireAdmin, async (req, res) => {
   if (filmBusy) return res.status(409).json({ error: 'Filmen lages allerede.' });
   if (!film.available()) return res.status(501).json({ error: 'ffmpeg er ikke installert på serveren.' });
-  const items = [...jobs.values()].filter((j) => VIDEO_TYPES.has(j.type) && j.status === 'done' && onScreen(j)).sort((a, b) => a.createdAt - b.createdAt);
+  const items = [...jobs.values()].filter((j) => SHOWN_VIDEO_TYPES.has(j.type) && j.status === 'done' && onScreen(j)).sort((a, b) => a.createdAt - b.createdAt);
   const fileOf = (url) => (url && url.startsWith('media/') ? path.join(MEDIA_DIR, path.basename(url)) : null);
   // Maks 40 klipp: ta et jevnt utvalg gjennom kvelden
   const pickEvery = Math.max(1, Math.ceil(items.length / 40));
@@ -1278,7 +1332,7 @@ r.post('/api/admin/examples', requireAdmin, upload.single('image'), (req, res) =
   const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
   const ids = list.map((x) => {
     const job = newJob('example', { label: x.name, emoji: x.emoji, inputUrl, input: { kind, ref: x.id } });
-    enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype, fix: kind === 'selfie' ? imageFixFor(x, req.file.buffer) : null });
+    enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype, fix: kind === 'selfie' ? imageFixFor(x, req.file.buffer) : drawingFixFor(req.file.buffer) });
     return job.id;
   });
   res.json({ count: ids.length });
@@ -1326,7 +1380,7 @@ r.get('/lyd', page('lyd'));
 
 // «Last ned alt» som én zip-fil
 r.get('/api/gallery/zip', async (req, res) => {
-  const items = [...jobs.values()].filter((j) => onScreen(j) && j.status === 'done' && (AI_TYPES.has(j.type) || j.type === 'greeting')).sort((a, b) => a.createdAt - b.createdAt);
+  const items = [...jobs.values()].filter((j) => onScreen(j) && j.status === 'done' && GALLERY_TYPES.has(j.type)).sort((a, b) => a.createdAt - b.createdAt);
   const entries = [];
   const safe = (t) => String(t || '').replace(/[^\p{L}\p{N} _-]+/gu, '').trim().slice(0, 40) || 'gjest';
   const fileOf = (url) => (url && url.startsWith('media/') ? path.join(MEDIA_DIR, path.basename(url)) : null);
@@ -1338,7 +1392,7 @@ r.get('/api/gallery/zip', async (req, res) => {
     if (j.type === 'greeting') return greetings.push(`${j.label}\n«${j.text}»${j.guest ? `\n– ${j.guest}` : ''}\n`);
     const src = fileOf(r2.videoUrl) || fileOf(r2.audioUrl) || fileOf(r2.imageUrl);
     if (!src || !fs.existsSync(src)) return;
-    const folder = { drawing: 'tegninger', selfie: 'selfies', song: 'sanger' }[j.type];
+    const folder = { drawing: 'tegninger', selfie: 'selfies', song: 'sanger', clip: 'klipp' }[j.type];
     entries.push({ name: `${folder}/${prefix} ${safe(j.type === 'song' ? r2.title || j.label : j.label)} - ${safe(j.guest)}${path.extname(src)}`, file: src, date });
   });
   if (greetings.length) entries.push({ name: 'hilsener.txt', data: Buffer.from(greetings.join('\n')) });
@@ -1358,7 +1412,7 @@ r.get('/api/gallery/zip', async (req, res) => {
 });
 r.get('/api/gallery', (req, res) => {
   const items = [...jobs.values()]
-    .filter((j) => onScreen(j) && j.status === 'done' && (AI_TYPES.has(j.type) || j.type === 'greeting'))
+    .filter((j) => onScreen(j) && j.status === 'done' && GALLERY_TYPES.has(j.type))
     .sort((a, b) => a.createdAt - b.createdAt)
     .map(publicJob);
   const finale = jobs.get(state.finaleId);
@@ -1373,6 +1427,7 @@ r.get('/api/health', (req, res) => {
     imageFix: useImageFix,
     videoSeconds: higgsfield.VIDEO_SECONDS,
     pingpong: usePingpong,
+    clipTranscode: useClipTranscode,
     suno: useSuno ? 'på' : 'demo',
     lipsync: higgsfield.lipsyncConfigured(),
     publicUrl: PUBLIC_URL || null,

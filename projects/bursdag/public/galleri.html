@@ -72,6 +72,7 @@
       <button data-f="all" class="on">Alt</button>
       <button data-f="drawing">🖍️ Tegninger</button>
       <button data-f="selfie">🤳 Selfies</button>
+      <button data-f="clip">🎥 Klipp</button>
       <button data-f="song">🎵 Sanger</button>
       <button data-f="greeting">💌 Hilsener</button>
     </div>
@@ -102,9 +103,9 @@
   const $ = (id) => document.getElementById(id);
   let items = [], shown = [], filter = 'all', pos = -1;
   const mine = new Set();
-  const votable = (j) => j.type === 'drawing' || j.type === 'selfie';
+  const votable = (j) => j.type === 'drawing' || j.type === 'selfie' || j.type === 'clip';
   const time = (t) => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
-  const by = (j) => (j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : j.type === 'greeting' ? 'Fra ' : 'Av ') + j.guest : 'Anonym') + ' · ' + time(j.createdAt);
+  const by = (j) => (j.guest ? (j.type === 'drawing' ? 'Tegnet av ' : j.type === 'greeting' ? 'Fra ' : j.type === 'clip' ? 'Filmet av ' : 'Av ') + j.guest : 'Anonym') + ' · ' + time(j.createdAt);
   const mediaUrl = (j) => { const r = j.result || {}; return r.videoUrl || r.audioUrl || r.imageUrl || j.inputUrl || ''; };
   const titleOf = (j) => (j.type === 'song' ? (j.result && j.result.title) || j.label : (j.emoji ? j.emoji + ' ' : '') + j.label);
 
