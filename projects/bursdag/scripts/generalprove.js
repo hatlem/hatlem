@@ -90,7 +90,7 @@ async function testVideo() {
     const imageUrl = await higgsfield.upload(fs.readFileSync(bilde), type);
     ok('Bildet er lastet opp til Higgsfield');
     const { requestId } = await higgsfield.submitImageToVideo({ imageUrl, prompt: 'A majestic realistic tiger walks slowly in a full circle around the person. Cinematic.' });
-    ok(`Video sendt (modell ${process.env.HF_VIDEO_MODEL || 'higgsfield-ai/dop/standard'}), venter …`);
+    ok(`Video sendt (modell ${higgsfield.VIDEO_MODEL}, ${higgsfield.VIDEO_SECONDS} sek), venter …`);
     for (;;) {
       await sleep(5000);
       const s = await higgsfield.status(requestId);

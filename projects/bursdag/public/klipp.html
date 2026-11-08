@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Last opp et klipp</title>
+</head>
+<body data-help="klipp">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
+  <h1>🎥 Last opp et klipp</h1>
+  <p class="hint">Film noe gøy, <strong>maks <span class="maxsec">15</span> sekunder</strong>. Klippet vises frem og tilbake på storskjermen, så det blir litt levende av seg selv.</p>
+
+  <form id="f">
+    <div class="card">
+      <div class="step">1 · Film eller velg et klipp</div>
+      <label class="photo-drop clip-drop" id="drop">
+        <div><div class="big">🎥</div><strong>Trykk for å filme</strong><p class="hint" style="margin:4px 0 0">Maks <span class="maxsec">15</span> sek · en hilsen, en dans, et trylletriks</p></div>
+        <input type="file" name="video" accept="video/*" capture="user" id="mainInput">
+      </label>
+      <div class="src-btns">
+        <label>🙋 Noen filmer meg<input type="file" accept="video/*" capture="environment" data-src></label>
+        <label>📁 Velg et klipp jeg har<input type="file" accept="video/*" data-src></label>
+      </div>
+      <div class="clip-info" id="clipInfo" hidden></div>
+    </div>
+    <div class="card">
+      <div class="step">2 · Hva heter du?</div>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
+    </div>
+
+    <p class="hint" style="text-align:center">Klippet lagres på festens server og vises på storskjermen og i galleriet. Ingen AI, bare deg.</p>
+    <button class="btn" id="go" type="submit" disabled>🎬 Send til storskjermen!</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  const drop = document.getElementById('drop');
+  const info = document.getElementById('clipInfo');
+  const err = document.getElementById('err');
+  let file = null, maxSec = 15;
+  Party.rememberName(document.getElementById('name'));
+  Party.config().then((c) => {
+    maxSec = c.maxClipSeconds || 15;
+    document.querySelectorAll('.maxsec').forEach((el) => { el.textContent = maxSec; });
+  });
+
+  /** Lengden på klippet leses i nettleseren før opplasting, så ingen laster opp noe som er for langt. */
+  function probe(f) {
+    return new Promise((resolve) => {
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      const done = (d) => { URL.revokeObjectURL(v.src); resolve(d); };
+      v.onloadedmetadata = () => done(Number.isFinite(v.duration) ? v.duration : null);
+      v.onerror = () => done(null);
+      v.src = URL.createObjectURL(f);
+    });
+  }
+
+  function showClip(f) {
+    let v = drop.querySelector('video');
+    if (!v) {
+      v = document.createElement('video');
+      v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+      drop.prepend(v);
+    }
+    v.src = URL.createObjectURL(f);
+    if (!drop.querySelector('.retake')) {
+      const r = document.createElement('span');
+      r.className = 'retake';
+      r.textContent = '🎥 Film på nytt';
+      drop.append(r);
+    }
+  }
+
+  async function useFile(f) {
+    err.textContent = '';
+    file = null; go.disabled = true;
+    showClip(f);
+    const d = await probe(f);
+    const mb = f.size / 1048576;
+    info.hidden = false;
+    if (d != null && d > maxSec + 0.25) {
+      info.innerHTML = '<strong>⏱️ ' + Math.round(d) + ' sekunder: for langt.</strong> Maks ' + maxSec + ' sek. Film på nytt, eller klipp det ned i kamerarullen først.';
+      info.className = 'clip-info bad';
+      return;
+    }
+    if (mb > 200) {
+      info.innerHTML = '<strong>Filen er for stor</strong> (' + Math.round(mb) + ' MB). Velg et mindre klipp.';
+      info.className = 'clip-info bad';
+      return;
+    }
+    info.innerHTML = (d != null ? '✅ ' + (Math.round(d * 10) / 10) + ' sekunder' : '✅ Klippet er klart') + (mb > 1 ? ' · ' + Math.round(mb) + ' MB' : '');
+    info.className = 'clip-info';
+    file = f; go.disabled = false;
+  }
+
+  document.querySelectorAll('input[type=file]').forEach((inp) => inp.addEventListener('change', () => {
+    const f = inp.files && inp.files[0];
+    if (f) useFile(f);
+  }));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!file) return;
+    go.disabled = true; go.textContent = '⏳ Laster opp …';
+    err.textContent = '';
+    try {
+      const fd = new FormData();
+      fd.append('video', file, file.name || 'klipp.mp4');
+      fd.append('name', form.name.value);
+      fd.append('deviceId', Party.deviceId());
+      const { id } = await Party.submit('api/clip', fd);
+      location.href = 'status/' + id;
+    } catch (ex) {
+      err.textContent = ex.message;
+      go.disabled = false; go.textContent = '🎬 Send til storskjermen!';
+    }
+  });
+</script>
+</body>
+</html>

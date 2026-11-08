@@ -21,8 +21,14 @@
     ],
     selfie: [
       ['👆', 'Trykk på en effekt du liker, for eksempel tigeren.'],
-      ['🤳', 'Trykk på det store feltet og ta et bilde av deg selv. Hold mobilen litt unna, så får du med mer.'],
+      ['🧍', 'Skal noe skje rundt bena dine (tiger, UFO, disko), må hele deg være med: få noen til å ta bildet fra 3–4 meter.'],
+      ['🤳', 'Slange, trollmann og de andre holder med en vanlig selfie: ansikt og skuldre.'],
       ['🙋', 'Liker du ikke selfie? Velg «Noen tar bildet av meg», eller bruk et bilde du allerede har.'],
+    ],
+    klipp: [
+      ['🎥', 'Trykk på det store feltet og film maks 15 sekunder. Si hei, dans eller vis et triks.'],
+      ['📁', 'Har du et klipp fra før? Velg «Velg et klipp jeg har». Er det over 15 sekunder, må du korte det ned i kamerarullen først.'],
+      ['⏪', 'Klippet vises frem og tilbake på storskjermen, så det ser ut som det lever.'],
     ],
     quiz: [
       ['✍️', 'Skriv navnet ditt og trykk «Bli med».'],

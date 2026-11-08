@@ -118,15 +118,16 @@
     }
 
     const src = r.videoUrl || r.imageUrl || item.inputUrl;
-    const caption = `<div class="caption"><span class="em">${esc(item.emoji || '✨')}</span><div>${esc(item.label || '')}<small>${item.type === 'drawing' ? 'Tegnet av' : 'Med'} ${esc(item.guest || 'en hemmelig gjest')}</small></div></div>`;
+    const caption = `<div class="caption"><span class="em">${esc(item.emoji || '✨')}</span><div>${esc(item.label || '')}<small>${item.type === 'drawing' ? 'Tegnet av' : item.type === 'clip' ? 'Filmet av' : 'Med'} ${esc(item.guest || 'en hemmelig gjest')}</small></div></div>`;
     const bg = `<div class="bg" style="background-image:url('${esc(item.inputUrl || r.imageUrl || '')}')"></div>`;
     if (r.videoUrl) {
       layer.innerHTML = bg + `<video src="${esc(src)}" muted playsinline autoplay></video>` + caption + badge;
       const v = layer.querySelector('video');
+      // Filmene går frem og tilbake (ping-pong): vis hver i minst ~16 sekunder, så korte klipp får leve litt
       let loops = 0;
-      v.addEventListener('ended', () => { loops++; if (loops >= 2 || v.duration > 8) next(); else v.play(); });
+      v.addEventListener('ended', () => { loops++; if (loops * (v.duration || 10) >= 16 || loops >= 4) next(); else v.play(); });
       v.addEventListener('error', () => next());
-      timer = setTimeout(next, 25000); // sikring
+      timer = setTimeout(next, 40000); // sikring
     } else {
       layer.innerHTML = bg + `<img class="kb" src="${esc(src)}" alt="">` + caption + badge;
       timer = setTimeout(next, 9000);
