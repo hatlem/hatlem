@@ -16,10 +16,16 @@
   <div class="top"><a class="back" href="./">‹ Forsiden</a></div>
   <div id="box" class="card status-box">
     <div class="spinner" id="spin" aria-hidden="true">🎨</div>
-    <div class="stages" id="stages" hidden><span data-s="image">1 · Fikser bildet</span><span data-s="video">2 · Lager film</span></div>
     <div class="status-msg" id="msg" aria-live="polite">Starter …</div>
     <div class="progress"><div id="bar"></div></div>
-    <p class="hint">Du kan lukke siden. Resultatet dukker opp på storskjermen!</p>
+    <ol class="steps" id="steps" hidden>
+      <li data-s="upload"><i>✓</i><b>Bildet er mottatt</b></li>
+      <li data-s="image"><i></i><b>Fikser lys og bakgrunn</b><small>ca. 20 sekunder</small></li>
+      <li data-s="video"><i></i><b>Lager filmen</b><small>2–4 minutter, AI-en tegner hvert bilde</small></li>
+      <li data-s="finishing"><i></i><b>Klipper frem og tilbake</b><small>noen sekunder</small></li>
+      <li data-s="done"><i></i><b>Klar på storskjermen</b></li>
+    </ol>
+    <p class="hint" id="waitHint">Filmen tar noen minutter å lage. Du kan lukke siden, legge bort mobilen og kikke på storskjermen. Vi sier fra her når den er klar.</p>
   </div>
   <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
   <div id="react"></div>
@@ -109,16 +115,23 @@
     document.getElementById('actions').hidden = false;
   }
 
-  // Selfier går i to steg hos AI-en: bildefiks (lys + bakgrunn) og film
+  // Steg-for-steg som på en reisesøkeside: det som er gjort får hake, det som pågår pulserer
+  const ORDER = ['upload', 'image', 'video', 'finishing', 'done'];
   function showStages(job) {
-    const el = document.getElementById('stages');
-    const stage = job.stage === 'video-pending' || job.stage === 'finishing' ? 'video' : job.stage;
-    const show = (job.type === 'selfie' || job.type === 'drawing') && (stage === 'image' || stage === 'video');
-    el.hidden = !show;
-    if (!show) return;
-    el.querySelectorAll('span').forEach((s) => {
-      s.classList.toggle('on', s.dataset.s === stage);
-      s.classList.toggle('done', s.dataset.s === 'image' && stage === 'video');
+    const el = document.getElementById('steps');
+    const film = job.type === 'selfie' || job.type === 'drawing' || job.type === 'clip';
+    el.hidden = !film;
+    if (!film) return;
+    let stage = job.stage === 'video-pending' ? 'video' : job.stage;
+    if (job.status === 'waiting' || job.status === 'queued' || job.status === 'starting') stage = 'upload';
+    if (job.type === 'clip') { el.querySelector('[data-s=image]').hidden = true; if (stage !== 'finishing') stage = 'video'; }
+    if (job.status === 'done') stage = 'done';
+    const at = Math.max(0, ORDER.indexOf(stage || 'video'));
+    el.querySelectorAll('li').forEach((li) => {
+      const i = ORDER.indexOf(li.dataset.s);
+      li.classList.toggle('done', i < at || stage === 'done');
+      li.classList.toggle('on', i === at && stage !== 'done');
+      li.querySelector('i').textContent = i < at || stage === 'done' ? '✓' : i === at ? '…' : '';
     });
   }
 

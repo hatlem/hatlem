@@ -70,8 +70,11 @@ const playlistFiles = party.makeFolderScanner(PLAYLIST_DIR, party.AUDIO);
 const AI_TYPES = new Set(['drawing', 'selfie', 'song']);
 const GALLERY_TYPES = new Set([...AI_TYPES, 'clip', 'greeting']);
 
-const useHiggsfield = higgsfield.isConfigured();
-const useImageFix = higgsfield.imageFixConfigured();
+// VIDEO_PROVIDER=mcp: filmene lages ikke av Higgsfield-API-et, men av en arbeider (Claude Code med Higgsfield-MCP) som
+// henter jobbene via /api/admin/mcp og leverer bilde og film tilbake. Da brukes Higgsfield-kontoens kreditter.
+const MCP_MODE = /^mcp$/i.test(process.env.VIDEO_PROVIDER || '');
+const useHiggsfield = MCP_MODE || higgsfield.isConfigured();
+const useImageFix = MCP_MODE || higgsfield.imageFixConfigured();
 const useSuno = suno.isConfigured();
 // Filmene vises frem og tilbake (ping-pong). Krever ffmpeg; uten den vises originalen i vanlig loop.
 const usePingpong = !/^(0|off|nei|false)$/i.test(process.env.PINGPONG || '') && pingpong.available();
@@ -291,6 +294,12 @@ const hookUrl = (job) => (PUBLIC_URL ? `${PUBLIC_URL}/api/hooks/higgsfield?job=$
  * Tegninger og jobber uten fiks går rett til video. Feiler fiksen, brukes originalbildet.
  */
 async function startVideoJob(job) {
+  if (MCP_MODE) {
+    // Arbeideren plukker jobben opp; stage sier hva som gjenstår.
+    const fix = job.input.fix;
+    updateJob(job, { status: 'processing', provider: { name: 'mcp', stage: fix && fix.prompt && !job.fixedImageUrl ? 'image' : 'video' } });
+    return;
+  }
   if (!useHiggsfield) {
     updateJob(job, { status: 'processing', demo: true, provider: { name: 'demo', readyAt: Date.now() + demo.VIDEO_DELAY_MS } });
     return;
@@ -411,6 +420,7 @@ async function pollJob(job) {
   // Tidsfristen regnes fra jobben faktisk startet, ikke fra den kom i kø.
   if (Date.now() - (job.startedAt || job.createdAt) > JOB_TIMEOUT_MS) return fail(job, 'Det tok for lang tid. Prøv igjen!');
 
+  if (p.name === 'mcp') return; // arbeideren leverer via /api/admin/mcp
   if (p.name === 'demo') {
     if (Date.now() < p.readyAt) return;
     if (job.type === 'song') {
@@ -1118,6 +1128,59 @@ r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// --- MCP-arbeideren: henter jobber som venter på bilde/film og leverer resultatet ---------------
+const absUrl = (req, rel) => (rel && !/^https?:/.test(rel) ? `${baseUrl(req)}/${rel}` : rel);
+function mcpJobView(req, j) {
+  const p = j.provider || {};
+  return {
+    id: j.id,
+    type: j.type,
+    stage: p.stage,
+    claimedAt: p.claimedAt || null,
+    inputUrl: absUrl(req, j.inputUrl),
+    fixedImageUrl: absUrl(req, (j.result || {}).fixedImageUrl) || null,
+    fix: j.input.fix || null,
+    prompt: j.input.prompt,
+    seconds: higgsfield.VIDEO_SECONDS,
+    label: j.label,
+    createdAt: j.createdAt,
+  };
+}
+r.get('/api/admin/mcp/jobs', requireAdmin, (req, res) => {
+  const list = [...jobs.values()]
+    .filter((j) => j.status === 'processing' && j.provider && j.provider.name === 'mcp')
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map((j) => mcpJobView(req, j));
+  res.json({ mode: MCP_MODE ? 'mcp' : 'api', jobs: list, waiting: videoWaitList().length });
+});
+r.post('/api/admin/mcp/jobs/:id/claim', requireAdmin, (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job || !job.provider || job.provider.name !== 'mcp') return res.status(404).json({ error: 'Ingen slik MCP-jobb' });
+  updateJob(job, { provider: { ...job.provider, claimedAt: Date.now(), worker: clean((req.body || {}).worker, 40) } });
+  res.json(mcpJobView(req, job));
+});
+r.post('/api/admin/mcp/jobs/:id/result', requireAdmin, async (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job || !job.provider || job.provider.name !== 'mcp') return res.status(404).json({ error: 'Ingen slik MCP-jobb' });
+  const b = req.body || {};
+  if (b.error) {
+    fail(job, clean(b.error, 160));
+    return res.json({ ok: true, status: 'failed' });
+  }
+  if (b.imageUrl && job.provider.stage === 'image') {
+    const local = await mirror(String(b.imageUrl), 'image/png');
+    updateJob(job, { fixedImageUrl: String(b.imageUrl), result: { ...(job.result || {}), fixedImageUrl: local }, provider: { name: 'mcp', stage: 'video' } });
+    return res.json({ ok: true, stage: 'video' });
+  }
+  if (b.videoUrl) {
+    res.json({ ok: true, stage: 'finishing' });
+    await completeVideo(job, String(b.videoUrl));
+    setImmediate(pumpVideos);
+    return;
+  }
+  res.status(400).json({ error: 'Send imageUrl, videoUrl eller error' });
+});
+
 r.post('/api/admin/jobs/:id', requireAdmin, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).end();
@@ -1431,6 +1494,7 @@ function health(req, res) {
   res.json({
     ok: true,
     teaser: TEASER,
+    videoProvider: MCP_MODE ? 'mcp' : useHiggsfield ? 'higgsfield' : 'demo',
     higgsfield: useHiggsfield ? 'på' : 'demo',
     imageFix: useImageFix,
     videoSeconds: higgsfield.VIDEO_SECONDS,
@@ -1461,7 +1525,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}${BASE_PATH}/`);
   for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}${BASE_PATH}/`);
-  console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, ${higgsfield.VIDEO_SECONDS} sek per film, maks ${HF_MAX_CONCURRENT} samtidig`);
+  console.log(`   Video: ${MCP_MODE ? 'MCP-ARBEIDER (Claude Code + Higgsfield-MCP)' : useHiggsfield ? 'Higgsfield-API PÅ' : 'DEMO (sett HF_KEY)'}, ${higgsfield.VIDEO_SECONDS} sek per film, maks ${HF_MAX_CONCURRENT} samtidig`);
   console.log(`   Bildefiks:          ${useImageFix ? 'PÅ (' + higgsfield.IMAGE_MODEL + ')' : 'AV'}, frem og tilbake: ${usePingpong ? 'PÅ' : 'AV (ffmpeg mangler)'}`);
   console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}, maks ${SUNO_MAX_CONCURRENT} samtidig`);
   if (!PUBLIC_URL) console.log('   Tips: sett PUBLIC_URL slik at QR-kodene peker til riktig adresse.\n');
