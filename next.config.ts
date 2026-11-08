@@ -22,7 +22,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Alt unntatt /bursdag: bursdagsappen trenger kamera og mikrofon på mobilen
+        source: "/((?!bursdag).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
