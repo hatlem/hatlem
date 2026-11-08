@@ -1169,7 +1169,7 @@ r.post('/api/admin/mcp/jobs/:id/result', requireAdmin, async (req, res) => {
   }
   if (b.imageUrl && job.provider.stage === 'image') {
     const local = await mirror(String(b.imageUrl), 'image/png');
-    updateJob(job, { fixedImageUrl: String(b.imageUrl), result: { ...(job.result || {}), fixedImageUrl: local }, provider: { name: 'mcp', stage: 'video' } });
+    updateJob(job, { fixedImageUrl: String(b.imageUrl), result: { ...(job.result || {}), fixedImageUrl: local }, provider: { ...job.provider, stage: 'video' } });
     return res.json({ ok: true, stage: 'video' });
   }
   if (b.videoUrl) {
