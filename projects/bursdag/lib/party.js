@@ -16,6 +16,14 @@ function loadConfig(file, name) {
   const quiz = raw.quiz || { sporsmal: [] };
   return {
     birthYear: Number(raw.fodselsar) || null,
+    venue: {
+      name: (raw.sted && raw.sted.navn) || '',
+      address: (raw.sted && raw.sted.adresse) || '',
+      date: (raw.sted && raw.sted.dato) || '',
+      day: (raw.sted && raw.sted.dag) || '', // ÅÅÅÅ-MM-DD: «nå»/«ferdig» markeres bare denne dagen
+      time: (raw.sted && raw.sted.tid) || '',
+      directions: (raw.sted && raw.sted.veibeskrivelse) || [],
+    },
     schedule: (raw.program || []).map((p) => ({ time: p.tid, title: fill(p.tittel), emoji: p.emoji || '⭐', highlight: !!p.hoydepunkt })),
     greetingPrompts: (raw.hilsen || []).map((g) => ({ id: g.id, name: fill(g.tekst), emoji: g.emoji || '💌' })),
     songIdeas: (raw.sangideer || []).map(fill),

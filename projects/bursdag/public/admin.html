@@ -33,6 +33,10 @@
   .hreq .who small { display: block; color: var(--muted); font-size: 14px; }
   .hreq button { font: inherit; font-weight: 800; border: 0; border-radius: 12px; padding: 10px 12px; cursor: pointer; background: var(--card); color: var(--text); }
   .hreq button.go { background: var(--yellow); color: #2a0b2b; }
+  .pe-row { display: grid; grid-template-columns: 66px 46px 1fr 34px 34px; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .pe-row input { padding: 9px 8px; font-size: 15px; }
+  .pe-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--yellow); justify-self: center; }
+  .pe-row button { border: 0; background: var(--card); color: var(--text); border-radius: 10px; height: 38px; cursor: pointer; }
   .item q { display: block; margin-top: 4px; font-style: italic; }
   .s-failed { color: var(--danger); } .s-waiting { color: var(--muted); } .s-done { color: var(--cyan); } .s-processing { color: var(--yellow); }
 </style>
@@ -113,6 +117,26 @@
       <p class="hint" id="fStatus"></p>
     </section>
 
+    <section class="card" id="progEdit">
+      <div class="step">📅 Program og veibeskrivelse</div>
+      <p class="hint" style="margin-top:0">Vises på forsiden, på <a href="program">/program</a>, på skjermen og på «kommer snart». Endringer vises for gjestene innen et minutt.</p>
+      <label for="peNote">📣 Kunngjøring (valgfritt)</label>
+      <input type="text" id="peNote" maxlength="200" placeholder="F.eks. Kaka er flyttet til 17:30!">
+      <label>Programpunkter</label>
+      <div id="peRows"></div>
+      <button type="button" class="link" id="peAdd" style="margin-top:6px">➕ Legg til punkt</button>
+      <label for="peName">Sted</label>
+      <input type="text" id="peName" maxlength="80">
+      <label for="peAddr">Adresse</label>
+      <input type="text" id="peAddr" maxlength="120" placeholder="Gate og nummer, postnummer og by">
+      <div class="row"><div><label for="peDate">Dato</label><input type="text" id="peDate" maxlength="60"></div><div><label for="peTime">Tid</label><input type="text" id="peTime" maxlength="40"></div></div>
+      <label for="peDir">Slik finner du fram (én linje per tips)</label>
+      <textarea id="peDir" rows="4" placeholder="🚋 Trikk til …&#10;🚗 Parkering …&#10;🚪 Inngang fra …"></textarea>
+      <p></p>
+      <div class="row"><button class="btn" type="button" id="peSave" style="font-size:17px;padding:12px">💾 Lagre</button><button class="btn secondary" type="button" id="peReset" style="font-size:15px;padding:12px">↺ Tilbake til party.json</button></div>
+      <p class="hint" id="peStatus" style="margin-bottom:0"></p>
+    </section>
+
     <section class="card">
       <div class="step">🎞️ Kveldens film</div>
       <p class="hint" style="margin-top:0">Syr sammen alle godkjente filmer og selfies (opptil 40 klipp à 5 sek) med gjestesangene under. Tar noen minutter. Kan vises på skjermen og lastes ned fra galleriet.</p>
@@ -161,6 +185,7 @@
       return;
     }
     document.getElementById('login').hidden = true;
+    if (document.getElementById('panel').hidden) loadProgram();
     document.getElementById('panel').hidden = false;
     loadParty();
     const { jobs, queue, nowPlaying } = await r.json();
@@ -276,6 +301,44 @@
   }
   document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
   document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
+  // --- Program og veibeskrivelse ---
+  function peRow(p = { time: '', emoji: '⭐', title: '', highlight: false }) {
+    return `<div class="pe-row"><input type="text" inputmode="numeric" maxlength="5" placeholder="17:00" value="${esc(p.time)}" aria-label="Klokkeslett"><input type="text" value="${esc(p.emoji)}" maxlength="8" aria-label="Emoji"><input type="text" value="${esc(p.title)}" maxlength="80" placeholder="Hva skjer" aria-label="Tittel"><input type="checkbox" ${p.highlight ? 'checked' : ''} title="Høydepunkt" aria-label="Høydepunkt"><button type="button" data-rm aria-label="Fjern">✕</button></div>`;
+  }
+  async function loadProgram() {
+    const d = await fetch('api/program').then((r) => r.json()).catch(() => null);
+    if (!d) return;
+    document.getElementById('peNote').value = d.note || '';
+    document.getElementById('peRows').innerHTML = d.schedule.map(peRow).join('');
+    const v = d.venue;
+    document.getElementById('peName').value = v.name || '';
+    document.getElementById('peAddr').value = v.address || '';
+    document.getElementById('peDate').value = v.date || '';
+    document.getElementById('peTime').value = v.time || '';
+    document.getElementById('peDir').value = (v.directions || []).join('\n');
+    document.getElementById('peStatus').textContent = d.updatedAt ? 'Sist endret kl. ' + new Date(d.updatedAt).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) : 'Fra party.json';
+  }
+  document.getElementById('peAdd').addEventListener('click', () => document.getElementById('peRows').insertAdjacentHTML('beforeend', peRow()));
+  document.getElementById('peRows').addEventListener('click', (e) => { if (e.target.closest('[data-rm]')) e.target.closest('.pe-row').remove(); });
+  document.getElementById('peSave').addEventListener('click', async () => {
+    const schedule = [...document.querySelectorAll('#peRows .pe-row')].map((row) => {
+      const [t, em, ti, hl] = row.querySelectorAll('input');
+      return { time: t.value, emoji: em.value, title: ti.value, highlight: hl.checked };
+    });
+    const body = {
+      schedule, note: document.getElementById('peNote').value,
+      venue: { name: document.getElementById('peName').value, address: document.getElementById('peAddr').value, date: document.getElementById('peDate').value, time: document.getElementById('peTime').value, directions: document.getElementById('peDir').value.split('\n') },
+    };
+    const r = await api('api/admin/program', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('peStatus').textContent = r.ok ? '✅ Lagret' : '❌ Kunne ikke lagre';
+    if (r.ok) loadProgram();
+  });
+  document.getElementById('peReset').addEventListener('click', async () => {
+    if (!confirm('Fjerne endringene og bruke programmet fra party.json?')) return;
+    await api('api/admin/program', { method: 'POST', body: JSON.stringify({ reset: true }) });
+    loadProgram();
+  });
+
   let filmTimer;
   document.getElementById('filmGo').addEventListener('click', async () => {
     if (!confirm('Lage kveldens film nå? Det tar noen minutter, og du kan lage den på nytt senere.')) return;

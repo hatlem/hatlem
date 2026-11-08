@@ -164,5 +164,14 @@
     "Ved inngangen",
     "Ved langbordet",
     "Ute"
-  ]
+  ],
+  "sted": {
+    "_les_meg": "Vises på /program og «kommer snart». Kan også endres i admin → Program underveis.",
+    "navn": "Rodeløkka Velhus",
+    "adresse": "",
+    "dato": "Lørdag 14. november",
+    "dag": "2026-11-14",
+    "tid": "kl. 14–20",
+    "veibeskrivelse": []
+  }
 }

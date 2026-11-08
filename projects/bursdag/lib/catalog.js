@@ -125,11 +125,12 @@ const FRAMING = {
  * Prompt til bildefiksen før videoen: lyset rettes opp og tømmerhytta byttes ut med effektens scene,
  * uten å endre personen. Det som skal bevege seg (tigeren, flukten …) lages i videosteget.
  */
-function imagePrompt(effect) {
+function imagePrompt(effect, aspect) {
   if (!effect || !effect.scene) return null;
   return [
     'Keep the person exactly as they are: same face, identity, body, pose, expression, hair and clothes.',
     `Replace the entire background (an indoor log cabin party venue) with ${effect.scene}.`,
+    aspect === '16:9' ? 'Wide 16:9 landscape composition for a TV screen: keep the person in the center and show more of the new scene to the left and right.' : '',
     'Relight the person naturally to match the new scene, fix uneven indoor lighting and color cast.',
     effect.framing === 'full' ? 'Show the whole body including the feet standing on the ground.' : '',
     effect.costume || '',
@@ -141,10 +142,13 @@ function imagePrompt(effect) {
  * Bildefiks for tegninger: beskjær til A4-arket, rett opp perspektivet og fjern bord, hender og skygger,
  * så videomodellen bare får selve tegningen. Streken endres ikke.
  */
-function drawingImagePrompt() {
+function drawingImagePrompt(aspect) {
   return [
-    'Crop and straighten the photo so that only the sheet of paper with the drawing fills the entire frame, seen straight from above.',
+    'Crop and straighten the photo so that only the sheet of paper with the drawing remains, seen straight from above.',
     'Remove everything outside the paper: the table, hands, fingers, pens, shadows and background.',
+    aspect === '16:9'
+      ? 'Make it a wide 16:9 landscape image for a TV screen: the drawing fills the full height in the center, and the paper and the drawing\'s background continue to the left and right in exactly the same hand-drawn style, colors and texture, without adding new characters or objects.'
+      : 'The sheet of paper fills the entire frame.',
     'Keep the drawing exactly as it is: same lines, colors, proportions and crayon or pencil texture; do not redraw, add or remove anything on the paper.',
     'Even, soft lighting, no glare, no text added, no watermark.',
   ].join(' ');

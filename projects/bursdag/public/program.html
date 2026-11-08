@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Program</title>
+<style>
+  .note { margin: 0 0 16px; padding: 14px 16px; border-radius: 16px; background: rgba(255,210,63,.14); border: 1px solid rgba(255,210,63,.6); font-weight: 800; font-size: 17px; }
+  .note small { display: block; font-weight: 600; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .prog { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .prog li { display: grid; grid-template-columns: 58px 32px 1fr; gap: 8px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--card-border); }
+  .prog li b { color: var(--yellow); font-size: 17px; }
+  .prog li .e { font-size: 24px; text-align: center; }
+  .prog li .t { font-weight: 700; font-size: 17px; line-height: 1.25; }
+  .prog li .t small { display: block; font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--cyan); }
+  .prog li.past { opacity: .45; }
+  .prog li.now { border: 2px solid var(--cyan); background: rgba(62,230,216,.1); }
+  .prog li.hl:not(.past) { border-color: rgba(255,79,163,.6); }
+  .venue h2 { font-size: 22px; margin: 0 0 4px; }
+  .venue .when { color: var(--yellow); font-weight: 800; }
+  .venue .addr { font-size: 17px; margin: 8px 0 12px; }
+  .maps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .maps a { text-align: center; text-decoration: none; font-weight: 800; padding: 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); }
+  .dir { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+  .dir li { padding-left: 4px; line-height: 1.4; }
+  .upd { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
+</style>
+</head>
+<body data-help="forside">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
+  <h1>📅 Program</h1>
+  <div class="note" id="note" hidden></div>
+  <ul class="prog" id="prog"></ul>
+
+  <section class="card venue" style="margin-top:22px">
+    <div class="step">📍 Slik finner du fram</div>
+    <h2 id="vName"></h2>
+    <div class="when" id="vWhen"></div>
+    <div class="addr" id="vAddr"></div>
+    <div class="maps">
+      <a id="gmaps" target="_blank" rel="noopener">🗺️ Google Maps</a>
+      <a id="amaps" target="_blank" rel="noopener">🍎 Apple Kart</a>
+    </div>
+    <ul class="dir" id="vDir"></ul>
+  </section>
+  <p class="upd" id="upd"></p>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script>
+(function () {
+  const esc = Party.esc;
+  const $ = (id) => document.getElementById(id);
+  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+  async function load() {
+    let d;
+    try { d = await (await fetch('api/program')).json(); } catch { return; }
+    const now = new Date(d.serverNow);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    let cur = -1;
+    const iso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const isToday = !d.venue.day || d.venue.day === iso; // før festdagen er alt «kommende»
+    if (isToday) d.schedule.forEach((p, i) => { if (toMin(p.time) <= nowMin) cur = i; });
+    $('prog').innerHTML = d.schedule.map((p, i) => {
+      const cls = [i === cur ? 'now' : i < cur ? 'past' : '', p.highlight ? 'hl' : ''].join(' ');
+      const tag = i === cur ? '<small>Nå</small>' : isToday && i === cur + 1 ? '<small>Neste</small>' : p.highlight ? '<small>Høydepunkt</small>' : '';
+      return '<li class="' + cls + '"><b>' + esc(p.time) + '</b><span class="e">' + esc(p.emoji) + '</span><span class="t">' + tag + esc(p.title) + '</span></li>';
+    }).join('') || '<li><span class="t">Programmet kommer!</span></li>';
+    $('note').hidden = !d.note;
+    if (d.note) $('note').innerHTML = '📣 ' + esc(d.note) + (d.updatedAt ? '<small>Oppdatert kl. ' + new Date(d.updatedAt).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) + '</small>' : '');
+    const v = d.venue;
+    $('vName').textContent = v.name || d.partyTitle;
+    $('vWhen').textContent = [v.date, v.time].filter(Boolean).join(' · ');
+    $('vAddr').textContent = v.address || '';
+    $('vAddr').hidden = !v.address;
+    $('gmaps').href = v.maps.google;
+    $('amaps').href = v.maps.apple;
+    $('vDir').innerHTML = (v.directions || []).map((x) => '<li>' + esc(x) + '</li>').join('');
+    $('upd').textContent = 'Oppdateres automatisk · sist hentet kl. ' + new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+  }
+  load();
+  setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>

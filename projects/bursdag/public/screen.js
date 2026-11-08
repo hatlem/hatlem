@@ -194,7 +194,7 @@
       `<li class="${i === cur ? 'now' : i < cur ? 'past' : ''}"><b>${esc(p.time)}</b><span>${esc(p.emoji)} ${esc(p.title)}</span></li>`).join('');
     const hl = data.schedule.find((p) => p.highlight && toMin(p.time) > nowMin);
     const left = hl ? toMin(hl.time) - nowMin : null;
-    $('countdown').textContent = hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
+    $('countdown').textContent = data.programNote ? '📣 ' + data.programNote : hl && left <= 45 ? `⏰ Om ${left} min: ${hl.title}!` : '';
   }
 
   // ------------------------------------------------------------------ felles høydepunkt
