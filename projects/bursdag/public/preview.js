@@ -44,6 +44,8 @@
       case 'attitall': add(fx('r', '<i>●</i> REC  ' + new Date(1986, 10, 17).toLocaleDateString('nb-NO'))); break;
       case 'magisk': for (let i = 0; i < 10; i++) add(fx('sp', '✨', { left: rnd(5, 90) + '%', top: rnd(5, 85) + '%', animationDelay: -rnd(0, 2.4) + 's' })); break;
       case 'anime': for (let i = 0; i < 8; i++) add(fx('p', '🌸', { left: rnd(20, 110) + '%', animationDelay: -rnd(0, 4) + 's' })); break;
+      case 'slange': add(fx('sn', '🐍')); break;
+      case 'trollmann': add(fx('hat', '🎩')); for (let i = 0; i < 10; i++) add(fx('sp', '✨', { left: rnd(5, 90) + '%', top: rnd(10, 90) + '%', animationDelay: -rnd(0, 2) + 's' })); break;
       default: break;
     }
     return pv;

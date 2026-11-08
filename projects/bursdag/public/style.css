@@ -234,3 +234,24 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 .stamp.done::after { content: '✓'; position: absolute; right: -4px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; background: var(--yellow); color: #2a0b2b; font-size: 16px; font-weight: 800; display: grid; place-items: center; }
 .stamp:not(.done) { opacity: .55; filter: grayscale(.6); }
 .stamps.complete { border-style: solid; background: linear-gradient(135deg, rgba(255,210,63,.2), rgba(255,79,163,.2)); }
+
+/* Selfie: rammekrav (helfigur vs. portrett) og bekreftelse før innsending */
+.btn.small { font-size: 16px; padding: 12px 14px; }
+.frame-tip { display: flex; gap: 14px; align-items: center; padding: 12px 14px; margin-bottom: 12px; border-radius: 16px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--card-border); }
+.frame-tip p { margin: 2px 0 0; color: var(--muted); font-size: 14px; line-height: 1.35; }
+.frame-tip .figure { position: relative; flex: 0 0 56px; height: 72px; display: grid; place-items: end center; border-radius: 10px; background: rgba(255,255,255,.06); overflow: hidden; transition: background .2s; }
+.frame-tip .figure .person { font-size: 44px; line-height: 1; transition: font-size .25s, transform .25s; }
+.frame-tip .figure .floor { position: absolute; left: 6px; right: 6px; bottom: 6px; height: 2px; border-radius: 2px; background: var(--yellow); opacity: 0; transition: opacity .2s; }
+.frame-tip[data-framing=full] .figure .person { font-size: 56px; transform: translateY(-6px); }
+.frame-tip[data-framing=full] .figure .floor { opacity: 1; }
+.frame-tip[data-framing=full] { border-color: rgba(255, 210, 63, 0.5); }
+.frame-tip[data-framing=portrait] .figure .person { font-size: 64px; transform: translateY(26px); }
+.confirm-frame { margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 210, 63, 0.12); border: 1px solid rgba(255, 210, 63, 0.5); }
+.confirm-frame p { margin: 0 0 10px; }
+.confirm-frame span { display: block; color: var(--yellow); font-size: 14px; margin-top: 4px; }
+.fixed-shot { display: flex; gap: 10px; align-items: center; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.fixed-shot img { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 1px solid var(--card-border); }
+.stages { display: flex; justify-content: center; gap: 6px; margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--muted); }
+.stages span { padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.25); }
+.stages span.on { color: var(--bg); background: var(--yellow); }
+.stages span.done { color: var(--text); background: rgba(255, 210, 63, 0.25); }

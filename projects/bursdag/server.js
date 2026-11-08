@@ -22,7 +22,9 @@ const path = require('path');
 const higgsfield = require('./lib/higgsfield');
 const suno = require('./lib/suno');
 const demo = require('./lib/demo');
-const { DRAWING_STYLES, SELFIE_EFFECTS, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
+const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
+const { imageSize, nearestAspect } = require('./lib/imagesize');
+const pingpong = require('./lib/pingpong');
 const party = require('./lib/party');
 const { createKahoot } = require('./lib/kahoot');
 const { writeZip } = require('./lib/zip');
@@ -64,7 +66,10 @@ const playlistFiles = party.makeFolderScanner(PLAYLIST_DIR, party.AUDIO);
 const AI_TYPES = new Set(['drawing', 'selfie', 'song']);
 
 const useHiggsfield = higgsfield.isConfigured();
+const useImageFix = higgsfield.imageFixConfigured();
 const useSuno = suno.isConfigured();
+// Filmene vises frem og tilbake (ping-pong). Krever ffmpeg; uten den vises originalen i vanlig loop.
+const usePingpong = !/^(0|off|nei|false)$/i.test(process.env.PINGPONG || '') && pingpong.available();
 
 // ---------------------------------------------------------------------------
 // Lagring (enkel JSON-fil, holder lenge for én fest)
@@ -189,6 +194,7 @@ function publicJob(job) {
     id: job.id,
     type: job.type,
     status: job.status,
+    stage: job.status === 'processing' && job.provider ? job.provider.stage || null : null,
     guest: job.guest,
     label: job.label,
     emoji: job.emoji,
@@ -259,7 +265,7 @@ async function pumpVideos() {
         updateJob(job, { status: 'starting', startedAt: Date.now() });
         lane.start(job).catch((err) => {
           // Kontoen er full (eller midlertidig feil hos tjenesten): tilbake i køen og prøv igjen litt senere.
-          if (/429|concurren|too many|rate.?limit|limit.*(reached|exceeded)|queue.*full|frequen/i.test(err.message) && (job.retries || 0) < 20) {
+          if (RATE_LIMITED.test(err.message) && (job.retries || 0) < 20) {
             console.warn(`[${lane.name} ${job.id}] fullt, venter litt:`, err.message.slice(0, 120));
             updateJob(job, { status: 'waiting', retryAt: Date.now() + 20000, retries: (job.retries || 0) + 1 });
           } else {
@@ -273,6 +279,12 @@ async function pumpVideos() {
   }
 }
 
+const hookUrl = (job) => (PUBLIC_URL ? `${PUBLIC_URL}/api/hooks/higgsfield?job=${job.id}&t=${job.hookToken}` : undefined);
+
+/**
+ * Selfie i to steg: 1) bildefiks (lys + ny bakgrunn som passer effekten), 2) bilde til video.
+ * Tegninger og jobber uten fiks går rett til video. Feiler fiksen, brukes originalbildet.
+ */
 async function startVideoJob(job) {
   if (!useHiggsfield) {
     updateJob(job, { status: 'processing', demo: true, provider: { name: 'demo', readyAt: Date.now() + demo.VIDEO_DELAY_MS } });
@@ -281,9 +293,39 @@ async function startVideoJob(job) {
   const buffer = fs.readFileSync(path.join(MEDIA_DIR, path.basename(job.inputUrl)));
   const imageUrl = job.hfImageUrl || (await higgsfield.upload(buffer, job.input.contentType || 'image/jpeg'));
   if (!job.hfImageUrl) updateJob(job, { hfImageUrl: imageUrl }); // ikke last opp på nytt ved nytt forsøk
-  const webhook = PUBLIC_URL ? `${PUBLIC_URL}/api/hooks/higgsfield?job=${job.id}&t=${job.hookToken}` : undefined;
-  const { requestId } = await higgsfield.submitImageToVideo({ imageUrl, prompt: job.input.prompt, webhookUrl: webhook });
-  updateJob(job, { status: 'processing', provider: { name: 'higgsfield', requestId } });
+  const fix = job.input.fix;
+  if (useImageFix && fix && fix.prompt && !job.fixedImageUrl) {
+    const { requestId } = await higgsfield.submitImageFix({ imageUrl, prompt: fix.prompt, aspectRatio: fix.aspectRatio, webhookUrl: hookUrl(job) });
+    updateJob(job, { status: 'processing', provider: { name: 'higgsfield', stage: 'image', requestId } });
+    return;
+  }
+  await submitVideo(job, job.fixedImageUrl || imageUrl);
+}
+
+async function submitVideo(job, imageUrl) {
+  const { requestId } = await higgsfield.submitImageToVideo({ imageUrl, prompt: job.input.prompt, webhookUrl: hookUrl(job) });
+  updateJob(job, { status: 'processing', provider: { name: 'higgsfield', stage: 'video', requestId } });
+}
+
+const RATE_LIMITED = /429|concurren|too many|rate.?limit|limit.*(reached|exceeded)|queue.*full|frequen/i;
+
+/** Steg 2 etter bildefiksen. Er kontoen full akkurat nå, prøver pollJob igjen om litt. */
+async function videoAfterFix(job, imageUrl, note) {
+  updateJob(job, { provider: { name: 'higgsfield', stage: 'video-pending', imageUrl }, retryAt: 0, ...(note ? { note } : {}) });
+  await trySubmitVideo(job);
+}
+
+async function trySubmitVideo(job) {
+  const p = job.provider;
+  if (job.retryAt && Date.now() < job.retryAt) return;
+  try {
+    await submitVideo(job, p.imageUrl);
+  } catch (err) {
+    if (RATE_LIMITED.test(err.message) && (job.retries || 0) < 20) {
+      console.warn(`[Higgsfield ${job.id}] fullt før videosteget, venter litt:`, err.message.slice(0, 120));
+      updateJob(job, { retryAt: Date.now() + 20000, retries: (job.retries || 0) + 1 });
+    } else fail(job, friendly(err));
+  }
 }
 
 async function startSongJob(job) {
@@ -315,11 +357,27 @@ function newJob(type, fields) {
 // ---------------------------------------------------------------------------
 // Fullføring og polling
 // ---------------------------------------------------------------------------
+/**
+ * Ferdig video: lastes ned lokalt og (unntatt finalen) gjøres om til en frem-og-tilbake-versjon,
+ * så den lever lenger på skjermen. Originalen beholdes i result.originalUrl (brukes i kveldens film).
+ */
 async function completeVideo(job, videoUrl) {
   const noReview = job.type === 'finale' || job.type === 'example';
-  updateJob(job, { status: 'done', result: { videoUrl, ...(job.type === 'finale' ? { lipsync: true } : {}) }, ...(noReview ? {} : reviewFlag()) });
+  updateJob(job, { provider: { ...(job.provider || {}), stage: 'finishing' } }); // nedlasting og ffmpeg tar tid: ikke poll på nytt imens
   const local = await mirror(videoUrl, 'video/mp4');
-  if (local !== videoUrl) updateJob(job, { result: { ...job.result, videoUrl: local } });
+  const result = { ...(job.result || {}), videoUrl: local, ...(job.type === 'finale' ? { lipsync: true } : {}) };
+  if (usePingpong && job.type !== 'finale' && local.startsWith('media/')) {
+    const src = path.join(MEDIA_DIR, path.basename(local));
+    const name = path.basename(local, path.extname(local)) + '-pp.mp4';
+    try {
+      await pingpong.build(src, path.join(MEDIA_DIR, name));
+      result.originalUrl = local;
+      result.videoUrl = 'media/' + name;
+    } catch (err) {
+      console.warn(`[pingpong ${job.id}] beholder originalen:`, err.message);
+    }
+  }
+  updateJob(job, { status: 'done', result, ...(noReview ? {} : reviewFlag()) });
 }
 
 
@@ -362,13 +420,27 @@ async function pollJob(job) {
   lastPoll.set(job.id, Date.now());
 
   if (p.name === 'higgsfield') {
+    if (p.stage === 'video-pending') return trySubmitVideo(job);
+    if (p.stage === 'finishing') return;
     const s = await higgsfield.status(p.requestId);
+    if (s.status === 'nsfw') return fail(job, 'Bildet ble stoppet av innholdsfilteret. Prøv et annet bilde!');
+    const stopped = ['failed', 'canceled', 'cancelled'].includes(s.status);
+    if (p.stage === 'image') {
+      // Bildefiksen er bonus: går den galt, lages filmen av originalbildet.
+      if (s.status === 'completed' && s.imageUrl) {
+        const local = await mirror(s.imageUrl, 'image/jpeg');
+        updateJob(job, { fixedImageUrl: s.imageUrl, result: { ...(job.result || {}), fixedImageUrl: local } });
+        return videoAfterFix(job, s.imageUrl);
+      }
+      if (s.status === 'completed') return videoAfterFix(job, job.hfImageUrl, 'Bildefiks uten bilde i svaret');
+      if (stopped) return videoAfterFix(job, job.hfImageUrl, `Bildefiks ${s.status}`);
+      return;
+    }
     if (s.status === 'completed') {
       if (!s.videoUrl) return fail(job, 'Fikk ikke noe video tilbake.');
       return completeVideo(job, s.videoUrl);
     }
-    if (s.status === 'nsfw') return fail(job, 'Bildet ble stoppet av innholdsfilteret. Prøv et annet bilde!');
-    if (['failed', 'canceled', 'cancelled'].includes(s.status)) return fail(job, 'Videoen kunne ikke lages. Prøv igjen!');
+    if (stopped) return fail(job, 'Videoen kunne ikke lages. Prøv igjen!');
   }
 
   if (p.name === 'suno') {
@@ -403,6 +475,8 @@ for (const job of jobs.values()) {
   if (job.status === 'queued') fail(job, 'Serveren ble startet på nytt. Prøv igjen!');
   // Stoppet midt i innsendingen: vi vet ikke om Higgsfield fikk den, så send på nytt.
   if (job.status === 'starting' && laneOf(job)) updateJob(job, { status: 'waiting' });
+  // Stoppet under nedlasting/ffmpeg: hent resultatet fra Higgsfield på nytt
+  if (job.status === 'processing' && job.provider && job.provider.stage === 'finishing') updateJob(job, { provider: { ...job.provider, stage: 'video' } });
   if (job.status === 'starting' && job.type === 'finale') setImmediate(() => finaleFallback(job, 'serveren startet på nytt'));
 }
 
@@ -457,7 +531,10 @@ r.get('/api/config', (req, res) => {
     birthdayName: BIRTHDAY_NAME,
     partyTitle: PARTY_TITLE,
     drawingStyles: DRAWING_STYLES.map(({ id, name, emoji }) => ({ id, name, emoji })),
-    selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji }) => ({ id, name, emoji })),
+    selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji, framing }) => ({ id, name, emoji, framing })),
+    framing: FRAMING,
+    videoSeconds: higgsfield.VIDEO_SECONDS,
+    imageFix: useImageFix,
     songGenres: SONG_GENRES,
     songMoods: SONG_MOODS,
     schedule: PARTY.schedule,
@@ -512,8 +589,16 @@ r.post('/api/selfie', upload.single('image'), async (req, res) => {
   const job = newJob('selfie', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id } });
 
   res.json({ id: job.id });
-  enqueueVideo(job, req.file.mimetype, effect.prompt);
+  enqueue(job, { prompt: effect.prompt, contentType: req.file.mimetype, fix: imageFixFor(effect, req.file.buffer) });
 });
+
+/** Bildefiksen trenger prompt og et sideforhold som ligner bildet (ellers blir alt kvadratisk). */
+function imageFixFor(effect, buffer) {
+  const prompt = imagePrompt(effect);
+  if (!prompt) return null;
+  const dim = imageSize(buffer);
+  return { prompt, aspectRatio: dim ? nearestAspect(dim.width, dim.height, higgsfield.IMAGE_ASPECTS) : '3:4' };
+}
 
 // Sang
 r.post('/api/song', async (req, res) => {
@@ -1111,7 +1196,7 @@ r.post('/api/admin/film', requireAdmin, async (req, res) => {
   // Maks 40 klipp: ta et jevnt utvalg gjennom kvelden
   const pickEvery = Math.max(1, Math.ceil(items.length / 40));
   const clips = items.filter((_, i) => i % pickEvery === 0).map((j) => {
-    const v = fileOf(j.result.videoUrl);
+    const v = fileOf(j.result.originalUrl || j.result.videoUrl);
     if (v && fs.existsSync(v)) return { file: v };
     const img = fileOf(j.result.imageUrl || j.inputUrl);
     return img && fs.existsSync(img) ? { file: img, image: true } : null;
@@ -1193,7 +1278,7 @@ r.post('/api/admin/examples', requireAdmin, upload.single('image'), (req, res) =
   const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
   const ids = list.map((x) => {
     const job = newJob('example', { label: x.name, emoji: x.emoji, inputUrl, input: { kind, ref: x.id } });
-    enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype });
+    enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype, fix: kind === 'selfie' ? imageFixFor(x, req.file.buffer) : null });
     return job.id;
   });
   res.json({ count: ids.length });
@@ -1285,6 +1370,9 @@ r.get('/api/health', (req, res) => {
   res.json({
     ok: true,
     higgsfield: useHiggsfield ? 'på' : 'demo',
+    imageFix: useImageFix,
+    videoSeconds: higgsfield.VIDEO_SECONDS,
+    pingpong: usePingpong,
     suno: useSuno ? 'på' : 'demo',
     lipsync: higgsfield.lipsyncConfigured(),
     publicUrl: PUBLIC_URL || null,
@@ -1306,7 +1394,8 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`\n🎂 ${PARTY_TITLE} kjører på http://localhost:${PORT}${BASE_PATH}/`);
   for (const url of lanAddresses()) console.log(`   På nettverket: http://${url}:${PORT}${BASE_PATH}/`);
-  console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, maks ${HF_MAX_CONCURRENT} samtidig`);
+  console.log(`   Video (Higgsfield): ${useHiggsfield ? 'PÅ' : 'DEMO (sett HF_KEY)'}, ${higgsfield.VIDEO_SECONDS} sek per film, maks ${HF_MAX_CONCURRENT} samtidig`);
+  console.log(`   Bildefiks:          ${useImageFix ? 'PÅ (' + higgsfield.IMAGE_MODEL + ')' : 'AV'}, frem og tilbake: ${usePingpong ? 'PÅ' : 'AV (ffmpeg mangler)'}`);
   console.log(`   Sang (Suno):        ${useSuno ? 'PÅ' : 'DEMO (sett SUNO_API_KEY)'}, maks ${SUNO_MAX_CONCURRENT} samtidig`);
   if (!PUBLIC_URL) console.log('   Tips: sett PUBLIC_URL slik at QR-kodene peker til riktig adresse.\n');
 });

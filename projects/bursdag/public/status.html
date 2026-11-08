@@ -16,6 +16,7 @@
   <div class="top"><a class="back" href="./">‹ Forsiden</a></div>
   <div id="box" class="card status-box">
     <div class="spinner" id="spin" aria-hidden="true">🎨</div>
+    <div class="stages" id="stages" hidden><span data-s="image">1 · Fikser bildet</span><span data-s="video">2 · Lager film</span></div>
     <div class="status-msg" id="msg" aria-live="polite">Starter …</div>
     <div class="progress"><div id="bar"></div></div>
     <p class="hint">Du kan lukke siden. Resultatet dukker opp på storskjermen!</p>
@@ -39,7 +40,10 @@
   const again = document.getElementById('again');
   const MSGS = {
     drawing: ['Kunstneren studerer tegningen din …', 'Fargene begynner å bevege seg …', 'Regissøren roper ACTION! 🎬', 'Legger på litt magisk støv ✨', 'Snart premiere …'],
-    selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Ordner lyset 💡', 'Nesten klar for storskjermen …'],
+    selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Nesten klar for storskjermen …'],
+    image: ['Ordner lyset 💡', 'Bytter ut tømmerhytta med noe bedre 🌍', 'Pusser opp bakgrunnen …'],
+    video: ['Regissøren roper ACTION! 🎬', 'Effekten varmer opp …', 'Filmer siste scene …', 'Nesten klar for storskjermen …'],
+    finishing: ['Klipper filmen frem og tilbake ⏪⏩', 'Siste finpuss …'],
     song: ['Skriver tekst på rim …', 'Stemmer gitaren 🎸', 'Vokalisten varmer opp 🎤', 'Mikser refrenget …', 'Trykker på REC …'],
   };
   const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang' };
@@ -66,7 +70,9 @@
       return;
     }
     if (job.status !== 'done') {
-      const list = MSGS[job.type] || MSGS.drawing;
+      showStages(job);
+      const stage = job.stage === 'video-pending' ? 'video' : job.stage;
+      const list = (job.type === 'selfie' && MSGS[stage]) || MSGS[job.type] || MSGS.drawing;
       const secs = (Date.now() - start) / 1000;
       msg.textContent = list[Math.floor(secs / 7) % list.length];
       bar.style.width = Math.min(92, 5 + (secs / (EXPECTED[job.type] || 120)) * 87) + '%';
@@ -87,6 +93,7 @@
       else html += '<p class="hint">Sangen er lagt i spillelisten.</p>';
     } else if (r.videoUrl) {
       html += '<video class="result-media" src="' + Party.esc(r.videoUrl) + '" autoplay loop muted playsinline controls></video>';
+      if (r.fixedImageUrl) html += '<div class="fixed-shot"><img src="' + Party.esc(r.fixedImageUrl) + '" alt=""><span>Vi fikset lyset og flyttet deg til et sted som passer, før filmen ble laget.</span></div>';
       html += '<p><a class="btn secondary" href="' + Party.esc(r.videoUrl) + '" download>⬇️ Last ned filmen</a></p>';
     } else if (r.imageUrl) {
       html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
@@ -97,6 +104,19 @@
       : '<p class="hint">Se etter den på storskjermen 📺</p>';
     box.innerHTML = html;
     document.getElementById('actions').hidden = false;
+  }
+
+  // Selfier går i to steg hos AI-en: bildefiks (lys + bakgrunn) og film
+  function showStages(job) {
+    const el = document.getElementById('stages');
+    const stage = job.stage === 'video-pending' || job.stage === 'finishing' ? 'video' : job.stage;
+    const show = job.type === 'selfie' && (stage === 'image' || stage === 'video');
+    el.hidden = !show;
+    if (!show) return;
+    el.querySelectorAll('span').forEach((s) => {
+      s.classList.toggle('on', s.dataset.s === stage);
+      s.classList.toggle('done', s.dataset.s === 'image' && stage === 'video');
+    });
   }
 
   async function tick() {

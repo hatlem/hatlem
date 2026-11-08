@@ -6,12 +6,26 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 |---|---|---|
 | 🖍️ **Tegning blir film** | Ta bilde av en tegning, velg stil (magisk, 3D-tegnefilm, anime, blir ekte). Du får en video. | Higgsfield (bilde til video) |
 | 🎤 **Lag en sang** | Velg hvem den er til, tema, sjanger og stemning. Sangen legges **i kø i spillelisten** på storskjermen. | Suno (sunoapi.org / api.box) |
-| 🤳 **Selfie med effekt** | Tiger som går rundt deg, bli et spøkelse, superhelt, UFO, drage, disko, is eller konfetti. | Higgsfield (bilde til video) |
+| 🤳 **Selfie med effekt** | Tiger som går rundt deg, slange rundt halsen, trollmann, spøkelse, superhelt, UFO, drage, disko, is eller konfetti. Bildet fikses først (lys og ny bakgrunn), så lages filmen. | Higgsfield (bilde til bilde, så bilde til video) |
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
 - 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Storskjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
+
+## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake
+
+Alle bildene tas inne i festlokalet, en tømmerhytte med ujevnt lys. Derfor går hver selfie gjennom to steg hos Higgsfield:
+
+1. **Bildefiks** (`HF_IMAGE_MODEL`, standard Qwen Image 3 Edit): personen beholdes som den er, lyset rettes opp, og tømmerhytta byttes ut med et sted i verden som passer effekten (tigeren får jungelen i Ranthambore, UFO-en Nevada-ørkenen, trollmannen et tårn). Slange og trollmannsklær legges på i dette steget. Sideforholdet følger bildet, så stående bilder forblir stående. Feiler fiksen, lages filmen av originalbildet.
+2. **Film** (`HF_VIDEO_MODEL`, standard Kling 3.0 Standard uten lyd): `VIDEO_SECONDS` sekunder per film, **aldri mer enn 15** uansett innstilling.
+
+Hver effekt har et rammekrav som styrer kamerasteget på mobilen (`lib/catalog.js` → `framing`):
+
+- **Helfigur** (tiger, superhelt, UFO, disko, is): noe skjer rundt bena, så hele kroppen må være med. Siden ber gjesten få noen til å ta bildet fra 3–4 meter, åpner bakkameraet, og krever at gjesten bekrefter «hele meg er med» før innsending. Liggende bilder får et hint om at stående gir mer plass.
+- **Portrett** (slange, trollmann, 1986, spøkelse, drage, konfetti): en vanlig selfie holder.
+
+Ferdige filmer gjøres om til en **frem-og-tilbake-versjon** med ffmpeg (originalen, så den samme i revers), så korte klipp lever lenger på storskjermen, i galleriet og på statussiden. Originalen beholdes (`result.originalUrl`) og brukes i kveldens film. `PINGPONG=0` skrur det av, og uten ffmpeg vises originalen i vanlig loop.
 
 ## Mer moro: reaksjoner, stempelkort, hjerter og kveldens film
 
@@ -45,7 +59,7 @@ På tegne- og selfiesiden ser gjesten stilen før de bestiller:
 - **Ditt bilde (smakebit):** gjestens eget bilde animeres med en gang i valgt stil. Tigeren går rundt deg, du blir et gjennomsiktig spøkelse, UFO-en løfter deg opp, VHS-striper og «REC 17.11.1986», konfetti, is, disko, drage, superhelt, gnistrende tegning, anime, 3D-tegnefilm og «blir ekte». Det er gratis, uten AI, og laget i `public/preview.js` og `public/preview.css`.
 - **Ekte eksempel:** en ekte AI-film i samme stil. Valgknapper med eksempel får ▶︎.
   - Gjestenes egne filmer brukes automatisk, den nyeste godkjente i hver stil.
-  - Vil du ha eksempler fra start: Admin → «Eksempelfilmer» → last opp én tegning (4 filmer) og én selfie (9 filmer). Eksemplene går gjennom den vanlige videokøen og vises ikke i galleriet.
+  - Vil du ha eksempler fra start: Admin → «Eksempelfilmer» → last opp én tegning (4 filmer) og én selfie (11 filmer). Eksemplene går gjennom den vanlige videokøen og vises ikke i galleriet.
 
 ## Skjermer og lyd
 
@@ -180,7 +194,7 @@ API-klienten i `lib/higgsfield.js` følger den offisielle SDK-en `higgsfield-cli
 - Innsending: `POST /<modell>`
 - Status: `GET /requests/<id>/status`
 
-Standardmodellen er `higgsfield-ai/dop/standard`. Sjekk modellnavn og parametere i Higgsfield-konsollen, og bytt med `HF_VIDEO_MODEL`, `HF_VIDEO_EXTRA`, `HF_IMAGE_FIELD` og `HF_PROMPT_FIELD` uten å endre kode.
+Standardmodellen er `kling-video/v3.0/std/image-to-video` (Kling 3.0 Standard, `sound: off`). Sjekk modellnavn og parametere i [docs.higgsfield.ai](https://docs.higgsfield.ai), og bytt med `HF_VIDEO_MODEL`, `HF_VIDEO_EXTRA`, `HF_IMAGE_FIELD`, `HF_PROMPT_FIELD` og `HF_DURATION_FIELD` uten å endre kode. Bildefiksen byttes med `HF_IMAGE_MODEL`, `HF_IMAGE_EXTRA` og `HF_IMAGE_INPUT_FIELD`.
 
 ### Køer hos Higgsfield og Suno
 

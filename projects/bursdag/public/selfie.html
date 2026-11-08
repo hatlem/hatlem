@@ -16,7 +16,7 @@
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🤳 Selfie med effekt</h1>
-  <p class="hint">Velg effekt, ta en selfie, og se deg selv på storskjermen!</p>
+  <p class="hint">Velg effekt, ta bildet, og se deg selv på storskjermen! Vi fikser lyset og flytter deg til et sted som passer effekten.</p>
 
   <form id="f">
     <div class="card">
@@ -26,15 +26,25 @@
     </div>
 
     <div class="card">
-      <div class="step">2 · Ta selfie</div>
-      <p class="hint" style="margin-top:0">Tips: Ha litt luft rundt deg i bildet, så får tigeren plass 🐯</p>
+      <div class="step">2 · Ta bildet</div>
+      <div class="frame-tip" id="frameTip" data-framing="portrait">
+        <div class="figure" aria-hidden="true"><span class="person">🧍</span><span class="floor"></span></div>
+        <div><strong id="frameName">Portrett</strong><p id="frameHint">Portrett holder: ansikt og skuldre.</p></div>
+      </div>
       <label class="photo-drop" id="drop">
-        <div><div class="big">🤳</div><strong>Trykk for å ta selfie</strong></div>
-        <input type="file" name="image" accept="image/*" capture="user">
+        <div><div class="big" id="dropEmoji">🤳</div><strong id="dropText">Trykk for å ta selfie</strong></div>
+        <input type="file" name="image" accept="image/*" capture="user" id="mainInput">
       </label>
       <div class="src-btns">
-        <label>🙋 Noen tar bildet av meg<input type="file" accept="image/*" capture="environment" data-src></label>
+        <label><span id="altText">🙋 Noen tar bildet av meg</span><input type="file" accept="image/*" capture="environment" id="altInput" data-src></label>
         <label>🖼️ Bruk et bilde jeg har<input type="file" accept="image/*" data-src></label>
+      </div>
+      <div class="confirm-frame" id="confirm" hidden>
+        <p><strong>Er hele deg med, fra topp til tå?</strong> <span id="confirmWarn"></span></p>
+        <div class="row">
+          <button type="button" class="btn small" id="confirmYes">✅ Ja, hele meg er med</button>
+          <button type="button" class="btn small secondary" id="confirmRetake">📷 Ta nytt</button>
+        </div>
       </div>
     </div>
 
@@ -59,20 +69,55 @@
 <script>
   const form = document.getElementById('f');
   const go = document.getElementById('go');
-  let file = null;
+  const $ = (id) => document.getElementById(id);
+  let file = null, confirmed = false, landscape = false, effects = [], framingInfo = {};
   Party.demoBanner('video');
-  Party.rememberName(document.getElementById('name'));
+  Party.rememberName($('name'));
+
+  // Effekter rundt bena (tiger, UFO …) trenger hele kroppen; rundt halsen eller som trollmann holder portrett.
+  const current = () => effects.find((e) => e.id === form.effect.value) || effects[0] || {};
+  const needsFull = () => current().framing === 'full';
+  function syncFraming() {
+    const full = needsFull();
+    const info = framingInfo[full ? 'full' : 'portrait'] || {};
+    $('frameTip').dataset.framing = full ? 'full' : 'portrait';
+    $('frameName').textContent = (info.emoji ? info.emoji + ' ' : '') + (info.name || '');
+    $('frameHint').textContent = info.hint || '';
+    $('dropEmoji').textContent = full ? '📷' : '🤳';
+    $('dropText').textContent = full ? 'Få noen til å ta bildet av deg' : 'Trykk for å ta selfie';
+    $('mainInput').setAttribute('capture', full ? 'environment' : 'user');
+    $('altText').textContent = full ? '🤳 Selfie likevel' : '🙋 Noen tar bildet av meg';
+    $('altInput').setAttribute('capture', full ? 'user' : 'environment');
+    updateConfirm();
+  }
+  function updateConfirm() {
+    const ask = !!file && needsFull() && !confirmed;
+    $('confirm').hidden = !ask;
+    $('confirmWarn').textContent = ask && landscape ? 'Bildet er liggende: et stående bilde gir mer plass til hele deg.' : '';
+    go.disabled = !file || ask;
+  }
+
   Party.config().then((c) => {
+    effects = c.selfieEffects;
+    framingInfo = c.framing || {};
     const pre = new URLSearchParams(location.search).get('effekt');
-    const idx = Math.max(0, c.selfieEffects.findIndex((e) => e.id === pre));
-    Party.chips(document.getElementById('effects'), 'effect', c.selfieEffects, { checked: idx });
-    const sync = () => { const v = form.effect.value; pv.setStyle(v, (c.selfieEffects.find((e) => e.id === v) || {}).name); };
-    document.getElementById('effects').addEventListener('change', sync);
+    const idx = Math.max(0, effects.findIndex((e) => e.id === pre));
+    Party.chips($('effects'), 'effect', effects, { checked: idx });
+    const sync = () => { pv.setStyle(form.effect.value, current().name); syncFraming(); };
+    $('effects').addEventListener('change', sync);
     sync();
   });
-  const pv = Party.preview(document.getElementById('pvCard'), 'selfie');
-  const drop = document.getElementById('drop');
-  const useFile = (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); };
+  const pv = Party.preview($('pvCard'), 'selfie');
+  const drop = $('drop');
+  const useFile = (f) => {
+    file = f; confirmed = false; landscape = false;
+    const url = URL.createObjectURL(f);
+    pv.setImage(url);
+    const img = new Image();
+    img.onload = () => { landscape = img.naturalWidth > img.naturalHeight; updateConfirm(); };
+    img.src = url;
+    updateConfirm();
+  };
   Party.photoPicker(drop, useFile);
   // Alternativer for de som ikke vil/får til selfie
   document.querySelectorAll('input[data-src]').forEach((inp) => inp.addEventListener('change', () => {
@@ -81,6 +126,8 @@
     Party.showPhoto(drop, f);
     useFile(f);
   }));
+  $('confirmYes').addEventListener('click', () => { confirmed = true; updateConfirm(); go.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+  $('confirmRetake').addEventListener('click', () => $('mainInput').click());
   document.getElementById('randomEff').addEventListener('click', () => {
     const list = [...form.querySelectorAll('input[name=effect]')];
     const cur = list.find((x) => x.checked);
@@ -106,7 +153,8 @@
       location.href = 'status/' + id;
     } catch (err) {
       document.getElementById('err').textContent = err.message;
-      go.disabled = false; go.textContent = '✨ Gi meg effekten!';
+      go.textContent = '✨ Gi meg effekten!';
+      updateConfirm();
     }
   });
 </script>

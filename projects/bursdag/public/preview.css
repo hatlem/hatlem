@@ -108,3 +108,12 @@
 @keyframes pv-breathe { 50% { transform: scale(1.03); } }
 @keyframes pv-spin { to { transform: rotate(360deg); } }
 @keyframes pv-rise { from { transform: translateY(380px); opacity: 0; } 30% { opacity: .9; } to { transform: translateY(-80px); opacity: 0; } }
+/* Slange rundt halsen: glir rolig rundt skuldrene */
+.pv-slange .img { animation: pv-breathe 5s ease-in-out infinite; }
+.pv-slange .fx.sn { font-size: 64px; left: 50%; top: 52%; z-index: 3; animation: pv-coil 5s ease-in-out infinite alternate; }
+@keyframes pv-coil { from { transform: translate(-50%, -50%) translateX(-55%) rotate(-25deg) scaleX(-1); } to { transform: translate(-50%, -50%) translateX(55%) rotate(25deg); } }
+/* Trollmann: hatt, stav og gnister */
+.pv-trollmann { background: radial-gradient(ellipse at 50% 30%, #2b1a55, #0a0616 75%); }
+.pv-trollmann .img { animation: pv-breathe 4s ease-in-out infinite; filter: saturate(.9) hue-rotate(-10deg); }
+.pv-trollmann .fx.hat { font-size: 64px; left: 50%; top: 2%; z-index: 3; transform: translateX(-50%); animation: pv-swing 2.4s ease-in-out infinite alternate; }
+.pv-trollmann .fx.sp { font-size: 22px; animation: pv-sparkle 2s ease-in-out infinite; z-index: 3; }
