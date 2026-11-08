@@ -15,10 +15,11 @@ case "${1:-}" in
   liste) api "$BASE/api/admin/mcp/jobs" | python3 -c '
 import json,sys; d=json.load(sys.stdin); print("modus:", d["mode"], "| i kø bak:", d["waiting"])
 for j in d["jobs"]: print(j["id"], j["type"], "stage="+str(j["stage"]), "claimed" if j["claimedAt"] else "ledig", "|", j["label"], "| aspekt", (j.get("fix") or {}).get("aspectRatio"), "| sek", j["seconds"])' ;;
-  hent) api "$BASE/api/admin/mcp/jobs" | python3 -c '
-import json,sys,urllib.request; d=json.load(sys.stdin); j=[x for x in d["jobs"] if x["id"]==sys.argv[1]][0]
-url = j["fixedImageUrl"] if j["stage"]=="video" and j.get("fixedImageUrl") else j["inputUrl"]
-urllib.request.urlretrieve(url, sys.argv[2]); print("lastet", url, "->", sys.argv[2]); print("PROMPT:", j["prompt"]); print("FIX:", json.dumps(j.get("fix"), ensure_ascii=False))' "$2" "$3" ;;
+  hent) url=$(api "$BASE/api/admin/mcp/jobs" | python3 -c '
+import json,sys; d=json.load(sys.stdin); j=[x for x in d["jobs"] if x["id"]==sys.argv[1]][0]
+print(j["fixedImageUrl"] if j["stage"]=="video" and j.get("fixedImageUrl") else j["inputUrl"])
+print("PROMPT:", j["prompt"], file=sys.stderr); print("FIX:", json.dumps(j.get("fix"), ensure_ascii=False), file=sys.stderr)' "$2")
+        curl -sS -o "$3" "$url" && echo "lastet $url -> $3" ;;
   claim) api -H "Content-Type: application/json" -d '{"worker":"mac"}' "$BASE/api/admin/mcp/jobs/$2/claim" ;;
   bilde) api -H "Content-Type: application/json" -d "{\"imageUrl\":\"$3\"}" "$BASE/api/admin/mcp/jobs/$2/result" ;;
   film)  api -H "Content-Type: application/json" -d "{\"videoUrl\":\"$3\"}" "$BASE/api/admin/mcp/jobs/$2/result" ;;
