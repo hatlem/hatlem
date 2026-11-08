@@ -1419,8 +1419,8 @@ r.get('/api/gallery', (req, res) => {
   res.json({ partyTitle: PARTY_TITLE, items, finale: finale && finale.status === 'done' ? finale.result : null, film: state.film && state.film.url ? { url: state.film.url, seconds: state.film.seconds } : null });
 });
 
-// Helsesjekk for overvåking (f.eks. Railway eller UptimeRobot)
-r.get('/api/health', (req, res) => {
+// Helsesjekk for overvåking (f.eks. Railway eller UptimeRobot). Svarer også på rotstien når appen ligger under BASE_PATH.
+function health(req, res) {
   res.json({
     ok: true,
     higgsfield: useHiggsfield ? 'på' : 'demo',
@@ -1435,12 +1435,13 @@ r.get('/api/health', (req, res) => {
     songSlots: slots(LANES.song),
     jobs: jobs.size,
   });
-});
+}
+r.get('/api/health', health);
 
 app.use(BASE_PATH || '/', r);
 if (BASE_PATH) {
   app.get('/', (req, res) => res.redirect(BASE_PATH + '/'));
-  app.get('/api/health', (req, res) => res.redirect(307, BASE_PATH + '/api/health')); // Railway-helsesjekken bruker rotstien
+  app.get('/api/health', health); // Railway-helsesjekken bruker rotstien og følger ikke omdirigeringer
 }
 
 app.use((err, req, res, next) => {
