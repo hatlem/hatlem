@@ -11,7 +11,7 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
-- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Kl. 17 styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
+- 🧠 **Live-quiz** (`/quiz`), med spørsmål om ting i verden som har med bursdagsbarnet å gjøre (eksemplene handler om 1986): gjestene melder seg på når de kommer. Kl. 17 styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
 ## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake

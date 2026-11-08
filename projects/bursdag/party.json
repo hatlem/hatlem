@@ -1,5 +1,5 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Quiz-spørsmålene er eksempler om verden i 1986: bytt ut eller legg til egne, og sett \"eksempel\": false når quizen er ferdig. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "tid": "17:00",
-      "tittel": "Quiz om {navn}",
+      "tittel": "Quiz",
       "emoji": "🧠",
       "hoydepunkt": true
     },
@@ -54,82 +54,82 @@
     "eksempel": true,
     "sporsmal": [
       {
-        "q": "Hvilket år ble {navn} født?",
+        "q": "{navn} ble født i 1986. Hvilken stor ulykke skjedde i Ukraina i april det året?",
         "alt": [
-          "1984",
-          "1985",
-          "1986",
-          "1988"
+          "Tsjernobyl",
+          "Three Mile Island",
+          "Fukushima",
+          "Seveso"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilken norsk by arrangerte Eurovision i 1986?",
+        "alt": [
+          "Oslo",
+          "Trondheim",
+          "Bergen",
+          "Stavanger"
         ],
         "riktig": 2
       },
       {
-        "q": "Hva var {navn} sin første jobb?",
+        "q": "Hvilket land vant fotball-VM i 1986?",
         "alt": [
-          "Avisbud",
-          "Jordbærplukker",
-          "Butikk",
-          "Noe helt annet"
+          "Brasil",
+          "Argentina",
+          "Vest-Tyskland",
+          "Italia"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "Hvem ble Norges statsminister i 1986?",
+        "alt": [
+          "Kåre Willoch",
+          "Gro Harlem Brundtland",
+          "Jan P. Syse",
+          "Odvar Nordli"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "Hvilken romferge eksploderte rett etter oppskyting i januar 1986?",
+        "alt": [
+          "Columbia",
+          "Discovery",
+          "Atlantis",
+          "Challenger"
+        ],
+        "riktig": 3
+      },
+      {
+        "q": "Hvilken komet var synlig fra jorda i 1986, for første gang siden 1910?",
+        "alt": [
+          "Halleys komet",
+          "Hale–Bopp",
+          "Kometen Hyakutake",
+          "Shoemaker–Levy"
         ],
         "riktig": 0
       },
       {
-        "q": "Hva er {navn} sin favorittmat?",
+        "q": "Hvilket norsk band toppet den amerikanske Billboard-listen med «Take On Me» i 1985?",
         "alt": [
-          "Taco",
-          "Pizza",
-          "Fårikål",
-          "Sushi"
+          "Bobbysocks",
+          "a-ha",
+          "Dum Dum Boys",
+          "DeLillos"
         ],
-        "riktig": 0
+        "riktig": 1
       },
       {
-        "q": "Hvilket land har {navn} reist mest til?",
+        "q": "Hvilken norsk duo vant Eurovision i 1985, så Norge fikk arrangere i 1986?",
         "alt": [
-          "Spania",
-          "Sverige",
-          "Danmark",
-          "Hellas"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hva ville {navn} bli som liten?",
-        "alt": [
-          "Astronaut",
-          "Fotballspiller",
-          "Dyrlege",
-          "Rockestjerne"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hvilken 80-tallsfilm har {navn} sett flest ganger?",
-        "alt": [
-          "Tilbake til fremtiden",
-          "Top Gun",
-          "E.T.",
-          "Ghostbusters"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hvor mange søsken har {navn}?",
-        "alt": [
-          "0",
-          "1",
-          "2",
-          "3 eller flere"
-        ],
-        "riktig": 0
-      },
-      {
-        "q": "Hva gjør {navn} helst en søndag?",
-        "alt": [
-          "Tur i skogen",
-          "Sofa og serier",
-          "Trener",
-          "Lager mat"
+          "Bobbysocks",
+          "Secret Garden",
+          "Jahn Teigen og Anita Skorgan",
+          "Ketil Stokkan"
         ],
         "riktig": 0
       }

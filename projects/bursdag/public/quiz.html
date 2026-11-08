@@ -54,7 +54,7 @@
 
   function joinForm(v) {
     const name = (() => { try { return localStorage.getItem('bursdag-name') || ''; } catch { return ''; } })();
-    return '<div class="big">🧠</div><h2>Quiz om ' + esc(birthdayName) + '</h2>' +
+    return '<div class="big">🧠</div><h2>Quiz</h2>' +
       '<p>' + (v.phase ? 'Quizen er i gang. Bli med nå!' : 'Live-quiz på skjermen' + (highlight ? ' kl. ' + esc(highlight.time) : '') + '. Meld deg på nå, så er du klar!') + '</p>' +
       '<form id="join" class="card" style="text-align:left;margin-top:10px"><label for="nm">Navnet ditt</label><input type="text" id="nm" maxlength="24" required value="' + esc(name) + '" autocomplete="given-name"><p></p><button class="btn">🙋 Bli med</button><div class="error" id="err"></div></form>';
   }

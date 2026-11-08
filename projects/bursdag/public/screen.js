@@ -352,7 +352,7 @@
       const names = (v.names || []).map((n) => `<span>${esc(n)}</span>`).join('');
       if (changed) {
         el.innerHTML = `<div class="lq"><div class="lq-center">
-          <h1 class="gradient-text">🧠 Quiz om ${esc(birthdayName)}</h1>
+          <h1 class="gradient-text">🧠 Quiz!</h1>
           <div class="lq-join"><img src="qr.svg?path=/quiz" alt="QR-kode til quizen"><div><p>📱 Skann og skriv navnet ditt</p><p style="color:var(--muted)">Svar raskt: jo raskere, jo flere poeng!</p><p><b id="lqPlayers"></b></p></div></div>
           <div class="lq-names" id="lqNames"></div></div></div>`;
       }
@@ -361,7 +361,7 @@
     } else if (v.phase === 'question' || v.phase === 'reveal') {
       if (changed) {
         el.innerHTML = `<div class="lq">
-          <div class="lq-head"><span>Spørsmål ${v.q + 1} av ${v.total}</span><span>${esc(birthdayName)}-quizen 🧠</span></div>
+          <div class="lq-head"><span>Spørsmål ${v.q + 1} av ${v.total}</span><span>Quiz 🧠</span></div>
           <div class="lq-q">${esc(v.question)}</div>
           <div class="lq-mid"><div class="lq-timer" id="lqTimer"><span id="lqSec"></span></div><div class="lq-count" id="lqCount"></div></div>
           <div class="lq-grid">${v.options.map((o, i) => `<div class="lq-opt o${i}" id="lqo${i}"><span class="sym">${SYMS[i]}</span><span>${esc(o)}</span><span class="n" id="lqn${i}"></span></div>`).join('')}</div>
