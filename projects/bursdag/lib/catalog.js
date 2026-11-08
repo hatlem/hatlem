@@ -19,7 +19,7 @@ const DRAWING_STYLES = [
     name: '3D-tegnefilm',
     emoji: '🎬',
     prompt: (d) =>
-      `${PAPER_ONLY} Transform this child-like drawing into a colorful 3D animated feature film scene, cute characters faithful to the drawing's shapes and colors${d ? `, the scene shows: ${d}` : ''}, characters move expressively, cinematic lighting, smooth camera movement.`,
+      `${PAPER_ONLY} Transform this hand-made drawing into a colorful 3D animated feature film scene, cute characters faithful to the drawing's shapes and colors${d ? `, the scene shows: ${d}` : ''}, characters move expressively, cinematic lighting, smooth camera movement.`,
   },
   {
     id: 'anime',
