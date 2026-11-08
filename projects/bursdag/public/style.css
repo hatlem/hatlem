@@ -283,3 +283,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 .prog-mini li.hl b { color: var(--yellow); }
 .prog-note { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255,210,63,.14); color: var(--yellow); font-weight: 800; }
 .prog-more { display: block; margin-top: 12px; font-weight: 800; color: var(--cyan); }
+.prog-allday { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.prog-allday span { font-size: 14px; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: rgba(62,230,216,.12); border: 1px solid rgba(62,230,216,.4); color: var(--text); }
+.prog-allday:empty { display: none; }

@@ -151,7 +151,7 @@
       if (!n) return;
       const left = { drawing: '🖍️ tegning', song: '🎤 sang', selfie: '🤳 selfie' };
       const missing = ['drawing', 'song', 'selfie'].filter((t) => !s[t]).map((t) => left[t]);
-      document.getElementById('stampMsg').textContent = s.complete ? '🎟️ Alle tre stempler! Du er med i trekningen ved kaka.' : `🎟️ ${n} av 3 stempler. Mangler: ${missing.join(' og ')}`;
+      document.getElementById('stampMsg').textContent = s.complete ? '🎟️ Alle tre stempler! Du er med i trekningen ved quizen.' : `🎟️ ${n} av 3 stempler. Mangler: ${missing.join(' og ')}`;
       document.getElementById('stampLine').hidden = false;
       if (s.complete) document.getElementById('stampLine').classList.add('complete');
     }).catch(() => {});

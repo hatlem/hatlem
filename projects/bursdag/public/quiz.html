@@ -79,7 +79,7 @@
       return;
     }
     if (!v.phase) {
-      view.innerHTML = '<div class="big">✅</div><h2>Du er med, ' + esc(v.name) + '!</h2><p>Quizen starter på skjermen' + (highlight ? ' kl. ' + esc(highlight.time) + ' ved kaka 🎂' : '') + '.</p><p>Ha telefonen klar, og svar raskt for flest poeng!</p>';
+      view.innerHTML = '<div class="big">✅</div><h2>Du er med, ' + esc(v.name) + '!</h2><p>Quizen starter på skjermen' + (highlight ? ' kl. ' + esc(highlight.time) + ' 🧠' : '') + '.</p><p>Ha telefonen klar, og svar raskt for flest poeng!</p>';
     } else if (v.phase === 'lobby') {
       view.innerHTML = '<div class="big">⏳</div><h2>Du er med!</h2><p>Se på skjermen. Quizen starter straks …</p><p><b>' + v.players + '</b> spillere er klare</p>';
     } else if (v.phase === 'question') {

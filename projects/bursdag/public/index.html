@@ -41,7 +41,7 @@
       <a class="stamp" id="st-song" href="sang" aria-label="Sang">🎤</a>
       <a class="stamp" id="st-selfie" href="selfie" aria-label="Selfie">🤳</a>
     </div>
-    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved kaka!</p>
+    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved quizen!</p>
   </section>
 
   <h3 class="more-title">Mer moro</h3>
@@ -57,6 +57,7 @@
   <a class="prog-mini" id="progMini" href="program" hidden>
     <div class="step">📅 Program</div>
     <div class="prog-note" id="progNote" hidden></div>
+    <div class="prog-allday" id="progAllDay"></div>
     <ul id="progList"></ul>
     <span class="prog-more">Trykk for oppdatert program ›</span>
   </a>
@@ -74,9 +75,9 @@
     if (s.complete) {
       box.classList.add('complete');
       document.getElementById('stampTitle').textContent = '🎟️ Du er med i trekningen!';
-      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på skjermen ved kaka. Så langt er ${s.entries} med.`;
+      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på skjermen ved quizen. Så langt er ${s.entries} med.`;
     } else if (n) {
-      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved kaka 🎂`;
+      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved quizen 🎟️`;
     }
   }).catch(() => {});
   Party.config().then((c) => {
@@ -91,6 +92,7 @@
     const note = document.getElementById('progNote');
     note.hidden = !d.note;
     note.textContent = d.note ? '📣 ' + d.note : '';
+    document.getElementById('progAllDay').innerHTML = (d.allDay || []).map((x) => `<span>${Party.esc(x)}</span>`).join('');
     document.getElementById('progMini').hidden = false;
   }).catch(() => {});
 </script>

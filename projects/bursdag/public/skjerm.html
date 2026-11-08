@@ -83,6 +83,7 @@
   .program li.now { color: var(--text); font-weight: 800; }
   .program li.past { opacity: .45; }
   .program li b { width: 3.4vw; flex: none; }
+  .allday { margin-top: .5vw; font-size: 1.05vw; color: var(--text); font-weight: 700; display: grid; gap: .2vw; }
   .countdown { margin-top: .6vw; font-size: 1.3vw; font-weight: 800; color: var(--yellow); }
 
   .takeover { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; text-align: center; padding: 4vw;
@@ -187,6 +188,7 @@
     <div id="programBox" hidden>
       <h2>Program</h2>
       <ul class="program" id="program"></ul>
+      <div class="allday" id="allDay"></div>
       <div class="countdown" id="countdown"></div>
     </div>
   </aside>

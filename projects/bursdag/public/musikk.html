@@ -176,11 +176,11 @@
     if (SOUND) {
       const mix = player.mix;
       status = !player.started ? '' : !player.active ? '🔇 Lyden spilles fra en annen enhet. Trykk for å ta over.'
-        : mix.forcePause ? '⏸️ Pause for kake og tale' : mix.paused ? '⏸️ Satt på pause fra admin' : mix.duck < 1 ? '🔉 Quiz pågår, musikken er dempet' : '';
+        : mix.forcePause ? '⏸️ Pause for bursdagssang og tale' : mix.paused ? '⏸️ Satt på pause fra admin' : mix.duck < 1 ? '🔉 Quiz pågår, musikken er dempet' : '';
     } else if (data) {
       const mode = data.takeover && data.takeover.mode;
       status = !data.playing ? '🔇 Ingen lydkilde. Start /lyd på mobilen ved høyttaleren.'
-        : ['cake', 'greetings'].includes(mode) ? '⏸️ Pause for kake og tale' : data.playing.paused ? '⏸️ Pause' : mode === 'kahoot' ? '🔉 Quiz pågår, musikken er dempet' : '';
+        : ['cake', 'greetings'].includes(mode) ? '⏸️ Pause for bursdagssang og tale' : data.playing.paused ? '⏸️ Pause' : mode === 'kahoot' ? '🔉 Quiz pågår, musikken er dempet' : '';
     }
     $('status').textContent = status;
   }

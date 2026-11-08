@@ -24,6 +24,8 @@
   .tease li b { display: block; color: var(--text); font-size: 16px; margin-bottom: 2px; }
   .snart .date { display: inline-block; margin-top: 18px; padding: 10px 20px; border-radius: 22px; background: rgba(255, 210, 63, 0.14); border: 1px solid rgba(255, 210, 63, 0.5); font-weight: 800; line-height: 1.35; }
   .snart .date small { display: block; font-weight: 700; color: var(--muted); font-size: 15px; }
+  .snart .allday { margin-top: 18px; font-weight: 800; color: var(--text); font-size: 16px; }
+  .snart .allday:empty { display: none; }
   .prog-link { display: inline-block; font-weight: 800; color: var(--cyan); text-decoration: none; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--card-border); background: rgba(0,0,0,.25); }
   @media (max-width: 360px) { .snart { padding: 20px 14px; } .snart .cake { font-size: 80px; } .tease li { padding: 10px 12px; } }
 </style>
@@ -41,6 +43,7 @@
       <li><span aria-hidden="true">🧠</span><div><b>Live-quiz om 40-åringen</b>Hvor godt kjenner du egentlig Andreas?</div></li>
       <li><span aria-hidden="true">🎥</span><div><b>På skjermen hele dagen</b>Alt dere lager, dukker opp der</div></li>
     </ul>
+    <p class="allday" id="sAllDay"></p>
     <div class="date"><span id="sDate">Lørdag 14. november</span><small id="sPlace">Rodeløkka Velhus · kl. 14–20</small></div>
     <p style="margin-top:16px"><a class="prog-link" href="program">📅 Se programmet ›</a></p>
   </div>
@@ -52,6 +55,7 @@
     if (v.date) document.getElementById('sDate').textContent = v.date;
     const place = [v.name, v.time].filter(Boolean).join(' · ');
     if (place) document.getElementById('sPlace').textContent = place;
+    document.getElementById('sAllDay').textContent = (d.allDay || []).join(' · ');
   }).catch(() => {});
 </script>
 </body>

@@ -115,7 +115,7 @@
         [fmt(S + 60), 'pafyll1', 'Påfyll av mat, runde 1', ''],
         [fmt(H - 30), 'finale', 'Lag finalen i admin', 'Velg den beste gjestesangen + videoen din'],
         [fmt(H - 15), 'lobby', 'Åpne quiz-lobbyen', 'Admin → Live-quiz → «Åpne quizen», så folk rekker å melde seg på'],
-        [fmt(H), 'kake', `🎂 ${hl ? hl.title : 'Kake og tale'}`, 'Kaketid → kort tale → live-quiz → les hilsener → 🎬 finale → tilbake til vanlig', true],
+        [fmt(H), 'kake', `${hl ? hl.emoji + ' ' + hl.title : '🧠 Quiz'}`, 'Live-quiz → stempelkort-trekning → les hilsener → ❤️ favoritter → 🎬 finale → tilbake til vanlig', true],
         [fmt(T3), 'mingling', after ? after.title : 'Musikken opp', 'Skru opp volumet i Admin → Musikk'],
         [fmt(T3 + 30), 'pafyll2', 'Påfyll av mat, runde 2', 'Så det ikke er tomt for de som kommer sent'],
         [fmt(E - 30), 'zip', 'Last ned alt fra galleriet', '/galleri → «Last ned alt», som sikkerhetskopi'],
@@ -131,18 +131,17 @@
     const A = plan.adults, K = plan.kids, P = A + K;
     const ute = plan.venue !== 'inne';
     const list = [
-      ['🍽️ Mat (langbord)', [
-        ['polser', 'Pølser', up(A * 1.5 + K * 1.5) + ' stk'],
-        ['brod', 'Pølsebrød / lomper', up(A * 1.5 + K * 1.5) + ' stk'],
-        ['wraps', 'Wraps (ferdige eller til å lage)', up(A * 1.5 + K * 0.5) + ' stk'],
-        ['suppe', 'Suppe', (Math.round((A * 0.3 + K * 0.15) * 10) / 10) + ' liter'],
-        ['frukt', 'Frukt', (Math.round(P * 0.15 * 10) / 10) + ' kg'],
-        ['gront', 'Grønnsaksstaver og dipp', (Math.round(P * 0.08 * 10) / 10) + ' kg'],
-        ['kake', 'Bursdagskake (ca. 12 biter per kake)', up(P / 12) + ' stk'],
-        ['kaker', 'Småkaker / boller til påfyll', up(P * 1.5) + ' stk'],
+      ['🍽️ Mat hele dagen (tapas og kake)', [
+        ['tapas', 'Tapas: småretter (spekemat, oster, oliven, tortilla, kjøttboller, grønnsaker …)', (Math.round(P * 0.35 * 10) / 10) + ' kg totalt'],
+        ['brod', 'Brød og kjeks til tapasen', up(P / 6) + ' brød'],
+        ['frukt', 'Frukt og grønnsaksstaver', (Math.round(P * 0.15 * 10) / 10) + ' kg'],
+        ['kake', 'Kaker (fylles på gjennom dagen, ca. 12 biter per kake)', up(P * 1.5 / 12) + ' stk'],
+        ['bursdagskake', 'Bursdagskake til bursdagssangen', '1'],
       ]],
-      ...(K ? [['🧒 Barnebordet (lavt bord)', [
-        ['barnemat', 'Barnevennlig mat (pølsebiter, ost, kjeks)', up(K * 0.15) + ' kg'],
+      ...(K ? [['🌭 Til barna', [
+        ['polser', 'Pølser', up(K * 2) + ' stk'],
+        ['brod-polse', 'Pølsebrød / lomper', up(K * 2) + ' stk'],
+        ['ketchup', 'Ketchup og sennep', '1 av hver'],
         ['barnedrikke', 'Saft / juice i små kartonger', up(K * 2) + ' stk'],
       ]]] : []),
       ['🥤 Drikke', [
@@ -185,7 +184,7 @@
       ...(ute ? [['🌳 Ute', [
         ['telt', 'Partytelt / le for regn', '1'],
         ['pledd', 'Pledd og sitteunderlag', up(P / 4) + ' stk'],
-        ['grill', 'Grill + kull/gass (til pølsene)', '1'],
+        ['grill', 'Grill eller kokeplate til pølsene', '1'],
         ['lys', 'Lykter / lys til kvelden', up(P / 10) + ' stk'],
         ['mygg', 'Myggspray', '1–2'],
       ]]] : []),

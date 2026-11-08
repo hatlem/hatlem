@@ -11,7 +11,7 @@ En interaktiv fest-app. Gjestene skanner QR-koder rundt i lokalet og velger mell
 
 I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
-- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Ved kaka styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
+- 🧠 **Live-quiz om bursdagsbarnet** (`/quiz`): gjestene melder seg på når de kommer. Kl. 17 styrer du quizen fra admin. Skjermen viser spørsmål med nedtelling, og telefonene er fire fargede svarknapper. Raske, riktige svar gir flest poeng (500–1000). Etter hvert spørsmål vises fasit og toppliste, og til slutt pallen.
 - 💌 **Gjestebok med vri** (`/hilsen`): «Gi 40-åringen ett råd», «Gjett hva jeg gjorde da jeg var 20» osv.
 
 ## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake
@@ -97,7 +97,7 @@ Sider for verten:
 
 - `/admin/plan`: **kjøreplan og handleliste**.
   - Oppgi antall voksne og barn, og velg inne, ute eller begge.
-  - Tidsplanen regnes ut fra programmet i `party.json`: rigg, start lyd, åpne quiz-lobby, kaketid, påfyll og nedlasting.
+  - Tidsplanen regnes ut fra programmet i `party.json`: rigg, start lyd, åpne quiz-lobby, quiz, påfyll og nedlasting.
   - Handlelisten regnes ut fra antall gjester: pølser, wraps, suppe, kake, drikke, engangsutstyr, stasjoner, teknikk og ute-utstyr.
   - Avkrysning deles mellom alle i admin. Du kan legge til egne punkter, og siden kan skrives ut.
 - `/admin`: godkjenning, felles høydepunkt (🎂 kake, 💌 hilsener, 🎬 finale), live-quiz med én «Neste»-knapp, og forbruk.
@@ -159,7 +159,7 @@ Skriptet leser `.env`. Den ekte testen viser:
 - **Sangintro og sangtekst:** før hver gjestesang viser skjermen «🎤 Neste sang: tittel, laget av Per». Mens sangen spilles, vises teksten linje for linje i «Nå spilles».
 - **Finale** (i `/admin`): velg en gjestesang og last opp en kort video av bursdagsbarnet (5–15 sekunder, ansiktet rett mot kamera), eller bruk en ferdig selfievideo.
   - Higgsfield lipsync (`HF_LIPSYNC_MODEL`) får munnen til å synge sangen. Sangen kuttes til `FINALE_SECONDS` for å spare kreditter.
-  - Trykk «🎬 Vis finalen» ved kaka. Skjermen viser «Verdenspremiere!», så musikkvideoen, så konfetti.
+  - Trykk «🎬 Vis finalen» når du vil, for eksempel etter quizen. Skjermen viser «Verdenspremiere!», så musikkvideoen, så konfetti.
   - Hvis lipsync ikke er satt opp eller feiler, blir finalen videoen og sangen spilt samtidig, så den virker uansett.
 - **Galleri** (`/galleri`): alt som ble vist på skjermen, med nedlastingslenker og finalen øverst. Send lenken til gjestene dagen etter.
 - **Forbruk:** admin viser hvor mange videoer og sanger som er laget, mot `MAX_JOBS_TOTAL`.

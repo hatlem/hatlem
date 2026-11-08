@@ -22,6 +22,7 @@ function loadConfig(file, name) {
       day: (raw.sted && raw.sted.dag) || '', // ÅÅÅÅ-MM-DD: «nå»/«ferdig» markeres bare denne dagen
       time: (raw.sted && raw.sted.tid) || '',
     },
+    allDay: (raw.hele_dagen || []).map(fill),
     schedule: (raw.program || []).map((p) => ({ time: p.tid, title: fill(p.tittel), emoji: p.emoji || '⭐', highlight: !!p.hoydepunkt })),
     greetingPrompts: (raw.hilsen || []).map((g) => ({ id: g.id, name: fill(g.tekst), emoji: g.emoji || '💌' })),
     songIdeas: (raw.sangideer || []).map(fill),

@@ -121,7 +121,9 @@
       <div class="step">📅 Program</div>
       <p class="hint" style="margin-top:0">Vises på forsiden, på <a href="program">/program</a>, på skjermen og på «kommer snart». Endringer vises for gjestene innen et minutt.</p>
       <label for="peNote">📣 Kunngjøring (valgfritt)</label>
-      <input type="text" id="peNote" maxlength="200" placeholder="F.eks. Kaka er flyttet til 17:30!">
+      <input type="text" id="peNote" maxlength="200" placeholder="F.eks. Quizen er flyttet til 17:30!">
+      <label for="peAllDay">Hele dagen (én per linje)</label>
+      <textarea id="peAllDay" rows="2" placeholder="🍢 Tapas og kake hele dagen&#10;🌭 Pølser til barna"></textarea>
       <label>Programpunkter</label>
       <div id="peRows"></div>
       <button type="button" class="link" id="peAdd" style="margin-top:6px">➕ Legg til punkt</button>
@@ -264,7 +266,7 @@
       '<div class="demo-banner">Lipsync er ikke satt opp (HF_LIPSYNC_MODEL). Finalen blir da videoen og sangen spilt samtidig, uten at munnen synger.</div>';
     const f = p.finale;
     document.getElementById('fStatus').textContent = !f ? '' :
-      f.status === 'done' ? (f.lipsync ? '✅ Musikkvideoen er klar! Trykk «Vis finalen» ved kaka.' : `✅ Klar (${f.note || 'uten lipsync'}). Trykk «Vis finalen» ved kaka.`)
+      f.status === 'done' ? (f.lipsync ? '✅ Musikkvideoen er klar! Trykk «Vis finalen» når du vil.' : `✅ Klar (${f.note || 'uten lipsync'}). Trykk «Vis finalen» når du vil.`)
       : `⏳ Lager musikkvideo … (${STATUS[f.status] || f.status})`;
     document.getElementById('finaleBtn').disabled = !(f && f.status === 'done');
     clearTimeout(finaleTimer);
@@ -305,6 +307,7 @@
     const d = await fetch('api/program').then((r) => r.json()).catch(() => null);
     if (!d) return;
     document.getElementById('peNote').value = d.note || '';
+    document.getElementById('peAllDay').value = (d.allDay || []).join('\n');
     document.getElementById('peRows').innerHTML = d.schedule.map(peRow).join('');
     const v = d.venue;
     document.getElementById('peName').value = v.name || '';
@@ -320,7 +323,7 @@
       return { time: t.value, emoji: em.value, title: ti.value, highlight: hl.checked };
     });
     const body = {
-      schedule, note: document.getElementById('peNote').value,
+      schedule, note: document.getElementById('peNote').value, allDay: document.getElementById('peAllDay').value.split('\n'),
       venue: { name: document.getElementById('peName').value, date: document.getElementById('peDate').value, time: document.getElementById('peTime').value },
     };
     const r = await api('api/admin/program', { method: 'POST', body: JSON.stringify(body) });

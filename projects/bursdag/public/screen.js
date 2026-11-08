@@ -186,6 +186,7 @@
     const box = $('programBox');
     if (!data.schedule.length) { box.hidden = true; return; }
     box.hidden = false;
+    $('allDay').innerHTML = (data.allDay || []).map((x) => `<span>${esc(x)}</span>`).join('');
     const d = new Date();
     const nowMin = d.getHours() * 60 + d.getMinutes();
     let cur = -1;
@@ -213,7 +214,7 @@
     el.hidden = false;
 
     if (t.mode === 'cake') {
-      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Samle dere rundt kaka, så synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
+      el.innerHTML = `<div><div class="huge">🎂</div><h1 class="gradient-text">${esc(t.title)}</h1><p>Nå synger vi for ${esc(birthdayName)}! 🎉</p></div>`;
       Party.confetti(150);
     } else if (t.mode === 'greetings') {
       const list = t.greetings || [];

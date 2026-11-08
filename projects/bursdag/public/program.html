@@ -13,6 +13,8 @@
 <style>
   .note { margin: 0 0 16px; padding: 14px 16px; border-radius: 16px; background: rgba(255,210,63,.14); border: 1px solid rgba(255,210,63,.6); font-weight: 800; font-size: 17px; }
   .note small { display: block; font-weight: 600; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .allday { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+  .allday span { padding: 8px 14px; border-radius: 999px; background: rgba(62,230,216,.12); border: 1px solid rgba(62,230,216,.45); font-weight: 800; font-size: 15px; }
   .prog { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .prog li { display: grid; grid-template-columns: 58px 32px 1fr; gap: 8px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--card-border); }
   .prog li b { color: var(--yellow); font-size: 17px; }
@@ -31,6 +33,7 @@
   <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>📅 Program</h1>
   <div class="note" id="note" hidden></div>
+  <div class="allday" id="allDay" hidden></div>
   <ul class="prog" id="prog"></ul>
 
   <p class="where" id="where"></p>
@@ -57,6 +60,8 @@
       const tag = i === cur ? '<small>Nå</small>' : isToday && i === cur + 1 ? '<small>Neste</small>' : p.highlight ? '<small>Høydepunkt</small>' : '';
       return '<li class="' + cls + '"><b>' + esc(p.time) + '</b><span class="e">' + esc(p.emoji) + '</span><span class="t">' + tag + esc(p.title) + '</span></li>';
     }).join('') || '<li><span class="t">Programmet kommer!</span></li>';
+    $('allDay').hidden = !(d.allDay || []).length;
+    $('allDay').innerHTML = (d.allDay || []).map((x) => '<span>' + esc(x) + '</span>').join('');
     $('note').hidden = !d.note;
     if (d.note) $('note').innerHTML = '📣 ' + esc(d.note) + (d.updatedAt ? '<small>Oppdatert kl. ' + new Date(d.updatedAt).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) + '</small>' : '');
     const v = d.venue;

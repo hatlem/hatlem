@@ -1,5 +1,5 @@
 {
-  "_les_meg": "Rediger denne fila før festen. Programmet vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "_les_meg": "Rediger denne fila før festen. Programmet og «hele_dagen» (mat o.l. uten klokkeslett) vises på skjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
   "fodselsar": 1986,
   "program": [
     {
@@ -9,8 +9,8 @@
     },
     {
       "tid": "17:00",
-      "tittel": "Kake, tale og quiz",
-      "emoji": "🎂",
+      "tittel": "Quiz om {navn}",
+      "emoji": "🧠",
       "hoydepunkt": true
     },
     {
@@ -23,6 +23,10 @@
       "tittel": "Dørene stenger",
       "emoji": "👋"
     }
+  ],
+  "hele_dagen": [
+    "🍢 Tapas og kake hele dagen",
+    "🌭 Pølser til barna"
   ],
   "hilsen": [
     {

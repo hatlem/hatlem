@@ -758,6 +758,7 @@ r.get('/api/screen', (req, res) => {
     playlist,
     schedule: schedule(),
     programNote: (state.program && state.program.note) || '',
+    allDay: allDay(),
     takeover: takeoverView(),
     playing: playerReport(),
     serverNow: Date.now(),
@@ -820,7 +821,7 @@ function playerReport() {
   return rep && Date.now() - rep.at < 12000 ? rep : null;
 }
 
-/** Under kake, tale og finale stopper musikken; under quizen senkes den. */
+/** Under kaketid (bursdagssang), hilsener og finale stopper musikken; under quizen senkes den. */
 function playerMix() {
   const mode = state.takeover && state.takeover.mode;
   return { forcePause: ['cake', 'greetings', 'finale', 'film'].includes(mode), duck: ['kahoot', 'stamp', 'favorites'].includes(mode) ? 0.25 : 1 };
@@ -925,12 +926,17 @@ r.post('/api/hooks/:provider', (req, res) => {
 function schedule() {
   return (state.program && state.program.schedule) || PARTY.schedule;
 }
+/** Det som gjelder hele dagen (mat o.l.), uten klokkeslett. */
+function allDay() {
+  return (state.program && state.program.allDay) || PARTY.allDay;
+}
 function venue() {
   return { ...PARTY.venue, ...((state.program && state.program.venue) || {}) };
 }
 r.get('/api/program', (req, res) => {
   res.json({
     schedule: schedule(),
+    allDay: allDay(),
     note: (state.program && state.program.note) || '',
     updatedAt: (state.program && state.program.updatedAt) || null,
     venue: venue(),
@@ -1162,7 +1168,7 @@ r.get('/api/admin/party', requireAdmin, (req, res) => {
 r.post('/api/admin/takeover', requireAdmin, (req, res) => {
   const mode = (req.body || {}).mode;
   if (mode === 'off') state.takeover = null;
-  else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: (schedule().find((p) => p.highlight) || {}).title || 'Kaketid!' };
+  else if (mode === 'cake') state.takeover = { mode, at: Date.now(), title: 'Kaketid!' };
   else if (mode === 'greetings') state.takeover = { mode, at: Date.now() };
   else if (mode === 'film') {
     if (!state.film || !state.film.url) return res.status(409).json({ error: 'Kveldens film er ikke laget ennå.' });
@@ -1415,6 +1421,7 @@ r.post('/api/admin/program', requireAdmin, (req, res) => {
       .slice(0, 30);
   }
   if (typeof b.note === 'string') prog.note = clean(b.note, 200);
+  if (Array.isArray(b.allDay)) prog.allDay = b.allDay.map((x) => clean(x, 80)).filter(Boolean).slice(0, 8);
   if (b.venue && typeof b.venue === 'object') {
     prog.venue = {
       name: clean(b.venue.name, 80), date: clean(b.venue.date, 60), time: clean(b.venue.time, 40), day: /^\d{4}-\d{2}-\d{2}$/.test(b.venue.day || '') ? b.venue.day : PARTY.venue.day,
