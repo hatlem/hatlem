@@ -907,7 +907,7 @@ r.post('/api/hooks/:provider', (req, res) => {
   pollJob(job).catch((err) => console.warn('[hook]', err.message));
 });
 
-// --- Program og veibeskrivelse (kan oppdateres fra admin underveis) ------------
+// --- Program (kan oppdateres fra admin underveis) --------------------------------
 function schedule() {
   return (state.program && state.program.schedule) || PARTY.schedule;
 }
@@ -915,13 +915,11 @@ function venue() {
   return { ...PARTY.venue, ...((state.program && state.program.venue) || {}) };
 }
 r.get('/api/program', (req, res) => {
-  const v = venue();
-  const q = encodeURIComponent(v.address ? `${v.name}, ${v.address}` : `${v.name}, Oslo`);
   res.json({
     schedule: schedule(),
     note: (state.program && state.program.note) || '',
     updatedAt: (state.program && state.program.updatedAt) || null,
-    venue: { ...v, maps: { google: `https://www.google.com/maps/search/?api=1&query=${q}`, apple: `https://maps.apple.com/?q=${q}` } },
+    venue: venue(),
     partyTitle: PARTY_TITLE,
     serverNow: Date.now(),
   });
@@ -1064,7 +1062,7 @@ async function finishClip(job) {
   if (useClipTranscode) {
     const base = path.basename(job.sourceUrl, path.extname(job.sourceUrl));
     const out = `${base}-h264.mp4`, poster = `${base}-bilde.jpg`;
-    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster));
+    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster), { wide: VIDEO_ASPECT === '16:9' });
     videoUrl = 'media/' + out;
     extra.seconds = Math.round(r2.seconds * 10) / 10;
     extra.trimmed = r2.trimmed;
@@ -1405,8 +1403,7 @@ r.post('/api/admin/program', requireAdmin, (req, res) => {
   if (typeof b.note === 'string') prog.note = clean(b.note, 200);
   if (b.venue && typeof b.venue === 'object') {
     prog.venue = {
-      name: clean(b.venue.name, 80), address: clean(b.venue.address, 120), date: clean(b.venue.date, 60), time: clean(b.venue.time, 40), day: /^\d{4}-\d{2}-\d{2}$/.test(b.venue.day || '') ? b.venue.day : PARTY.venue.day,
-      directions: (Array.isArray(b.venue.directions) ? b.venue.directions : []).map((x) => clean(x, 200)).filter(Boolean).slice(0, 10),
+      name: clean(b.venue.name, 80), date: clean(b.venue.date, 60), time: clean(b.venue.time, 40), day: /^\d{4}-\d{2}-\d{2}$/.test(b.venue.day || '') ? b.venue.day : PARTY.venue.day,
     };
   }
   if (b.reset) Object.keys(prog).forEach((k) => delete prog[k]);

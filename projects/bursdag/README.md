@@ -32,13 +32,14 @@ Hver effekt har et rammekrav som styrer kamerasteget på mobilen (`lib/catalog.j
 
 Ferdige filmer gjøres om til en **frem-og-tilbake-versjon** med ffmpeg (originalen, så den samme i revers), så korte klipp lever lenger på skjermen, i galleriet og på statussiden. Originalen beholdes (`result.originalUrl`) og brukes i kveldens film. `PINGPONG=0` skrur det av, og uten ffmpeg vises originalen i vanlig loop.
 
-## Program, veibeskrivelse og filmformat
+## Program og filmformat
 
-- **Program:** forsiden viser programmet nederst. «Trykk for oppdatert program og veibeskrivelse» åpner `/program` med «nå» og «neste» (bare på festdagen, `sted.dag` i `party.json`), adresse, Google- og Apple-kart og «Slik finner du fram». `/program` virker også før festen, mens «kommer snart»-siden er på.
-- **Endre underveis:** Admin → «📅 Program og veibeskrivelse» har klokkeslett, punkter, høydepunkt, kunngjøring (vises også på skjermen), sted, adresse og veibeskrivelse. Utgangspunktet er `program` og `sted` i `party.json`, og «Tilbake til party.json» angrer endringene.
+- **Program:** forsiden viser programmet nederst. «Trykk for oppdatert program» åpner `/program` med «nå» og «neste» (bare på festdagen, `sted.dag` i `party.json`), kunngjøring og sted, dato og tid. `/program` virker også bak «kommer snart».
+- **Endre underveis:** Admin → «📅 Program» har klokkeslett, punkter, høydepunkt, kunngjøring (vises også på skjermen), sted, dato og tid. «Tilbake til party.json» angrer endringene.
 - **16:9:** filmene lages i 16:9 så de fyller skjermen (`VIDEO_ASPECT`, standard `16:9`, eller `auto` for å følge mobilbildet).
   - Bildefiksen lager et bredt bilde. Selfien får mer av bakgrunnen på sidene, og tegningen forlenges til sidene i samme stil.
   - Er bildefiksen av eller feiler, legges bildet midt i en 16:9-ramme med uskarp bakgrunn (ffmpeg) før filmen lages.
+  - Egne klipp («Film et klipp») gjøres om til 1280×720. Stående 9:16-klipp legges i midten med en forstørret, uskarp kopi på sidene.
 
 ## Mer moro: reaksjoner, stempelkort, hjerter og kveldens film
 

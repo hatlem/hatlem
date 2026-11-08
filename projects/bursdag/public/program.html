@@ -22,13 +22,7 @@
   .prog li.past { opacity: .45; }
   .prog li.now { border: 2px solid var(--cyan); background: rgba(62,230,216,.1); }
   .prog li.hl:not(.past) { border-color: rgba(255,79,163,.6); }
-  .venue h2 { font-size: 22px; margin: 0 0 4px; }
-  .venue .when { color: var(--yellow); font-weight: 800; }
-  .venue .addr { font-size: 17px; margin: 8px 0 12px; }
-  .maps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .maps a { text-align: center; text-decoration: none; font-weight: 800; padding: 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); }
-  .dir { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
-  .dir li { padding-left: 4px; line-height: 1.4; }
+  .where { text-align: center; font-weight: 800; color: var(--yellow); margin: 22px 0 0; font-size: 17px; }
   .upd { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
 </style>
 </head>
@@ -39,17 +33,7 @@
   <div class="note" id="note" hidden></div>
   <ul class="prog" id="prog"></ul>
 
-  <section class="card venue" style="margin-top:22px">
-    <div class="step">📍 Slik finner du fram</div>
-    <h2 id="vName"></h2>
-    <div class="when" id="vWhen"></div>
-    <div class="addr" id="vAddr"></div>
-    <div class="maps">
-      <a id="gmaps" target="_blank" rel="noopener">🗺️ Google Maps</a>
-      <a id="amaps" target="_blank" rel="noopener">🍎 Apple Kart</a>
-    </div>
-    <ul class="dir" id="vDir"></ul>
-  </section>
+  <p class="where" id="where"></p>
   <p class="upd" id="upd"></p>
 </main>
 <script src="common.js"></script>
@@ -76,13 +60,7 @@
     $('note').hidden = !d.note;
     if (d.note) $('note').innerHTML = '📣 ' + esc(d.note) + (d.updatedAt ? '<small>Oppdatert kl. ' + new Date(d.updatedAt).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) + '</small>' : '');
     const v = d.venue;
-    $('vName').textContent = v.name || d.partyTitle;
-    $('vWhen').textContent = [v.date, v.time].filter(Boolean).join(' · ');
-    $('vAddr').textContent = v.address || '';
-    $('vAddr').hidden = !v.address;
-    $('gmaps').href = v.maps.google;
-    $('amaps').href = v.maps.apple;
-    $('vDir').innerHTML = (v.directions || []).map((x) => '<li>' + esc(x) + '</li>').join('');
+    $('where').textContent = '📍 ' + [v.name, v.date, v.time].filter(Boolean).join(' · ');
     $('upd').textContent = 'Oppdateres automatisk · sist hentet kl. ' + new Date().toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
   }
   load();

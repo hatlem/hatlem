@@ -9,6 +9,7 @@ const { spawn, spawnSync } = require('child_process');
 
 const MAX_CLIP_SECONDS = 15;
 const MAX_SIDE = 1280;
+const WIDE_W = 1280, WIDE_H = 720;
 
 function available() {
   try {
@@ -36,12 +37,23 @@ function plan(seconds, max = MAX_CLIP_SECONDS) {
   return { seconds: d == null ? max : Math.min(d, max), trimmed };
 }
 
-/** Omkoding: H.264 + AAC, maks 1280 px, 30 fps, kuttet til `seconds`. Rotasjon fra mobil følger med (autorotate). */
-function transcodeArgs(input, output, seconds) {
+/**
+ * Omkoding: H.264 + AAC, 30 fps, kuttet til `seconds`. Rotasjon fra mobil følger med (autorotate).
+ * wide (standard): alltid 1280x720 (16:9) så klippet fyller skjermen. Stående (9:16) og andre formater
+ * legges i midten, og sidene fylles med en forstørret, uskarp kopi av klippet i stedet for svarte kanter.
+ * wide = false: beholder formen fra mobilen (maks 1280 px).
+ */
+function transcodeArgs(input, output, seconds, wide = true) {
+  const video = wide
+    ? ['-filter_complex',
+      `[0:v]split[a][b];[a]scale=${WIDE_W}:${WIDE_H}:force_original_aspect_ratio=increase,crop=${WIDE_W}:${WIDE_H},boxblur=20:2,eq=brightness=-0.08[bg];` +
+        `[b]scale=${WIDE_W}:${WIDE_H}:force_original_aspect_ratio=decrease:force_divisible_by=2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,fps=30,format=yuv420p[v]`,
+      '-map', '[v]', '-map', '0:a?']
+    : ['-vf', `scale='min(${MAX_SIDE},iw)':'min(${MAX_SIDE},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30,format=yuv420p`];
   return [
     '-y', '-hide_banner', '-loglevel', 'error',
     '-i', input, '-t', String(seconds),
-    '-vf', `scale='min(${MAX_SIDE},iw)':'min(${MAX_SIDE},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30,format=yuv420p`,
+    ...video,
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-profile:v', 'high', '-level', '4.1',
     '-c:a', 'aac', '-b:a', '128k', '-ac', '2',
     '-movflags', '+faststart', output,
@@ -66,9 +78,9 @@ function run(args) {
 /**
  * @returns {Promise<{seconds:number, trimmed:boolean, poster:boolean}>}
  */
-async function prepare(input, output, poster) {
+async function prepare(input, output, poster, { wide = true } = {}) {
   const p = plan(duration(input));
-  await run(transcodeArgs(input, output, p.seconds));
+  await run(transcodeArgs(input, output, p.seconds, wide));
   let hasPoster = false;
   try {
     await run(posterArgs(output, poster));

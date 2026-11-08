@@ -118,7 +118,7 @@
     </section>
 
     <section class="card" id="progEdit">
-      <div class="step">📅 Program og veibeskrivelse</div>
+      <div class="step">📅 Program</div>
       <p class="hint" style="margin-top:0">Vises på forsiden, på <a href="program">/program</a>, på skjermen og på «kommer snart». Endringer vises for gjestene innen et minutt.</p>
       <label for="peNote">📣 Kunngjøring (valgfritt)</label>
       <input type="text" id="peNote" maxlength="200" placeholder="F.eks. Kaka er flyttet til 17:30!">
@@ -127,11 +127,7 @@
       <button type="button" class="link" id="peAdd" style="margin-top:6px">➕ Legg til punkt</button>
       <label for="peName">Sted</label>
       <input type="text" id="peName" maxlength="80">
-      <label for="peAddr">Adresse</label>
-      <input type="text" id="peAddr" maxlength="120" placeholder="Gate og nummer, postnummer og by">
       <div class="row"><div><label for="peDate">Dato</label><input type="text" id="peDate" maxlength="60"></div><div><label for="peTime">Tid</label><input type="text" id="peTime" maxlength="40"></div></div>
-      <label for="peDir">Slik finner du fram (én linje per tips)</label>
-      <textarea id="peDir" rows="4" placeholder="🚋 Trikk til …&#10;🚗 Parkering …&#10;🚪 Inngang fra …"></textarea>
       <p></p>
       <div class="row"><button class="btn" type="button" id="peSave" style="font-size:17px;padding:12px">💾 Lagre</button><button class="btn secondary" type="button" id="peReset" style="font-size:15px;padding:12px">↺ Tilbake til party.json</button></div>
       <p class="hint" id="peStatus" style="margin-bottom:0"></p>
@@ -301,7 +297,7 @@
   }
   document.getElementById('lqNext').addEventListener('click', () => quizAction('next'));
   document.getElementById('lqEnd').addEventListener('click', () => { if (confirm('Avslutte quizen?')) quizAction('end'); });
-  // --- Program og veibeskrivelse ---
+  // --- Program ---
   function peRow(p = { time: '', emoji: '⭐', title: '', highlight: false }) {
     return `<div class="pe-row"><input type="text" inputmode="numeric" maxlength="5" placeholder="17:00" value="${esc(p.time)}" aria-label="Klokkeslett"><input type="text" value="${esc(p.emoji)}" maxlength="8" aria-label="Emoji"><input type="text" value="${esc(p.title)}" maxlength="80" placeholder="Hva skjer" aria-label="Tittel"><input type="checkbox" ${p.highlight ? 'checked' : ''} title="Høydepunkt" aria-label="Høydepunkt"><button type="button" data-rm aria-label="Fjern">✕</button></div>`;
   }
@@ -312,10 +308,8 @@
     document.getElementById('peRows').innerHTML = d.schedule.map(peRow).join('');
     const v = d.venue;
     document.getElementById('peName').value = v.name || '';
-    document.getElementById('peAddr').value = v.address || '';
     document.getElementById('peDate').value = v.date || '';
     document.getElementById('peTime').value = v.time || '';
-    document.getElementById('peDir').value = (v.directions || []).join('\n');
     document.getElementById('peStatus').textContent = d.updatedAt ? 'Sist endret kl. ' + new Date(d.updatedAt).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) : 'Fra party.json';
   }
   document.getElementById('peAdd').addEventListener('click', () => document.getElementById('peRows').insertAdjacentHTML('beforeend', peRow()));
@@ -327,7 +321,7 @@
     });
     const body = {
       schedule, note: document.getElementById('peNote').value,
-      venue: { name: document.getElementById('peName').value, address: document.getElementById('peAddr').value, date: document.getElementById('peDate').value, time: document.getElementById('peTime').value, directions: document.getElementById('peDir').value.split('\n') },
+      venue: { name: document.getElementById('peName').value, date: document.getElementById('peDate').value, time: document.getElementById('peTime').value },
     };
     const r = await api('api/admin/program', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('peStatus').textContent = r.ok ? '✅ Lagret' : '❌ Kunne ikke lagre';
