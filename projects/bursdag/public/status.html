@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Lager magi</title>
+</head>
+<body data-help="status">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Forsiden</a></div>
+  <div id="box" class="card status-box">
+    <div class="spinner" id="spin" aria-hidden="true">🎨</div>
+    <div class="status-msg" id="msg" aria-live="polite">Starter …</div>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="hint">Du kan lukke siden. Resultatet dukker opp på storskjermen!</p>
+  </div>
+  <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
+  <div id="react"></div>
+  <div id="actions" class="row" hidden>
+    <a class="btn secondary" href="./">🏠 Forsiden</a>
+    <a class="btn secondary" id="again" href="./">🔁 Lag en til</a>
+  </div>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script src="reactions.js"></script>
+<script>
+  const id = location.pathname.split('/').pop();
+  const box = document.getElementById('box');
+  const msg = document.getElementById('msg');
+  const bar = document.getElementById('bar');
+  const spin = document.getElementById('spin');
+  const again = document.getElementById('again');
+  const MSGS = {
+    drawing: ['Kunstneren studerer tegningen din …', 'Fargene begynner å bevege seg …', 'Regissøren roper ACTION! 🎬', 'Legger på litt magisk støv ✨', 'Snart premiere …'],
+    selfie: ['Fanger inn magien …', 'Effekten varmer opp …', 'Ordner lyset 💡', 'Nesten klar for storskjermen …'],
+    song: ['Skriver tekst på rim …', 'Stemmer gitaren 🎸', 'Vokalisten varmer opp 🎤', 'Mikser refrenget …', 'Trykker på REC …'],
+  };
+  const LINKS = { drawing: 'tegning', selfie: 'selfie', song: 'sang' };
+  const EXPECTED = { drawing: 120, selfie: 120, song: 150 };
+  const start = Date.now();
+  let i = 0, done = false;
+
+  function render(job) {
+    again.href = LINKS[job.type] || './';
+    spin.textContent = job.type === 'song' ? '🎵' : job.type === 'selfie' ? (job.emoji || '✨') : '🎨';
+    if (job.status === 'failed') {
+      done = true;
+      box.innerHTML = '<div style="font-size:64px">😵</div><div class="status-msg">' + Party.esc(job.error || 'Noe gikk galt') + '</div>';
+      document.getElementById('actions').hidden = false;
+      again.textContent = '🔁 Prøv igjen';
+      return;
+    }
+    if (job.status === 'waiting' && job.waitPosition) {
+      const studio = job.type === 'song' ? 'lydstudioet 🎙️' : 'filmstudioet 🎬';
+      msg.textContent = job.waitPosition === 1
+        ? 'Du er neste i køen hos ' + studio
+        : 'Du er nr. ' + job.waitPosition + ' i køen hos ' + studio + ' (ca. ' + job.waitMinutes + ' min)';
+      bar.style.width = '4%';
+      return;
+    }
+    if (job.status !== 'done') {
+      const list = MSGS[job.type] || MSGS.drawing;
+      const secs = (Date.now() - start) / 1000;
+      msg.textContent = list[Math.floor(secs / 7) % list.length];
+      bar.style.width = Math.min(92, 5 + (secs / (EXPECTED[job.type] || 120)) * 87) + '%';
+      return;
+    }
+    done = true;
+    Party.confetti();
+    showStamps();
+    const r = job.result || {};
+    let html = '<h2>Ferdig! 🎉</h2>';
+    if (job.type === 'song') {
+      if (r.imageUrl) html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
+      html += '<h3 style="margin-top:12px">' + Party.esc(r.title || job.label) + '</h3>';
+      html += '<audio controls src="' + Party.esc(r.audioUrl) + '" style="width:100%"></audio>';
+      if (job.pending) html += '<div class="queue-badge">👀 Legges i køen når verten har hørt på den</div>';
+      else if (job.nowPlaying) html += '<div class="queue-badge">🔊 Spilles nå!</div>';
+      else if (job.queuePosition) html += '<div class="queue-badge">Nr. ' + job.queuePosition + ' i køen 🎶</div>';
+      else html += '<p class="hint">Sangen er lagt i spillelisten.</p>';
+    } else if (r.videoUrl) {
+      html += '<video class="result-media" src="' + Party.esc(r.videoUrl) + '" autoplay loop muted playsinline controls></video>';
+      html += '<p><a class="btn secondary" href="' + Party.esc(r.videoUrl) + '" download>⬇️ Last ned filmen</a></p>';
+    } else if (r.imageUrl) {
+      html += '<img class="result-media" src="' + Party.esc(r.imageUrl) + '" alt="">';
+      if (job.demo) html += '<p class="hint">Demo: med Higgsfield-nøkkel blir dette en film.</p>';
+    }
+    html += job.pending && job.type !== 'song'
+      ? '<p class="hint">Vises på storskjermen så snart verten har sett på den 👀</p>'
+      : '<p class="hint">Se etter den på storskjermen 📺</p>';
+    box.innerHTML = html;
+    document.getElementById('actions').hidden = false;
+  }
+
+  async function tick() {
+    try {
+      const res = await fetch('api/jobs/' + encodeURIComponent(id));
+      if (res.status === 404) { render({ status: 'failed', error: 'Fant ikke denne.' }); return; }
+      const job = await res.json();
+      render(job);
+    } catch { /* nettverk hikker, prøv igjen */ }
+    if (!done) setTimeout(tick, 3000);
+  }
+  Party.reactions(document.getElementById('react'));
+  function showStamps() {
+    fetch('api/stamps?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).then((s) => {
+      const n = ['drawing', 'song', 'selfie'].filter((t) => s[t]).length;
+      if (!n) return;
+      const left = { drawing: '🖍️ tegning', song: '🎤 sang', selfie: '🤳 selfie' };
+      const missing = ['drawing', 'song', 'selfie'].filter((t) => !s[t]).map((t) => left[t]);
+      document.getElementById('stampMsg').textContent = s.complete ? '🎟️ Alle tre stempler! Du er med i trekningen ved kaka.' : `🎟️ ${n} av 3 stempler. Mangler: ${missing.join(' og ')}`;
+      document.getElementById('stampLine').hidden = false;
+      if (s.complete) document.getElementById('stampLine').classList.add('complete');
+    }).catch(() => {});
+  }
+  tick();
+  // Oppdater køplass jevnlig etter at sangen er ferdig
+  setInterval(async () => {
+    const b = document.querySelector('.queue-badge');
+    if (!b) return;
+    try {
+      const j = await (await fetch('api/jobs/' + id)).json();
+      b.textContent = j.pending ? '👀 Legges i køen når verten har hørt på den' : j.nowPlaying ? '🔊 Spilles nå!' : j.queuePosition ? 'Nr. ' + j.queuePosition + ' i køen 🎶' : '✅ Spilt på festen!';
+    } catch {}
+  }, 8000);
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Skriv en hilsen</title>
+</head>
+<body data-help="hilsen">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
+  <h1>💌 Gjestebok med vri</h1>
+  <p class="hint">Hilsenen dukker opp på storskjermen. De beste leses høyt ved kaka!</p>
+
+  <form id="f">
+    <div class="card">
+      <div class="step">1 · Velg tema</div>
+      <div id="prompts"></div>
+    </div>
+    <div class="card">
+      <div class="step">2 · Skriv</div>
+      <textarea id="text" name="text" maxlength="200" required placeholder="Skriv her …"></textarea>
+      <p class="hint" style="margin:6px 0 0;text-align:right"><span id="left">200</span> tegn igjen</p>
+      <label for="name">Fra</label>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt (valgfritt)" autocomplete="given-name">
+    </div>
+    <button class="btn" id="go" type="submit">💌 Send hilsen</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+
+  <div class="card done-box" id="done" hidden>
+    <div class="big">💛</div>
+    <h2>Takk!</h2>
+    <p class="hint">Hilsenen din vises snart på storskjermen.</p>
+    <div class="row">
+      <a class="btn secondary" href="./">🏠 Forsiden</a>
+      <a class="btn secondary" href="hilsen">✍️ Skriv en til</a>
+    </div>
+  </div>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  Party.rememberName(document.getElementById('name'));
+  Party.config().then((c) => Party.chips(document.getElementById('prompts'), 'prompt', c.greetingPrompts, { list: true }));
+  form.text.addEventListener('input', () => { document.getElementById('left').textContent = 200 - form.text.value.length; });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    go.disabled = true;
+    document.getElementById('err').textContent = '';
+    try {
+      await Party.submit('api/greeting', { prompt: form.prompt.value, text: form.text.value, name: form.name.value, deviceId: Party.deviceId() });
+      form.hidden = true;
+      document.getElementById('done').hidden = false;
+      Party.confetti(50);
+    } catch (err) {
+      document.getElementById('err').textContent = err.message;
+      go.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

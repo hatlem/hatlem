@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="preview.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Selfie med effekt</title>
+</head>
+<body data-help="selfie">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
+  <h1>🤳 Selfie med effekt</h1>
+  <p class="hint">Velg effekt, ta en selfie, og se deg selv på storskjermen!</p>
+
+  <form id="f">
+    <div class="card">
+      <div class="step">1 · Velg effekt</div>
+      <div id="effects"></div>
+      <div class="assist"><button type="button" id="randomEff">🎲 Velg for meg</button></div>
+    </div>
+
+    <div class="card">
+      <div class="step">2 · Ta selfie</div>
+      <p class="hint" style="margin-top:0">Tips: Ha litt luft rundt deg i bildet, så får tigeren plass 🐯</p>
+      <label class="photo-drop" id="drop">
+        <div><div class="big">🤳</div><strong>Trykk for å ta selfie</strong></div>
+        <input type="file" name="image" accept="image/*" capture="user">
+      </label>
+      <div class="src-btns">
+        <label>🙋 Noen tar bildet av meg<input type="file" accept="image/*" capture="environment" data-src></label>
+        <label>🖼️ Bruk et bilde jeg har<input type="file" accept="image/*" data-src></label>
+      </div>
+    </div>
+
+    <div class="card" id="pvCard">
+      <div class="step">👀 Slik kan det bli</div>
+      <div class="pv-tabs"><button type="button" data-tab="mine" class="on">Ditt bilde</button><button type="button" data-tab="example" disabled>▶︎ Ekte eksempel</button></div>
+      <div class="pv-box tall"></div>
+    </div>
+    <div class="card">
+      <div class="step">3 · Hva heter du?</div>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
+    </div>
+
+    <p class="hint" style="text-align:center">👨‍👩‍👧 Barn under 13: spør en voksen før du tar selfie. Bildet sendes til en AI-tjeneste for å lage videoen.</p>
+    <button class="btn" id="go" type="submit" disabled>✨ Gi meg effekten!</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script src="preview.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  let file = null;
+  Party.demoBanner('video');
+  Party.rememberName(document.getElementById('name'));
+  Party.config().then((c) => {
+    const pre = new URLSearchParams(location.search).get('effekt');
+    const idx = Math.max(0, c.selfieEffects.findIndex((e) => e.id === pre));
+    Party.chips(document.getElementById('effects'), 'effect', c.selfieEffects, { checked: idx });
+    const sync = () => { const v = form.effect.value; pv.setStyle(v, (c.selfieEffects.find((e) => e.id === v) || {}).name); };
+    document.getElementById('effects').addEventListener('change', sync);
+    sync();
+  });
+  const pv = Party.preview(document.getElementById('pvCard'), 'selfie');
+  const drop = document.getElementById('drop');
+  const useFile = (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); };
+  Party.photoPicker(drop, useFile);
+  // Alternativer for de som ikke vil/får til selfie
+  document.querySelectorAll('input[data-src]').forEach((inp) => inp.addEventListener('change', () => {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    Party.showPhoto(drop, f);
+    useFile(f);
+  }));
+  document.getElementById('randomEff').addEventListener('click', () => {
+    const list = [...form.querySelectorAll('input[name=effect]')];
+    const cur = list.find((x) => x.checked);
+    let r = Party.pick(list);
+    if (list.length > 1) while (r === cur) r = Party.pick(list);
+    r.checked = true;
+    r.dispatchEvent(new Event('change', { bubbles: true }));
+    r.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!file) return;
+    go.disabled = true; go.textContent = '⏳ Laster opp …';
+    document.getElementById('err').textContent = '';
+    try {
+      const fd = new FormData();
+      fd.append('image', await Party.shrinkImage(file), 'selfie.jpg');
+      fd.append('effect', form.effect.value);
+      fd.append('name', form.name.value);
+      fd.append('deviceId', Party.deviceId());
+      const { id } = await Party.submit('api/selfie', fd);
+      location.href = 'status/' + id;
+    } catch (err) {
+      document.getElementById('err').textContent = err.message;
+      go.disabled = false; go.textContent = '✨ Gi meg effekten!';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Railway (Nixpacks): ffmpeg trengs for «Kveldens film»
+[phases.setup]
+nixPkgs = ["...", "ffmpeg"]

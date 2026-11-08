@@ -9,6 +9,7 @@ export const config = {
     // - API routes
     // - _next (Next.js internals)
     // - Static files with extensions
-    "/((?!api|_next|.*\\..*).*)",
+    // - /bursdag (egen app, videresendes i next.config.ts)
+    "/((?!api|_next|bursdag|.*\\..*).*)",
   ],
 };

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Bursdagsmoro</title>
+</head>
+<body data-help="forside">
+<main class="wrap">
+  <section class="hero">
+    <div class="cake" aria-hidden="true">🎂</div>
+    <h1><span class="gradient-text" id="title">Bursdagsmoro</span></h1>
+    <p>Velg hva du vil lage. Resultatet vises på storskjermen!</p>
+  </section>
+
+  <nav class="choices">
+    <a class="choice c-drawing" href="tegning">
+      <div class="icon" aria-hidden="true">🖍️</div>
+      <div><h2>Tegning blir film</h2><p>Ta bilde av tegningen din, så blir den levende</p></div>
+    </a>
+    <a class="choice c-song" href="sang">
+      <div class="icon" aria-hidden="true">🎤</div>
+      <div><h2>Lag en sang</h2><p>Din egen låt havner i spillelisten på festen</p></div>
+    </a>
+    <a class="choice c-selfie" href="selfie">
+      <div class="icon" aria-hidden="true">🤳</div>
+      <div><h2>Selfie med effekt</h2><p>En tiger rundt deg, bli et spøkelse og mer</p></div>
+    </a>
+  </nav>
+
+  <section class="stamps" id="stamps" hidden>
+    <h3 id="stampTitle">🎟️ Stempelkort</h3>
+    <div class="stamp-row">
+      <a class="stamp" id="st-drawing" href="tegning" aria-label="Tegning">🖍️</a>
+      <a class="stamp" id="st-song" href="sang" aria-label="Sang">🎤</a>
+      <a class="stamp" id="st-selfie" href="selfie" aria-label="Selfie">🤳</a>
+    </div>
+    <p id="stampText">Lag en tegning, en sang og en selfie, så er du med i trekningen ved kaka!</p>
+  </section>
+
+  <h3 class="more-title">Mer moro</h3>
+  <nav class="more">
+    <a href="quiz"><span aria-hidden="true">🧠</span><em>Quiz om <span class="bname">bursdagsbarnet</span></em></a>
+    <a href="hilsen"><span aria-hidden="true">💌</span><em>Skriv en hilsen</em></a>
+    <a href="galleri" style="grid-column:1/-1"><span aria-hidden="true">📸</span><em>Se alt som er laget, og gi hjerter ❤️</em></a>
+  </nav>
+
+  <div id="react"></div>
+
+  <p class="program" id="program" hidden></p>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script src="reactions.js"></script>
+<script>
+  Party.reactions(document.getElementById('react'));
+  fetch('api/stamps?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).then((s) => {
+    const box = document.getElementById('stamps');
+    box.hidden = false;
+    let n = 0;
+    for (const t of ['drawing', 'song', 'selfie']) { document.getElementById('st-' + t).classList.toggle('done', !!s[t]); if (s[t]) n++; }
+    if (s.complete) {
+      box.classList.add('complete');
+      document.getElementById('stampTitle').textContent = '🎟️ Du er med i trekningen!';
+      document.getElementById('stampText').textContent = `Alle tre stempler, bra jobba${s.name ? ', ' + s.name : ''}! Vinneren trekkes på storskjermen ved kaka. Så langt er ${s.entries} med.`;
+    } else if (n) {
+      document.getElementById('stampText').textContent = `${n} av 3 stempler! Lag ${3 - n === 1 ? 'én til' : 'to til'}, så er du med i trekningen ved kaka 🎂`;
+    }
+  }).catch(() => {});
+  Party.config().then((c) => {
+    document.getElementById('title').textContent = c.partyTitle;
+    document.title = c.partyTitle;
+    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
+    const hl = (c.schedule || []).find((p) => p.highlight);
+    if (hl) {
+      const el = document.getElementById('program');
+      el.textContent = `${hl.emoji} Kl. ${hl.time}: ${hl.title}`;
+      el.hidden = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+{
+  "_les_meg": "Rediger denne fila før festen. Programmet vises på storskjermen og forsiden, quizen på /quiz, og hilsen-temaene på /hilsen. Sett \"eksempel\": false når quizen er ferdig skrevet. «sangideer» og «tegneideer» vises som forslag til gjester som står fast, og «hjelpesteder» er stedene gjestene kan be om hjelp.",
+  "fodselsar": 1986,
+  "program": [
+    {
+      "tid": "14:00",
+      "tittel": "Barnefamilietid",
+      "emoji": "🧸"
+    },
+    {
+      "tid": "17:00",
+      "tittel": "Kake, tale og quiz",
+      "emoji": "🎂",
+      "hoydepunkt": true
+    },
+    {
+      "tid": "18:00",
+      "tittel": "Musikken opp, mer mingling",
+      "emoji": "🥂"
+    },
+    {
+      "tid": "20:00",
+      "tittel": "Takk for i dag!",
+      "emoji": "👋"
+    }
+  ],
+  "hilsen": [
+    {
+      "id": "rad",
+      "tekst": "Gi 40-åringen ett råd",
+      "emoji": "🦉"
+    },
+    {
+      "id": "tjue",
+      "tekst": "Gjett hva jeg gjorde da jeg var 20",
+      "emoji": "🕺"
+    },
+    {
+      "id": "minne",
+      "tekst": "Mitt beste minne med {navn}",
+      "emoji": "💛"
+    },
+    {
+      "id": "hilsen",
+      "tekst": "En hilsen til {navn}",
+      "emoji": "💌"
+    }
+  ],
+  "quiz": {
+    "eksempel": true,
+    "sporsmal": [
+      {
+        "q": "Hvilket år ble {navn} født?",
+        "alt": [
+          "1984",
+          "1985",
+          "1986",
+          "1988"
+        ],
+        "riktig": 2
+      },
+      {
+        "q": "Hva var {navn} sin første jobb?",
+        "alt": [
+          "Avisbud",
+          "Jordbærplukker",
+          "Butikk",
+          "Noe helt annet"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hva er {navn} sin favorittmat?",
+        "alt": [
+          "Taco",
+          "Pizza",
+          "Fårikål",
+          "Sushi"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilket land har {navn} reist mest til?",
+        "alt": [
+          "Spania",
+          "Sverige",
+          "Danmark",
+          "Hellas"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hva ville {navn} bli som liten?",
+        "alt": [
+          "Astronaut",
+          "Fotballspiller",
+          "Dyrlege",
+          "Rockestjerne"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilken 80-tallsfilm har {navn} sett flest ganger?",
+        "alt": [
+          "Tilbake til fremtiden",
+          "Top Gun",
+          "E.T.",
+          "Ghostbusters"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvor mange søsken har {navn}?",
+        "alt": [
+          "0",
+          "1",
+          "2",
+          "3 eller flere"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hva gjør {navn} helst en søndag?",
+        "alt": [
+          "Tur i skogen",
+          "Sofa og serier",
+          "Trener",
+          "Lager mat"
+        ],
+        "riktig": 0
+      }
+    ]
+  },
+  "sangideer": [
+    "Da {navn} prøvde å lage mat og brannalarmen gikk",
+    "{navn} sine elendige ordspill",
+    "Alle gangene {navn} har gått seg vill",
+    "{navn} på hyttetur uten strøm",
+    "{navn} som 80-tallsbarn med walkman og bobledress",
+    "Hvorfor {navn} alltid er sist ut døra",
+    "{navn} sin hemmelige superkraft",
+    "En kjærlighetserklæring til {navn} sin kaffe",
+    "{navn} og den store fotball-drømmen",
+    "{navn} fyller 40, men føler seg som 25"
+  ],
+  "tegneideer": [
+    "Tegn {navn} som superhelt 🦸",
+    "Tegn {navn} på månen 🌙",
+    "Tegn {navn} som dinosaur 🦖",
+    "Tegn verdens største bursdagskake 🎂",
+    "Tegn {navn} som rockestjerne 🎸",
+    "Tegn {navn} sin drømmebil 🚗",
+    "Tegn {navn} som pirat på et skip 🏴‍☠️",
+    "Tegn et monster som spiser kake 👾",
+    "Tegn {navn} som 80-tallsbarn 📼",
+    "Tegn familien din på fest 🎉"
+  ],
+  "hjelpesteder": [
+    "Tegnebordet",
+    "Fotohjørnet",
+    "Ved storskjermen",
+    "Ved inngangen",
+    "Ved langbordet",
+    "Ute"
+  ]
+}

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120a24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+<title>Lag en sang</title>
+</head>
+<body data-help="sang">
+<main class="wrap">
+  <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
+  <h1>🎤 Lag en sang</h1>
+  <p class="hint">AI-en skriver og synger låten. Den legges i kø og spilles på festen!</p>
+
+  <form id="f">
+    <div class="card">
+      <div class="step">1 · Hvem er sangen til?</div>
+      <input type="text" id="to" name="to" maxlength="40" placeholder="Bursdagsbarnet">
+      <label for="about">Hva skal den handle om?</label>
+      <textarea id="about" name="about" maxlength="220" placeholder="Et morsomt minne, en rar vane, den gangen på hytta …"></textarea>
+      <div class="assist">
+        <button type="button" class="primary" id="guideBtn">✍️ Hjelp meg å skrive</button>
+        <button type="button" id="surprise">🎲 Overrask meg</button>
+      </div>
+      <div class="guide" id="guide" hidden>
+        <div class="idea-box" style="font-size:16px">Svar kort, så lager vi teksten for deg:</div>
+        <label for="g1">Ett ord som beskriver <span class="bname">bursdagsbarnet</span></label>
+        <input type="text" id="g1" maxlength="30" placeholder="F.eks. sprudlende, sta, morsom">
+        <label for="g2">Noe <span class="bname">bursdagsbarnet</span> alltid sier eller gjør</label>
+        <input type="text" id="g2" maxlength="60" placeholder="F.eks. «Det ordner seg!»">
+        <label for="g3">Et minne dere har sammen (valgfritt)</label>
+        <input type="text" id="g3" maxlength="90" placeholder="F.eks. da vi bommet på ferja til Danmark">
+        <p></p><button type="button" class="btn secondary" id="guideDone">✨ Lag teksten</button>
+      </div>
+      <label style="margin-top:14px">💡 Eller trykk på en idé</label>
+      <div class="ideas" id="ideas"></div>
+    </div>
+
+    <div class="card">
+      <div class="step">2 · Sjanger</div>
+      <div id="genres"></div>
+      <label>Stemning</label>
+      <div id="moods"></div>
+    </div>
+
+    <div class="card">
+      <div class="step">3 · Hvem lager sangen?</div>
+      <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
+    </div>
+
+    <button class="btn" id="go" type="submit">🎶 Lag sangen!</button>
+    <div class="error" id="err" role="alert"></div>
+  </form>
+</main>
+<script src="common.js"></script>
+<script src="help.js"></script>
+<script>
+  const form = document.getElementById('f');
+  const go = document.getElementById('go');
+  Party.demoBanner('song');
+  Party.rememberName(document.getElementById('name'));
+  const about = document.getElementById('about');
+  let cfg = null;
+  Party.config().then((c) => {
+    cfg = c;
+    form.to.value = c.birthdayName;
+    document.querySelectorAll('.bname').forEach((el) => { el.textContent = c.birthdayName; });
+    Party.chips(document.getElementById('genres'), 'genre', c.songGenres, { small: true });
+    Party.chips(document.getElementById('moods'), 'mood', c.songMoods, { small: true });
+    document.getElementById('ideas').innerHTML = (c.songIdeas || []).map((i) => '<button type="button" class="idea-chip">' + Party.esc(i) + '</button>').join('');
+  });
+
+  const flash = (el) => { el.animate([{ boxShadow: '0 0 0 4px rgba(255,210,63,.9)' }, { boxShadow: '0 0 0 0 rgba(255,210,63,0)' }], { duration: 1200 }); };
+  document.getElementById('ideas').addEventListener('click', (e) => {
+    const b = e.target.closest('.idea-chip');
+    if (!b) return;
+    about.value = b.textContent;
+    flash(about);
+  });
+  document.getElementById('guideBtn').addEventListener('click', () => {
+    const g = document.getElementById('guide');
+    g.hidden = !g.hidden;
+    if (!g.hidden) document.getElementById('g1').focus();
+  });
+  document.getElementById('guideDone').addEventListener('click', () => {
+    const name = form.to.value || (cfg && cfg.birthdayName) || 'bursdagsbarnet';
+    const [a, b, m] = ['g1', 'g2', 'g3'].map((id) => document.getElementById(id).value.trim());
+    if (!a && !b && !m) return document.getElementById('g1').focus();
+    const parts = [];
+    if (a) parts.push(`${name} er ${a.toLowerCase()}`);
+    if (b) parts.push(`${parts.length ? 'og' : name} sier alltid «${b.replace(/^[«"]|[»"]$/g, '')}»`);
+    let text = parts.join(' ') + (parts.length ? '.' : '');
+    if (m) text += ` Husker du ${m.charAt(0).toLowerCase() + m.slice(1)}?`;
+    about.value = text.trim().slice(0, 220);
+    document.getElementById('guide').hidden = true;
+    flash(about);
+  });
+  document.getElementById('surprise').addEventListener('click', () => {
+    if (!cfg) return;
+    if (cfg.songIdeas && cfg.songIdeas.length) about.value = Party.pick(cfg.songIdeas);
+    const pickRadio = (name) => { const list = form.querySelectorAll(`input[name=${name}]`); const r = Party.pick([...list]); if (r) r.checked = true; };
+    pickRadio('genre');
+    pickRadio('mood');
+    flash(about);
+    go.textContent = '🎶 Klar! Lag sangen!';
+    go.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    flash(go);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    go.disabled = true; go.textContent = '⏳ Sender …';
+    document.getElementById('err').textContent = '';
+    try {
+      const { id } = await Party.submit('api/song', {
+        to: form.to.value, about: form.about.value, genre: form.genre.value, mood: form.mood.value,
+        name: form.name.value, deviceId: Party.deviceId(),
+      });
+      location.href = 'status/' + id;
+    } catch (err) {
+      document.getElementById('err').textContent = err.message;
+      go.disabled = false; go.textContent = '🎶 Lag sangen!';
+    }
+  });
+</script>
+</body>
+</html>

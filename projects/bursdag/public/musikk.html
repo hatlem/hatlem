@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>Musikk</title>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { cursor: none; }
+  .m { display: grid; grid-template-columns: 1fr 30vw; height: 100vh; }
+  .main { position: relative; display: flex; flex-direction: column; justify-content: center; padding: 4vw 5vw; gap: 2vw; overflow: hidden; }
+  .blur { position: absolute; inset: -10%; background-size: cover; background-position: center; filter: blur(60px) brightness(.35) saturate(1.4); z-index: -1; transition: background-image 1s; }
+  .head { display: flex; gap: 3vw; align-items: center; }
+  .art { width: 22vw; height: 22vw; flex: none; border-radius: 2vw; overflow: hidden; display: grid; place-items: center; font-size: 10vw; background: linear-gradient(135deg, var(--pink), var(--violet)); box-shadow: 0 2vw 6vw rgba(0,0,0,.5); }
+  .art img { width: 100%; height: 100%; object-fit: cover; }
+  .art.year { font-size: 6vw; font-weight: 800; background: linear-gradient(135deg, var(--yellow), var(--pink)); color: #2a0b2b; }
+  .k { font-size: 1.4vw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--yellow); display: flex; align-items: center; gap: .8vw; }
+  .t { font-size: 4.6vw; font-weight: 800; line-height: 1.02; margin: .6vw 0; }
+  .by { font-size: 2vw; color: var(--muted); }
+  .bar { height: .6vw; background: rgba(255,255,255,.14); border-radius: 999px; overflow: hidden; }
+  .bar div { height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--pink), var(--yellow)); }
+  .times { display: flex; justify-content: space-between; font-size: 1.2vw; color: var(--muted); margin-top: .4vw; }
+  .lyrics { font-size: 3vw; font-weight: 800; line-height: 1.25; min-height: 3em; }
+  .lyrics span { display: block; transition: opacity .4s; }
+  .lyrics span + span { opacity: .35; }
+  .eq { display: inline-flex; gap: .25vw; align-items: flex-end; height: 1.4vw; }
+  .eq i { width: .35vw; background: var(--cyan); animation: eq .9s ease-in-out infinite; }
+  .eq i:nth-child(2) { animation-delay: .2s; } .eq i:nth-child(3) { animation-delay: .4s; }
+  .paused .eq i { animation: none; height: 30%; }
+  @keyframes eq { 0%,100% { height: 20%; } 50% { height: 100%; } }
+  .side { background: rgba(0,0,0,.35); border-left: 1px solid var(--card-border); padding: 2vw; display: flex; flex-direction: column; gap: 1.6vw; }
+  .side h2 { font-size: 1.2vw; text-transform: uppercase; letter-spacing: .12em; color: var(--yellow); margin: 0 0 .6vw; }
+  .queue { list-style: none; margin: 0; padding: 0; display: grid; gap: .6vw; }
+  .queue li { display: flex; gap: 1vw; align-items: center; font-size: 1.3vw; font-weight: 700; background: rgba(255,255,255,.06); border-radius: .9vw; padding: .7vw 1vw; }
+  .queue li b { color: var(--yellow); width: 1.6vw; }
+  .queue li small { display: block; color: var(--muted); font-size: 1vw; font-weight: 600; }
+  .muted { color: var(--muted); font-size: 1.2vw; }
+  .qr { margin-top: auto; background: #fff; color: #120a24; border-radius: 1.4vw; padding: 1.2vw; display: flex; gap: 1.2vw; align-items: center; }
+  .qr img { width: 10vw; height: 10vw; }
+  .qr strong { font-size: 1.8vw; line-height: 1.1; display: block; }
+  .qr span { font-size: 1.1vw; opacity: .7; }
+  .status { position: fixed; top: 1.5vw; left: 50%; transform: translateX(-50%); font-size: 1.4vw; font-weight: 800; padding: .6vw 1.6vw; border-radius: 999px; background: rgba(0,0,0,.6); border: 1px solid var(--card-border); z-index: 10; }
+  .status:empty { display: none; }
+  .intro { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; text-align: center; background: rgba(18,10,36,.88); backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity .6s; }
+  .intro.show { opacity: 1; }
+  .intro .k { justify-content: center; font-size: 2vw; }
+  .intro .t { font-size: 6vw; }
+  .intro .by { font-size: 2.6vw; }
+  .start { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; text-align: center; background: rgba(18,10,36,.94); cursor: pointer; }
+  .start h1 { font-size: 4.5vw; }
+  .start p { font-size: 1.8vw; color: var(--muted); }
+  .offline { position: fixed; bottom: 1vw; left: 1vw; z-index: 40; font-size: 1.2vw; font-weight: 800; padding: .5vw 1vw; border-radius: 999px; background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+<div class="m">
+  <section class="main" id="main">
+    <div class="blur" id="blur"></div>
+    <div class="head">
+      <div class="art" id="art">🎵</div>
+      <div>
+        <div class="k" id="kicker"><span class="eq"><i></i><i></i><i></i></span> Nå spilles</div>
+        <div class="t gradient-text" id="title">Venter på musikk …</div>
+        <div class="by" id="by"></div>
+      </div>
+    </div>
+    <div><div class="bar"><div id="bar"></div></div><div class="times"><span id="pos">0:00</span><span id="dur"></span></div></div>
+    <div class="lyrics" id="lyrics"></div>
+  </section>
+  <aside class="side">
+    <div><h2>Neste i køen</h2><ul class="queue" id="queue"></ul></div>
+    <div id="playedBox"><h2>Nylig spilt</h2><ul class="queue" id="played"></ul></div>
+    <div class="qr"><img src="qr.svg?path=/sang" alt="QR-kode for å lage en sang"><div><strong>🎤 Lag din egen sang!</strong><span>Den havner her i køen</span></div></div>
+  </aside>
+</div>
+<div class="status" id="status"></div>
+<div class="intro" id="intro"></div>
+<div class="float-layer" id="floatLayer"></div>
+<div class="offline" id="offline" hidden>⚠️ Mistet kontakt med serveren, prøver igjen …</div>
+<div class="start" id="start">
+  <div>
+    <div style="font-size:8vw">🔊</div>
+    <h1 id="startTitle">Trykk for å starte musikken</h1>
+    <p id="startHint">Denne skjermen spiller lyden. Bare én enhet spiller lyd om gangen.</p>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script src="player.js"></script>
+<script src="reactfloat.js"></script>
+<script>
+(function () {
+  const esc = Party.esc;
+  const $ = (id) => document.getElementById(id);
+  const fmt = (s) => (isFinite(s) && s > 0 ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '');
+  // Standard: bare visning, lyden går fra mobilen (/lyd). ?lyd=pa gjør denne skjermen til lydkilden.
+  const SOUND = /^(pa|på|1|ja)$/i.test(new URLSearchParams(location.search).get('lyd') || '');
+  let introTimer, data = null, fetchedAt = Date.now(), lastId = null, lyrics = { id: null, lines: [] }, firstLoad = true;
+
+  function intro(title, guest, label) {
+    $('intro').innerHTML = `<div><div class="k">🎤 Neste sang</div><div class="t gradient-text">${esc(title)}</div><div class="by">laget av ${esc(guest || 'en hemmelig gjest')}${label ? ' · ' + esc(label) : ''}</div></div>`;
+    $('intro').classList.add('show');
+    clearTimeout(introTimer);
+    introTimer = setTimeout(() => $('intro').classList.remove('show'), 6000);
+  }
+
+  const player = SOUND ? (window.partyPlayer = Party.player({
+    source: 'skjerm',
+    onChange: () => renderSong(fromPlayer()),
+    onTime: () => renderSong(fromPlayer()),
+    onIntro: (song) => intro((song.result && song.result.title) || song.label, song.guest, song.label),
+  })) : null;
+
+  /** Felles format for det som spilles, enten fra lokal spiller eller fra mobilens rapport. */
+  function fromPlayer() {
+    const s = player.current;
+    const a = player.audio;
+    if (!s) return { now: null };
+    const r = s.result || {};
+    return {
+      now: { id: s.id, kind: s.kind || 'guest', title: s.kind === 'playlist' ? s.title : r.title || s.label, guest: s.guest, label: s.label, year: s.year, imageUrl: r.imageUrl },
+      position: a.currentTime, duration: a.duration, paused: a.paused, lines: player.lyricLines(3), finale: player.finale,
+    };
+  }
+  function fromReport() {
+    const rep = data && data.playing;
+    if (!rep || !rep.now) return { now: null, finale: data && data.takeover && ['finale', 'film'].includes(data.takeover.mode) };
+    const pos = rep.position + (rep.paused ? 0 : (Date.now() - fetchedAt) / 1000);
+    let lines = [];
+    if (lyrics.id === rep.now.id && lyrics.lines.length && rep.duration) {
+      const i = Math.min(lyrics.lines.length - 1, Math.floor((pos / rep.duration) * lyrics.lines.length));
+      lines = lyrics.lines.slice(i, i + 3);
+    }
+    return { now: rep.now, position: pos, duration: rep.duration, paused: rep.paused, lines };
+  }
+
+  function renderSong(p) {
+    const now = p.now;
+    $('main').classList.toggle('paused', !!p.paused);
+    if (p.finale) {
+      $('art').className = 'art'; $('art').innerHTML = '🎬';
+      $('title').textContent = 'Finale på storskjermen!';
+      $('by').textContent = '';
+    } else if (!now) {
+      $('art').className = 'art'; $('art').innerHTML = '🎵';
+      $('title').textContent = 'Venter på musikk …';
+      $('by').textContent = 'Lag en sang med QR-koden, så havner den her!';
+      $('blur').style.backgroundImage = '';
+    } else if (now.kind === 'playlist') {
+      $('art').className = 'art year'; $('art').textContent = now.year || '🕰️';
+      $('title').textContent = now.title;
+      $('by').textContent = 'Årsspillelisten · én låt for hvert år';
+      $('blur').style.backgroundImage = '';
+    } else {
+      $('art').className = 'art';
+      $('art').innerHTML = now.imageUrl ? `<img src="${esc(now.imageUrl)}" alt="">` : '🎵';
+      $('title').textContent = now.title;
+      $('by').textContent = `${now.kind === 'reprise' ? 'Reprise · ' : ''}Laget av ${now.guest || 'en hemmelig gjest'}${now.label ? ' · ' + now.label : ''}`;
+      $('blur').style.backgroundImage = now.imageUrl ? `url('${now.imageUrl}')` : '';
+    }
+    const live = now && !p.finale;
+    $('bar').style.width = live && p.duration ? Math.min(100, (p.position / p.duration) * 100) + '%' : '0';
+    $('pos').textContent = live ? fmt(p.position) || '0:00' : '';
+    $('dur').textContent = live ? fmt(p.duration) : '';
+    const html = (live ? p.lines || [] : []).map((l) => `<span>${esc(l)}</span>`).join('');
+    if ($('lyrics').dataset.h !== html) { $('lyrics').innerHTML = html; $('lyrics').dataset.h = html; }
+    renderStatus();
+  }
+
+  function renderStatus() {
+    let status = '';
+    if (SOUND) {
+      const mix = player.mix;
+      status = !player.started ? '' : !player.active ? '🔇 Lyden spilles fra en annen enhet. Trykk for å ta over.'
+        : mix.forcePause ? '⏸️ Pause for kake og tale' : mix.paused ? '⏸️ Satt på pause fra admin' : mix.duck < 1 ? '🔉 Quiz pågår, musikken er dempet' : '';
+    } else if (data) {
+      const mode = data.takeover && data.takeover.mode;
+      status = !data.playing ? '🔇 Ingen lydkilde. Start /lyd på mobilen ved høyttaleren.'
+        : ['cake', 'greetings'].includes(mode) ? '⏸️ Pause for kake og tale' : data.playing.paused ? '⏸️ Pause' : mode === 'kahoot' ? '🔉 Quiz pågår, musikken er dempet' : '';
+    }
+    $('status').textContent = status;
+  }
+
+  async function loadLyrics(id) {
+    lyrics = { id, lines: [] };
+    try {
+      const j = await (await fetch('api/jobs/' + encodeURIComponent(id))).json();
+      if (lyrics.id === id) lyrics.lines = Party.cleanLyrics(j.result && j.result.lyrics);
+    } catch {}
+  }
+
+  let failures = 0;
+  async function refresh() {
+    let d;
+    try {
+      d = await (await fetch('api/screen')).json();
+      failures = 0;
+      $('offline').hidden = true;
+    } catch {
+      if (++failures >= 3) $('offline').hidden = false;
+      return;
+    }
+    data = d;
+    fetchedAt = Date.now();
+    if (!SOUND) {
+      const now = d.playing && d.playing.now;
+      if (now && now.id !== lastId) {
+        if (now.kind === 'guest' || now.kind === 'reprise') loadLyrics(now.id);
+        if (now.kind === 'guest' && !firstLoad) intro(now.title, now.guest, now.label);
+        lastId = now.id;
+      }
+      firstLoad = false;
+      renderSong(fromReport());
+    }
+    $('queue').innerHTML = d.queue.length
+      ? d.queue.slice(0, 6).map((s, i) => `<li><b>${i + 1}</b><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('')
+      : '<li class="muted">Tom kø. Skann og lag en sang! 🎤</li>';
+    const played = d.played.slice(-3).reverse();
+    $('playedBox').hidden = !played.length;
+    $('played').innerHTML = played.map((s) => `<li><div>${esc((s.result && s.result.title) || s.label)}<small>fra ${esc(s.guest || 'en gjest')}</small></div></li>`).join('');
+  }
+  if (!SOUND) setInterval(() => data && renderSong(fromReport()), 500);
+
+  if (!SOUND) {
+    $('startTitle').textContent = 'Trykk for fullskjerm';
+    $('startHint').textContent = 'Denne skjermen viser hva som spilles. Lyden går fra mobilen ved høyttaleren (/lyd).';
+  }
+  $('start').addEventListener('click', () => {
+    $('start').remove();
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    if (player) player.claim();
+  });
+  document.body.addEventListener('click', () => { if (player && player.started && !player.active) player.claim(); });
+
+  Party.reactFloat($('floatLayer'));
+  refresh();
+  setInterval(refresh, 2000);
+})();
+</script>
+</body>
+</html>
