@@ -57,6 +57,8 @@ const AVG_VIDEO_MIN = Number(process.env.AVG_VIDEO_MIN || 2); // for ventetidses
 const SUNO_MAX_CONCURRENT = Math.max(1, Number(process.env.SUNO_MAX_CONCURRENT || 5));
 const AVG_SONG_MIN = Number(process.env.AVG_SONG_MIN || 3);
 const FINALE_SECONDS = Number(process.env.FINALE_SECONDS || 60); // finalen kuttes til så mange sekunder (sparer kreditter)
+// «Kommer snart»: før festen viser alle gjestesider en teaser. Admin, helsesjekk og stilark virker som før.
+const TEASER = /^(1|on|ja|true)$/i.test(process.env.TEASER || '');
 
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
@@ -516,6 +518,10 @@ const page = (name) => (req, res) => {
   res.type('html').setHeader('Cache-Control', 'no-cache');
   res.send(html);
 };
+if (TEASER) {
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|qr(\.svg)?$|api\/(config|screen|examples|reactions|qr-info)$|media\/|nostalgi\/|spilleliste\/)/;
+  r.use((req, res, next) => (open.test(req.path) ? next() : page('snart')(req, res)));
+}
 r.get('/', page('index'));
 r.get('/tegning', page('tegning'));
 r.get('/sang', page('sang'));
@@ -1423,6 +1429,7 @@ r.get('/api/gallery', (req, res) => {
 function health(req, res) {
   res.json({
     ok: true,
+    teaser: TEASER,
     higgsfield: useHiggsfield ? 'på' : 'demo',
     imageFix: useImageFix,
     videoSeconds: higgsfield.VIDEO_SECONDS,
