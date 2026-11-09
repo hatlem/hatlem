@@ -56,8 +56,7 @@
 
     <div class="card" id="pvCard">
       <div class="step">👀 Slik kan det bli</div>
-      <div class="pv-tabs"><button type="button" data-tab="mine" class="on">Ditt bilde</button><button type="button" data-tab="example" disabled>▶︎ Ekte eksempel</button></div>
-      <div class="pv-box tall"></div>
+      <div class="pv-box"></div>
     </div>
     <div class="card">
       <div class="step">3 · Hva heter du?</div>
@@ -113,7 +112,7 @@
     const pre = new URLSearchParams(location.search).get('effekt');
     const idx = Math.max(0, effects.findIndex((e) => e.id === pre));
     Party.chips($('effects'), 'effect', effects, { checked: idx, scroll: true });
-    const sync = () => { pv.setStyle(form.effect.value, current().name); syncFraming(); };
+    const sync = () => { pv.setStyle(form.effect.value, current()); syncFraming(); };
     $('effects').addEventListener('change', sync);
     sync();
   });
@@ -122,7 +121,6 @@
   const useFile = (f) => {
     file = f; confirmed = false; landscape = false;
     const url = URL.createObjectURL(f);
-    pv.setImage(url);
     const img = new Image();
     img.onload = () => { landscape = img.naturalWidth > img.naturalHeight; updateConfirm(); };
     img.src = url;

@@ -46,7 +46,6 @@
 
     <div class="card" id="pvCard">
       <div class="step">👀 Slik kan det bli</div>
-      <div class="pv-tabs"><button type="button" data-tab="mine" class="on">Ditt bilde</button><button type="button" data-tab="example" disabled>▶︎ Ekte eksempel</button></div>
       <div class="pv-box"></div>
     </div>
     <div class="card">
@@ -74,12 +73,12 @@
   Party.config().then((c) => {
     Party.chips(document.getElementById('styles'), 'style', c.drawingStyles);
     if (!c.drawingStyles.some((s) => s.thumb)) document.getElementById('stylesHint').hidden = true;
-    const sync = () => { const v = form.style.value; pv.setStyle(v, (c.drawingStyles.find((s) => s.id === v) || {}).name); };
+    const sync = () => { const v = form.style.value; pv.setStyle(v, c.drawingStyles.find((s) => s.id === v)); };
     document.getElementById('styles').addEventListener('change', sync);
     sync();
   });
   const drop = document.getElementById('drop');
-  const useFile = (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); };
+  const useFile = (f) => { file = f; go.disabled = false; };
   Party.photoPicker(drop, useFile);
   const gotShot = (f) => Party.attachPhoto(drop, f, useFile);
   Party.cameraButton(drop, document.getElementById('mainInput'), () => ({ facing: 'environment', guide: 'paper', title: 'Ta bilde av tegningen' }), gotShot);
