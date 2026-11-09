@@ -22,7 +22,7 @@ const path = require('path');
 const higgsfield = require('./lib/higgsfield');
 const suno = require('./lib/suno');
 const demo = require('./lib/demo');
-const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
+const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, pickVariant, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
 const { imageSize, nearestAspect } = require('./lib/imagesize');
 const { widen } = require('./lib/widen');
 const mine = require('./lib/mine');
@@ -636,7 +636,7 @@ r.get('/api/config', (req, res) => {
     birthdayName: BIRTHDAY_NAME,
     partyTitle: PARTY_TITLE,
     drawingStyles: DRAWING_STYLES.map(({ id, name, emoji, thumb }) => ({ id, name, emoji, thumb: thumb && fs.existsSync(path.join(__dirname, 'public', thumb)) ? thumb : undefined })),
-    selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji, framing }) => ({ id, name, emoji, framing })),
+    selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji, framing, thumb }) => ({ id, name, emoji, framing, thumb: thumb && fs.existsSync(path.join(__dirname, 'public', thumb)) ? thumb : undefined })),
     framing: FRAMING,
     videoSeconds: higgsfield.VIDEO_SECONDS,
     imageFix: useImageFix,
@@ -698,13 +698,22 @@ r.post('/api/selfie', upload.single('image'), async (req, res) => {
   const limit = checkLimits(clean(req.body.deviceId, 64) || req.ip);
   if (limit) return res.status(429).json({ error: limit });
 
-  const effect = SELFIE_EFFECTS.find((e) => e.id === req.body.effect) || SELFIE_EFFECTS[0];
+  const effect = selfieVariant(req.body.effect);
   const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
-  const job = newJob('selfie', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id } });
+  const job = newJob('selfie', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id, variant: effect.variant } });
 
   res.json({ id: job.id });
   enqueue(job, { prompt: effect.prompt, contentType: req.file.mimetype, fix: imageFixFor(effect, req.file.buffer) });
 });
+
+// Samme effekt gir ulike scener og vrier fra gang til gang, og aldri den samme to ganger på rad
+const lastVariant = new Map();
+function selfieVariant(id) {
+  const base = SELFIE_EFFECTS.find((e) => e.id === id) || SELFIE_EFFECTS[0];
+  const effect = pickVariant(base, { avoid: lastVariant.get(base.id) });
+  lastVariant.set(base.id, effect.variant);
+  return effect;
+}
 
 /** Bildefiksen trenger prompt og et sideforhold som ligner bildet (ellers blir alt kvadratisk). */
 function imageFixFor(effect, buffer) {
@@ -1578,8 +1587,9 @@ r.post('/api/admin/examples', requireAdmin, upload.single('image'), (req, res) =
   if (!req.file) return res.status(400).json({ error: 'Velg et bilde.' });
   const list = kind === 'selfie' ? SELFIE_EFFECTS : DRAWING_STYLES;
   const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
-  const ids = list.map((x) => {
-    const job = newJob('example', { label: x.name, emoji: x.emoji, inputUrl, input: { kind, ref: x.id } });
+  const ids = list.map((base) => {
+    const x = kind === 'selfie' ? selfieVariant(base.id) : base;
+    const job = newJob('example', { label: x.name, emoji: x.emoji, inputUrl, input: { kind, ref: x.id, variant: x.variant } });
     enqueue(job, { prompt: kind === 'selfie' ? x.prompt : x.prompt(''), contentType: req.file.mimetype, fix: kind === 'selfie' ? imageFixFor(x, req.file.buffer) : drawingFixFor(req.file.buffer) });
     return job.id;
   });

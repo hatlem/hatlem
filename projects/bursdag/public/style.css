@@ -118,6 +118,17 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 
 .chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .chips.small { grid-template-columns: repeat(3, 1fr); }
+/* Sidelengs rad i to etasjer (mange valg uten at siden blir lang): de første kortene vises, resten ligger bak til høyre */
+.chips.scroll {
+  grid-template-columns: none; grid-auto-flow: column; grid-template-rows: repeat(2, 1fr); grid-auto-columns: min(42vw, 168px);
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 18px;
+  margin: 0 -18px; padding: 4px 18px 6px; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 26px), transparent);
+}
+.chips.scroll::-webkit-scrollbar { display: none; }
+.chips.scroll .chip { scroll-snap-align: start; }
+.swipe-hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 700; text-align: center; }
 .chip { position: relative; margin: 0; }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
 .chip span {
@@ -128,6 +139,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 }
 .chips.small .chip span { min-height: 48px; font-size: 15px; }
 .chip span b { font-size: 32px; line-height: 1; font-weight: 400; }
+.consent-box { background: rgba(62, 230, 216, 0.08); border: 1px solid rgba(62, 230, 216, 0.35); border-radius: 14px; padding: 10px 14px; margin: 0 0 12px; font-size: 14px; line-height: 1.4; color: var(--muted); }
+.consent-box p { margin: 4px 0; }
+.consent-box strong { color: var(--text); }
+.consent { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 12px; font-size: 15px; line-height: 1.35; cursor: pointer; }
+.consent input { width: 24px; height: 24px; flex: none; margin: 0; accent-color: var(--yellow); }
 .style-src { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; color: var(--muted); font-weight: 700; font-size: 15px; }
 .style-src img { width: 96px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; flex: none; }
 .chip.has-pic span { padding: 0; min-height: 0; gap: 0; overflow: hidden; align-items: stretch; }

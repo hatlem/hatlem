@@ -22,11 +22,16 @@
     <div class="card">
       <div class="step">1 · Velg effekt</div>
       <div id="effects"></div>
+      <p class="swipe-hint">Sveip sidelengs for flere effekter ›</p>
       <div class="assist"><button type="button" id="randomEff">🎲 Velg for meg</button></div>
     </div>
 
     <div class="card">
       <div class="step">2 · Ta bildet</div>
+      <div class="consent-box">
+        <p><strong>ℹ️ Bildet sendes til AI-tjenesten Higgsfield</strong> for å lage filmen. Filmen vises på storskjermen og i galleriet på festen. Vertskapet sletter bildene etter festen.</p>
+        <p><strong>👨‍👩‍👧 Barn:</strong> en forelder eller foresatt må være enig, og tar gjerne bildet sammen med barnet.</p>
+      </div>
       <div class="frame-tip" id="frameTip" data-framing="portrait">
         <div class="figure" aria-hidden="true"><span class="person">🧍</span><span class="floor"></span></div>
         <div><strong id="frameName">Portrett</strong><p id="frameHint">Portrett holder: ansikt og skuldre.</p></div>
@@ -58,7 +63,7 @@
       <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
     </div>
 
-    <p class="hint" style="text-align:center">👨‍👩‍👧 Barn under 13: spør en voksen før du tar selfie. Bildet sendes til en AI-tjeneste for å lage videoen.</p>
+    <label class="consent"><input type="checkbox" id="consent"><span>Jeg er over 18, eller en forelder/foresatt gjør dette sammen med meg og er enig i at bildet sendes til AI og vises på festen.</span></label>
     <button class="btn" id="go" type="submit" disabled>✨ Gi meg effekten!</button>
     <div class="error" id="err" role="alert"></div>
   </form>
@@ -94,15 +99,16 @@
     const ask = !!file && needsFull() && !confirmed;
     $('confirm').hidden = !ask;
     $('confirmWarn').textContent = ask && landscape ? 'Bildet er liggende: et stående bilde gir mer plass til hele deg.' : '';
-    go.disabled = !file || ask;
+    go.disabled = !file || ask || !$('consent').checked;
   }
+  $('consent').addEventListener('change', updateConfirm);
 
   Party.config().then((c) => {
     effects = c.selfieEffects;
     framingInfo = c.framing || {};
     const pre = new URLSearchParams(location.search).get('effekt');
     const idx = Math.max(0, effects.findIndex((e) => e.id === pre));
-    Party.chips($('effects'), 'effect', effects, { checked: idx });
+    Party.chips($('effects'), 'effect', effects, { checked: idx, scroll: true });
     const sync = () => { pv.setStyle(form.effect.value, current().name); syncFraming(); };
     $('effects').addEventListener('change', sync);
     sync();
@@ -142,7 +148,7 @@
     if (list.length > 1) while (r === cur) r = Party.pick(list);
     r.checked = true;
     r.dispatchEvent(new Event('change', { bubbles: true }));
-    r.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    Party.centerChip($('effects'), r, true);
   });
 
   form.addEventListener('submit', async (e) => {
