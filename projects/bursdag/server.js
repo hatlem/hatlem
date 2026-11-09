@@ -610,7 +610,7 @@ r.post('/api/vert/ut', (req, res) => {
 });
 
 if (teaserConfig.teaser) {
-  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks|vert)(\/|$)|style\.css$|common\.js$|player\.js$|vert\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks|vert)(\/|$)|style\.css$|common\.js$|player\.js$|vert\.js$|camera\.js$|stiler\/|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
   const isAdmin = (req) => vert.keyMatches(req.get('x-admin-key'), ADMIN_KEY) || isVert(req);
   r.use((req, res, next) => (!teaserOn() || open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
@@ -635,7 +635,7 @@ r.get('/api/config', (req, res) => {
   res.json({
     birthdayName: BIRTHDAY_NAME,
     partyTitle: PARTY_TITLE,
-    drawingStyles: DRAWING_STYLES.map(({ id, name, emoji }) => ({ id, name, emoji })),
+    drawingStyles: DRAWING_STYLES.map(({ id, name, emoji, thumb }) => ({ id, name, emoji, thumb: thumb && fs.existsSync(path.join(__dirname, 'public', thumb)) ? thumb : undefined })),
     selfieEffects: SELFIE_EFFECTS.map(({ id, name, emoji, framing }) => ({ id, name, emoji, framing })),
     framing: FRAMING,
     videoSeconds: higgsfield.VIDEO_SECONDS,

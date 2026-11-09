@@ -18,6 +18,10 @@ I tillegg finnes en diskret «Mer moro»-rad under de tre valgene:
 
 `/mine` viser alt gjesten har laget på sin mobil (koblet til `deviceId` i localStorage). Ferdige filmer og hilsener kan sendes til skjermen som neste lysbilde («Vis på skjermen», `POST /api/mine/:id/screen` → `state.featured`, skjermen kvitterer med `POST /api/screen/shown`), og sanger kan legges i køen igjen («Spill på høyttaleren», `POST /api/mine/:id/play`).
 
+## Kamera rett i siden
+
+«Trykk for å ta bilde» på tegne- og selfiesiden åpner kameraet rett i siden (`public/camera.js`, getUserMedia): søker med rammeguide (portrett, helfigur med fotlinje, eller A4-ark), snu-knapp, utløser og «Bruk bildet / Ta på nytt». Selfie bruker frontkameraet, helfigur og tegning bakkameraet. Hvis kameraet ikke kan åpnes (ingen tillatelse, gammel nettleser), faller siden tilbake til vanlig filvelger. «Last opp et bilde jeg har» er alltid en egen knapp. Stilvalget på tegnesiden viser samme eksempeltegning i alle fire stiler (`public/stiler/`, laget med Higgsfield; `thumb` i `lib/catalog.js`).
+
 ## Selfie: bildefiks, rammekrav og filmer som går frem og tilbake
 
 Alle bildene tas inne i festlokalet, en tømmerhytte med ujevnt lys. Derfor går hver selfie gjennom to steg hos Higgsfield:

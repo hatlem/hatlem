@@ -79,6 +79,8 @@
         const value = typeof it === 'string' ? it : it.id;
         const label = typeof it === 'string' ? it : it.name;
         const emoji = typeof it === 'string' ? '' : `<b>${esc(it.emoji)}</b>`;
+        // Med «thumb» vises et eksempelbilde av stilen, så man ser hva man velger
+        if (it && it.thumb) return `<label class="chip has-pic"><input type="radio" name="${name}" value="${esc(value)}" ${i === checked ? 'checked' : ''}><span><img class="pic" src="${esc(it.thumb)}" alt="" loading="lazy"><em>${emoji} ${esc(label)}</em></span></label>`;
         return `<label class="chip"><input type="radio" name="${name}" value="${esc(value)}" ${i === checked ? 'checked' : ''}><span>${emoji}${esc(label)}</span></label>`;
       })
       .join('');

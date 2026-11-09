@@ -125,6 +125,12 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 }
 .chips.small .chip span { min-height: 48px; font-size: 15px; }
 .chip span b { font-size: 32px; line-height: 1; font-weight: 400; }
+.style-src { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; color: var(--muted); font-weight: 700; font-size: 15px; }
+.style-src img { width: 96px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; flex: none; }
+.chip.has-pic span { padding: 0; min-height: 0; gap: 0; overflow: hidden; align-items: stretch; }
+.chip.has-pic .pic { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.chip.has-pic em { font-style: normal; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; font-size: 15px; }
+.chip.has-pic em b { font-size: 20px; }
 .chip input:checked + span { border-color: var(--yellow); background: rgba(255, 210, 63, 0.14); transform: scale(1.02); }
 .chip input:focus-visible + span { outline: 2px solid var(--cyan); }
 
@@ -193,7 +199,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 .guide label { margin-top: 10px; }
 .or { text-align: center; color: var(--muted); font-weight: 700; margin: 10px 0; }
 .src-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.src-btns label { margin: 0; position: relative; font-weight: 700; font-size: 15px; padding: 10px; border-radius: 14px; border: 1px solid var(--card-border); background: var(--card); text-align: center; cursor: pointer; }
+.src-btns label, .src-btns button { margin: 0; position: relative; font: inherit; font-weight: 700; font-size: 15px; padding: 10px; border-radius: 14px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); text-align: center; cursor: pointer; }
 .src-btns input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 /* ---------- Tegneflate ---------- */

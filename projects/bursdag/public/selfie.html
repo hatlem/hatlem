@@ -36,8 +36,8 @@
         <input type="file" name="image" accept="image/*" capture="user" id="mainInput">
       </label>
       <div class="src-btns">
-        <label><span id="altText">🙋 Noen tar bildet av meg</span><input type="file" accept="image/*" capture="environment" id="altInput" data-src></label>
-        <label>🖼️ Bruk et bilde jeg har<input type="file" accept="image/*" data-src></label>
+        <button type="button" id="altBtn">🙋 Noen tar bildet av meg</button>
+        <label>🖼️ Last opp et bilde jeg har<input type="file" accept="image/*" data-src></label>
       </div>
       <div class="confirm-frame" id="confirm" hidden>
         <p><strong>Er hele deg med, fra topp til tå?</strong> <span id="confirmWarn"></span></p>
@@ -64,6 +64,7 @@
   </form>
 </main>
 <script src="common.js"></script>
+<script src="camera.js"></script>
 <script src="help.js"></script>
 <script src="preview.js"></script>
 <script>
@@ -85,9 +86,8 @@
     $('frameHint').textContent = info.hint || '';
     $('dropEmoji').textContent = full ? '📷' : '🤳';
     $('dropText').textContent = full ? 'Få noen til å ta bildet av deg' : 'Trykk for å ta selfie';
-    $('mainInput').setAttribute('capture', full ? 'environment' : 'user');
-    $('altText').textContent = full ? '🤳 Selfie likevel' : '🙋 Noen tar bildet av meg';
-    $('altInput').setAttribute('capture', full ? 'user' : 'environment');
+    if ($('mainInput').hasAttribute('capture')) $('mainInput').setAttribute('capture', full ? 'environment' : 'user');
+    $('altBtn').textContent = full ? '🤳 Selfie likevel' : '🙋 Noen tar bildet av meg';
     updateConfirm();
   }
   function updateConfirm() {
@@ -119,15 +119,22 @@
     updateConfirm();
   };
   Party.photoPicker(drop, useFile);
-  // Alternativer for de som ikke vil/får til selfie
+  const gotShot = (f) => { Party.showPhoto(drop, f); useFile(f); };
+  // Kameraet åpner rett i siden: frontkamera for selfie, bakkamera når noen andre tar bildet (helfigur)
+  const camOpts = (other) => ({ facing: needsFull() !== other ? 'environment' : 'user', guide: needsFull() ? 'full' : 'portrait', title: needsFull() ? 'Ta bilde av hele deg' : 'Ta selfie' });
+  Party.cameraButton(drop, $('mainInput'), () => camOpts(false), gotShot);
+  $('altBtn').addEventListener('click', async () => {
+    const r = await Party.camera(camOpts(true));
+    if (r.file) gotShot(r.file);
+    else if (r.fallback) { $('mainInput').removeAttribute('capture'); $('mainInput').click(); }
+  });
+  // Last opp et bilde man har fra før
   document.querySelectorAll('input[data-src]').forEach((inp) => inp.addEventListener('change', () => {
     const f = inp.files && inp.files[0];
-    if (!f) return;
-    Party.showPhoto(drop, f);
-    useFile(f);
+    if (f) gotShot(f);
   }));
   $('confirmYes').addEventListener('click', () => { confirmed = true; updateConfirm(); go.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
-  $('confirmRetake').addEventListener('click', () => $('mainInput').click());
+  $('confirmRetake').addEventListener('click', () => drop.click());
   document.getElementById('randomEff').addEventListener('click', () => {
     const list = [...form.querySelectorAll('input[name=effect]')];
     const cur = list.find((x) => x.checked);

@@ -11,6 +11,7 @@ const DRAWING_STYLES = [
     id: 'magisk',
     name: 'Magisk liv',
     emoji: '✨',
+    thumb: 'stiler/tegning-magisk.jpg',
     prompt: (d) =>
       `${PAPER_ONLY} The hand-drawn drawing comes to life: the characters and objects in the drawing start moving, playful and joyful animation, keep the crayon and paper texture and the original colors${d ? `. The drawing shows: ${d}` : ''}. Sparkles and magic dust, gentle camera push-in.`,
   },
@@ -18,6 +19,7 @@ const DRAWING_STYLES = [
     id: 'tegnefilm',
     name: '3D-tegnefilm',
     emoji: '🎬',
+    thumb: 'stiler/tegning-tegnefilm.jpg',
     prompt: (d) =>
       `${PAPER_ONLY} Transform this hand-made drawing into a colorful 3D animated feature film scene, cute characters faithful to the drawing's shapes and colors${d ? `, the scene shows: ${d}` : ''}, characters move expressively, cinematic lighting, smooth camera movement.`,
   },
@@ -25,6 +27,7 @@ const DRAWING_STYLES = [
     id: 'anime',
     name: 'Anime',
     emoji: '🌸',
+    thumb: 'stiler/tegning-anime.jpg',
     prompt: (d) =>
       `${PAPER_ONLY} Turn this drawing into a vibrant anime scene with dynamic motion, wind, glowing light and expressive characters faithful to the drawing${d ? `, the scene shows: ${d}` : ''}.`,
   },
@@ -32,6 +35,7 @@ const DRAWING_STYLES = [
     id: 'ekte',
     name: 'Blir ekte',
     emoji: '🦄',
+    thumb: 'stiler/tegning-ekte.jpg',
     prompt: (d) =>
       `${PAPER_ONLY} The drawing transforms into a realistic live-action scene: everything drawn becomes real and moves naturally, matching the drawing's composition and colors${d ? `, the scene shows: ${d}` : ''}, cinematic.`,
   },
