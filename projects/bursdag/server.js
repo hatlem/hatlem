@@ -713,12 +713,19 @@ r.post('/api/selfie', upload.single('image'), async (req, res) => {
   if (limit) return res.status(429).json({ error: limit });
 
   const effect = selfieVariant(req.body.effect);
+  const wish = clean(req.body.wish, 120); // valgfritt ønske fra gjesten, flettes inn i filmprompten
   const inputUrl = saveMedia(req.file.buffer, req.file.mimetype);
-  const job = newJob('selfie', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id, variant: effect.variant } });
+  const job = newJob('selfie', { deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: effect.name, emoji: effect.emoji, inputUrl, input: { effect: effect.id, variant: effect.variant, ...(wish ? { wish } : {}) } });
 
   res.json({ id: job.id });
-  enqueue(job, { prompt: effect.prompt, contentType: req.file.mimetype, fix: imageFixFor(effect, req.file.buffer) });
+  enqueue(job, { prompt: selfiePrompt(effect, wish), contentType: req.file.mimetype, fix: imageFixFor(effect, req.file.buffer) });
 });
+
+/** Filmprompt for selfie: effektens prompt, pluss gjestens eget ønske (på norsk) hvis det er gitt. */
+function selfiePrompt(effect, wish) {
+  if (!wish) return effect.prompt;
+  return `${effect.prompt} The guest also asked for this (written in Norwegian), include it if it fits the scene: "${wish.replace(/"/g, "'")}".`;
+}
 
 // Samme effekt gir ulike scener og vrier fra gang til gang, og aldri den samme to ganger på rad
 const lastVariant = new Map();

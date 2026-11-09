@@ -21,6 +21,7 @@
   <form id="f">
     <div class="card">
       <div class="step">1 · Velg effekt</div>
+      <p class="hint" style="margin-top:0">Bildene er <b>eksempler</b> med en oppdiktet gjest. Du får din egen versjon.</p>
       <div id="effects"></div>
       <p class="swipe-hint">Sveip sidelengs for flere effekter ›</p>
       <div class="assist"><button type="button" id="randomEff">🎲 Velg for meg</button></div>
@@ -61,6 +62,9 @@
     <div class="card">
       <div class="step">3 · Hva heter du?</div>
       <input type="text" id="name" name="name" maxlength="40" placeholder="Navnet ditt" autocomplete="given-name">
+      <label for="wish" style="margin-top:12px">Hva skal skje i filmen? (valgfritt)</label>
+      <input type="text" id="wish" name="wish" maxlength="120" placeholder="F.eks. jeg vinker til tigeren, eller: vi er to på bildet">
+      <p class="hint" style="margin:6px 0 0">Et lite hint til AI-en. Den gjør så godt den kan.</p>
     </div>
 
     <label class="consent"><input type="checkbox" id="consent"><span>Jeg er over 18, eller en forelder/foresatt gjør dette sammen med meg og er enig i at bildet sendes til AI og vises på festen.</span></label>
@@ -161,6 +165,7 @@
       fd.append('image', await Party.shrinkImage(file), 'selfie.jpg');
       fd.append('effect', form.effect.value);
       fd.append('name', form.name.value);
+      fd.append('wish', form.wish.value);
       fd.append('deviceId', Party.deviceId());
       const { id } = await Party.submit('api/selfie', fd);
       location.href = 'status/' + id;

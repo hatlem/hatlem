@@ -145,7 +145,11 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--cyan); outl
 .consent { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 12px; font-size: 15px; line-height: 1.35; cursor: pointer; }
 .consent input { width: 24px; height: 24px; flex: none; margin: 0; accent-color: var(--yellow); }
 .style-src { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; color: var(--muted); font-weight: 700; font-size: 15px; }
-.style-src img { width: 96px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; flex: none; }
+.style-src .ex-thumb { position: relative; flex: none; width: 96px; }
+.style-src img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; display: block; }
+.style-src b { color: var(--text); }
+.ex-badge { font-style: normal; position: absolute; left: 6px; top: 6px; background: var(--yellow); color: #2a0b2b; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; letter-spacing: 0.02em; }
+.chip.has-pic .ex-badge { left: 6px; top: 6px; }
 .chip.has-pic span { padding: 0; min-height: 0; gap: 0; overflow: hidden; align-items: stretch; }
 .chip.has-pic .pic { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .chip.has-pic em { font-style: normal; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; font-size: 15px; }

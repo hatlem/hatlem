@@ -121,20 +121,30 @@
 
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-  function chips(container, name, items, { checked = 0, small = false, list = false } = {}) {
+  function chips(container, name, items, { checked = 0, small = false, list = false, scroll = false } = {}) {
     container.classList.add('chips');
     if (small) container.classList.add('small');
     if (list) container.classList.add('list');
+    if (scroll) container.classList.add('scroll');
     container.innerHTML = items
       .map((it, i) => {
         const value = typeof it === 'string' ? it : it.id;
         const label = typeof it === 'string' ? it : it.name;
         const emoji = typeof it === 'string' ? '' : `<b>${esc(it.emoji)}</b>`;
         // Med «thumb» vises et eksempelbilde av stilen, så man ser hva man velger
-        if (it && it.thumb) return `<label class="chip has-pic"><input type="radio" name="${name}" value="${esc(value)}" ${i === checked ? 'checked' : ''}><span><img class="pic" src="${esc(it.thumb)}" alt="" loading="lazy"><em>${emoji} ${esc(label)}</em></span></label>`;
+        if (it && it.thumb) return `<label class="chip has-pic"><input type="radio" name="${name}" value="${esc(value)}" ${i === checked ? 'checked' : ''}><span><img class="pic" src="${esc(it.thumb)}" alt="" loading="lazy"><i class="ex-badge">Eksempel</i><em>${emoji} ${esc(label)}</em></span></label>`;
         return `<label class="chip"><input type="radio" name="${name}" value="${esc(value)}" ${i === checked ? 'checked' : ''}><span>${emoji}${esc(label)}</span></label>`;
       })
       .join('');
+    if (scroll) centerChip(container, container.querySelector('input:checked'));
+  }
+
+  /** Ruller en sidelengs chip-rad så den valgte havner midt i, uten å flytte resten av siden. */
+  function centerChip(container, input, smooth = false) {
+    const span = input && input.nextElementSibling;
+    if (!span || !container.classList.contains('scroll')) return;
+    const left = span.getBoundingClientRect().left - container.getBoundingClientRect().left + container.scrollLeft;
+    container.scrollTo({ left: left - (container.clientWidth - span.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' });
   }
 
   /** Fyller inn navnet fra forrige gang, og husker det mens man skriver og når skjemaet sendes. */
@@ -180,5 +190,5 @@
     }
   }
 
-  window.Party = { deviceId, config, esc, shrinkImage, rotateImage, photoPicker, showPhoto, attachPhoto, pick, chips, rememberName, submit, confetti, demoBanner };
+  window.Party = { deviceId, config, esc, shrinkImage, rotateImage, photoPicker, showPhoto, attachPhoto, pick, chips, centerChip, rememberName, submit, confetti, demoBanner };
 })();
