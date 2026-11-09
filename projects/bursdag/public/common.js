@@ -24,8 +24,9 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   }
 
-  /** Skaler ned bildet på mobilen før opplasting (raskere på festnettet). */
+  /** Skaler ned bildet på mobilen før opplasting (raskere på festnettet), og rett det opp etter EXIF-orienteringen. */
   async function shrinkImage(file, max = 1600) {
+    if (file && file.normalized) return file; // allerede rettet opp og skalert
     try {
       const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
       const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
@@ -34,13 +35,32 @@
       canvas.height = Math.round(bmp.height * scale);
       canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.88));
-      return blob || file;
+      if (!blob) return file;
+      const out = new File([blob], 'bilde.jpg', { type: 'image/jpeg' });
+      out.normalized = true;
+      return out;
     } catch {
       return file;
     }
   }
 
-  /** Vis et valgt/tegnet bilde i bildefeltet (<label class="photo-drop">). */
+  /** Roter bildet 90° (når kameraet eller EXIF tok feil). */
+  async function rotateImage(file, deg = 90) {
+    const bmp = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = bmp.height;
+    canvas.height = bmp.width;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((deg * Math.PI) / 180);
+    ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.9));
+    const out = new File([blob || file], 'bilde.jpg', { type: 'image/jpeg' });
+    out.normalized = true;
+    return out;
+  }
+
+  /** Vis et valgt/tegnet bilde i bildefeltet (<label class="photo-drop">): hele bildet, i bildets eget format. */
   function showPhoto(root, file) {
     let img = root.querySelector('img');
     if (!img) {
@@ -48,7 +68,10 @@
       img.alt = 'Ditt bilde';
       root.prepend(img);
     }
-    img.src = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
+    img.onload = () => { root.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; URL.revokeObjectURL(url); };
+    img.src = url;
+    root.classList.add('has-photo');
     if (!root.querySelector('.retake')) {
       const r = document.createElement('span');
       r.className = 'retake';
@@ -57,14 +80,42 @@
     }
   }
 
+  /**
+   * Ta imot et bilde (fra kamera, filvelger eller tegnebrett): rett opp og skaler det med en gang,
+   * så forhåndsvisningen er nøyaktig det som sendes. «↻ Roter» retter bilder som ble liggende på siden.
+   */
+  async function attachPhoto(root, file, onChange) {
+    let current = await shrinkImage(file);
+    showPhoto(root, current);
+    onChange(current);
+    let rot = root.querySelector('[data-rotate]');
+    if (!rot) {
+      rot = document.createElement('button');
+      rot.type = 'button';
+      rot.className = 'rotate';
+      rot.dataset.rotate = '1';
+      rot.textContent = '↻ Roter';
+      rot.setAttribute('aria-label', 'Roter bildet 90 grader');
+      root.append(rot);
+    }
+    rot.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // ikke åpne kameraet
+      rot.disabled = true;
+      current = await rotateImage(current);
+      showPhoto(root, current);
+      onChange(current);
+      rot.disabled = false;
+    };
+  }
+
   /** Kobler en <label class="photo-drop"> med <input type=file> til forhåndsvisning. */
   function photoPicker(root, onChange) {
     const input = root.querySelector('input[type=file]');
     input.addEventListener('change', () => {
       const file = input.files && input.files[0];
       if (!file) return;
-      showPhoto(root, file);
-      onChange(file);
+      attachPhoto(root, file, onChange);
     });
   }
 
@@ -129,5 +180,5 @@
     }
   }
 
-  window.Party = { deviceId, config, esc, shrinkImage, photoPicker, showPhoto, pick, chips, rememberName, submit, confetti, demoBanner };
+  window.Party = { deviceId, config, esc, shrinkImage, rotateImage, photoPicker, showPhoto, attachPhoto, pick, chips, rememberName, submit, confetti, demoBanner };
 })();

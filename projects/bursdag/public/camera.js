@@ -162,7 +162,7 @@
   function cameraButton(trigger, input, opts, onFile) {
     let useNative = !supported();
     trigger.addEventListener('click', async (e) => {
-      if (useNative) return; // filvelgeren åpner som vanlig
+      if (useNative || e.target.closest('[data-rotate]')) return; // filvelgeren åpner som vanlig; roter-knappen er sin egen
       e.preventDefault(); // gjelder både <label> og det usynlige feltet oppå
       const r = await camera(opts());
       if (r.file) return onFile(r.file);

@@ -119,7 +119,7 @@
     updateConfirm();
   };
   Party.photoPicker(drop, useFile);
-  const gotShot = (f) => { Party.showPhoto(drop, f); useFile(f); };
+  const gotShot = (f) => Party.attachPhoto(drop, f, useFile);
   // Kameraet åpner rett i siden: frontkamera for selfie, bakkamera når noen andre tar bildet (helfigur)
   const camOpts = (other) => ({ facing: needsFull() !== other ? 'environment' : 'user', guide: needsFull() ? 'full' : 'portrait', title: needsFull() ? 'Ta bilde av hele deg' : 'Ta selfie' });
   Party.cameraButton(drop, $('mainInput'), () => camOpts(false), gotShot);

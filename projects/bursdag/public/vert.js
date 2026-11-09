@@ -8,7 +8,8 @@
     .vert-strip small { color: #c9bde6; font-weight: 600; }
     .vert-strip button { border: 0; border-radius: 999px; padding: 7px 12px; background: rgba(255, 255, 255, 0.12); color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
     .vert-strip button:hover { background: rgba(255, 255, 255, 0.2); }
-    @media (max-width: 420px) { .vert-strip { font-size: 13px; padding-left: 12px; } .vert-strip small { display: none; } }`;
+    .vert-strip > span { white-space: nowrap; }
+    @media (max-width: 520px) { .vert-strip { left: 12px; transform: none; max-width: calc(100vw - 120px); font-size: 13px; padding-left: 12px; } .vert-strip small { display: none; } }`;
   const style = document.createElement('style');
   style.textContent = css;
   document.head.appendChild(style);

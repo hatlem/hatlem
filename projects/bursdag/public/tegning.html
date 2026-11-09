@@ -80,7 +80,7 @@
   const drop = document.getElementById('drop');
   const useFile = (f) => { file = f; go.disabled = false; pv.setImage(URL.createObjectURL(f)); };
   Party.photoPicker(drop, useFile);
-  const gotShot = (f) => { Party.showPhoto(drop, f); useFile(f); };
+  const gotShot = (f) => Party.attachPhoto(drop, f, useFile);
   Party.cameraButton(drop, document.getElementById('mainInput'), () => ({ facing: 'environment', guide: 'paper', title: 'Ta bilde av tegningen' }), gotShot);
   document.getElementById('uploadInput').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) gotShot(f); });
 
@@ -102,9 +102,7 @@
     Party.drawpad({
       idea,
       onDone(blob) {
-        const f = new File([blob], 'tegning.png', { type: 'image/png' });
-        Party.showPhoto(drop, f);
-        useFile(f);
+        gotShot(new File([blob], 'tegning.png', { type: 'image/png' }));
         drop.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },
     });
