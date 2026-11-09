@@ -27,10 +27,21 @@ Appen laster ned resultatene selv, lager frem-og-tilbake-versjonen og viser film
 6. `stage` = `video`: `generate_video` med `model: kling3_0`, `prompt`, `duration: seconds`, `mode: std`, `sound: off`,
    `aspect_ratio: videoAspect` (16:9, så filmen fyller skjermen; er den `null`, 9:16 for stående bilde og 16:9 for liggende), `medias: [{ value: <job_id eller media_id>, role: start_image }]`.
    `jobs_wait` (15 s om gangen, 2–4 min totalt). POST `{ "videoUrl": result_url }`.
-7. Feiler noe to ganger: POST `{ "error": "kort forklaring" }`, så får gjesten beskjed og kan prøve igjen.
+7. Feiler noe to ganger (ekte feil, ikke 429): POST `{ "error": "kort forklaring" }`, så får gjesten beskjed og kan prøve igjen.
 
-Flere jobber samtidig: bruk `generate_image_batch` / `generate_video_batch` og `jobs_wait` med flere jobber. Maks 6 filmer
-om gangen, så kontoen ikke blir strupet.
+## Rate-grense (429 `rate_limit_reached`) er IKKE en feil
+
+Målt 9.11.2026: nano_banana_2_1 godtar 3–4 bildejobber på kort tid, så svarer kontoen 429 i 1–3 minutter (også på andre
+modeller). Det samme vil skje på festen når mange sender samtidig. Regler for arbeideren:
+
+- **Aldri** POST `{ "error" }` på 429. Jobben blir stående claimet (claimet i 10 min), gjesten ser bare «i kø».
+- Vent 60 s og prøv samme jobb igjen. Fortsatt 429: vent 90 s, så 120 s. Ikke start nye jobber mens du venter.
+- Hold maks **3 bildefikser** og **4 filmer** i gang samtidig. Send neste først når en er ferdig.
+- Ta jobbene i den rekkefølgen `GET /api/admin/mcp/jobs` gir dem (eldste først), så ingen blir hengende.
+- Appen selv har kø (status «i kø» med plass og ventetid), så det er bedre at ting tar tid enn at det feiler.
+
+Flere jobber samtidig: bruk `generate_image_batch` / `generate_video_batch` og `jobs_wait` med flere jobber, innenfor
+grensene over.
 
 ## Kjøre arbeideren under festen
 
