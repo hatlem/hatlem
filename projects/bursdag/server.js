@@ -563,16 +563,30 @@ const upload = multer({
 const isVert = (req) => vert.isVert(req.headers.cookie, ADMIN_KEY);
 const VERT_BANNER_SKIP = new Set(['snart', 'skjerm']); // TV-en og teaseren skal ikke ha vertsstripen
 const vertLimiter = new vert.Limiter();
+// Skript og stilark får ?v=<innholdshash> i sidene, så mobilene og Cloudflare henter nye filer etter hver deploy
+// (uten dette cacher Cloudflare .js/.css i fire timer). Filer med ?v= kan caches «for alltid», resten må sjekkes hver gang.
+const assetVersions = new Map();
+function assetVersion(file) {
+  let v = process.env.NODE_ENV === 'production' ? assetVersions.get(file) : null;
+  if (!v) {
+    try { v = crypto.createHash('sha1').update(fs.readFileSync(path.join(__dirname, 'public', file))).digest('hex').slice(0, 10); } catch { v = '0'; }
+    assetVersions.set(file, v);
+  }
+  return v;
+}
+const versionAssets = (html) => html.replace(/\b(src|href)="([\w./-]+\.(?:js|css))"/g, (m, attr, file) => `${attr}="${file}?v=${assetVersion(file)}"`);
+const staticHeaders = (res) => res.setHeader('Cache-Control', res.req.query.v ? 'public, max-age=31536000, immutable' : 'no-cache');
+
 const pageCache = new Map();
 const page = (name) => (req, res) => {
   // <base> gjør at alle relative lenker i sidene virker både på rot og under BASE_PATH
   let html = pageCache.get(name);
   if (!html || process.env.NODE_ENV !== 'production') {
-    html = fs.readFileSync(path.join(__dirname, 'public', `${name}.html`), 'utf8').replace('<head>', `<head>\n<base href="${BASE_PATH}/">`);
+    html = versionAssets(fs.readFileSync(path.join(__dirname, 'public', `${name}.html`), 'utf8').replace('<head>', `<head>\n<base href="${BASE_PATH}/">`));
     pageCache.set(name, html);
   }
   // Stripen «Du ser siden som vert» vises bare mens gjestene fortsatt ser teaseren
-  if (teaserOn() && !VERT_BANNER_SKIP.has(name) && isVert(req)) html = html.replace('</body>', '<script src="vert.js"></script>\n</body>');
+  if (teaserOn() && !VERT_BANNER_SKIP.has(name) && isVert(req)) html = html.replace('</body>', versionAssets('<script src="vert.js"></script>') + '\n</body>');
   res.type('html').setHeader('Cache-Control', 'no-cache');
   res.send(html);
 };
@@ -626,7 +640,7 @@ r.get('/quiz', page('quiz'));
 r.get('/hilsen', page('hilsen'));
 r.get('/klipp', page('klipp'));
 r.get('/mine', page('mine'));
-r.use(express.static(path.join(__dirname, 'public'), { index: false }));
+r.use(express.static(path.join(__dirname, 'public'), { index: false, setHeaders: staticHeaders }));
 r.use('/media', express.static(MEDIA_DIR, { maxAge: '7d', immutable: true }));
 r.use('/nostalgi', express.static(NOSTALGIA_DIR, { maxAge: '1h' }));
 r.use('/spilleliste', express.static(PLAYLIST_DIR, { maxAge: '1h' }));
