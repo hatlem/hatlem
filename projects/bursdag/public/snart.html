@@ -27,6 +27,12 @@
   .snart .allday { margin-top: 18px; font-weight: 800; color: var(--text); font-size: 16px; }
   .snart .allday:empty { display: none; }
   .prog-link { display: inline-block; font-weight: 800; color: var(--cyan); text-decoration: none; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--card-border); background: rgba(0,0,0,.25); }
+  .vert-link { margin-top: 28px; font-size: 13px; }
+  .vert-link button.link { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; text-decoration: underline; cursor: pointer; }
+  .vert-form { margin: 14px auto 0; max-width: 320px; display: grid; gap: 8px; }
+  .vert-form input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--card-border); background: rgba(0,0,0,.3); color: var(--text); font: inherit; }
+  .vert-form .btn { padding: 10px 16px; font-size: 16px; }
+  .vert-form .error { color: var(--danger); font-size: 14px; min-height: 1.2em; }
   @media (max-width: 360px) { .snart { padding: 20px 14px; } .snart .cake { font-size: 80px; } .tease li { padding: 10px 12px; } }
 </style>
 </head>
@@ -46,6 +52,13 @@
     <p class="allday" id="sAllDay"></p>
     <div class="date"><span id="sDate">Lørdag 14. november</span><small id="sPlace">Rodeløkka Velhus · kl. 14–20</small></div>
     <p style="margin-top:16px"><a class="prog-link" href="program">📅 Se programmet ›</a></p>
+    <p class="vert-link"><button class="link" type="button" id="vertToggle">Er du verten? Logg inn og test siden</button></p>
+    <form class="vert-form" id="vertForm" hidden>
+      <label for="vertKey" class="sr-only" style="position:absolute;left:-9999px">Admin-nøkkel</label>
+      <input type="password" id="vertKey" autocomplete="current-password" placeholder="Admin-nøkkel">
+      <button class="btn" type="submit">Logg inn som vert</button>
+      <div class="error" id="vertErr" aria-live="polite"></div>
+    </form>
   </div>
 </main>
 <script>
@@ -57,6 +70,21 @@
     if (place) document.getElementById('sPlace').textContent = place;
     document.getElementById('sAllDay').textContent = (d.allDay || []).join(' · ');
   }).catch(() => {});
+
+  // Verten logger inn med admin-nøkkelen; serveren setter en kjeks, og siden åpner seg på denne enheten
+  const vertForm = document.getElementById('vertForm');
+  document.getElementById('vertToggle').addEventListener('click', () => {
+    vertForm.hidden = !vertForm.hidden;
+    if (!vertForm.hidden) document.getElementById('vertKey').focus();
+  });
+  vertForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('vertErr');
+    err.textContent = '';
+    const r = await fetch('api/vert/inn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: document.getElementById('vertKey').value.trim() }) }).catch(() => null);
+    if (r && r.ok) return location.reload();
+    err.textContent = r ? ((await r.json().catch(() => ({}))).error || 'Feil') : 'Fikk ikke kontakt med serveren';
+  });
 </script>
 </body>
 </html>

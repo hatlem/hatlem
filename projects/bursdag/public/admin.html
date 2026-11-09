@@ -47,6 +47,15 @@
   <form id="login" class="card"><label for="k">Admin-nøkkel</label><input type="text" id="k" autocomplete="off"><p></p><button class="btn">Logg inn</button><div class="error" id="err"></div></form>
 
   <div id="panel" hidden>
+    <section class="card" id="vertBox" hidden>
+      <div class="step">👀 Test siden før festen</div>
+      <p class="hint" id="vertLine"></p>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <button class="btn" type="button" id="vertInn" style="font-size:16px;padding:10px">👀 Se siden som vert</button>
+        <button class="btn secondary" type="button" id="vertUt" style="font-size:16px;padding:10px" hidden>Se som gjest igjen</button>
+      </div>
+      <p class="hint" style="margin-bottom:0">Som vert ser du hele siden på denne enheten (forside, tegning, selfie, sang, hilsen, quiz, Mine ting) mens gjestene fortsatt ser «Noe kommer». Filmer og sanger du lager, havner i galleriet; skjul dem her etterpå om du vil.</p>
+    </section>
     <section class="card help-admin" id="helpBox" hidden>
       <div class="step">🙋 Noen trenger hjelp</div>
       <div id="helpList"></div>
@@ -186,6 +195,7 @@
     if (document.getElementById('panel').hidden) loadProgram();
     document.getElementById('panel').hidden = false;
     loadParty();
+    loadVert();
     const { jobs, queue, nowPlaying } = await r.json();
 
     // Godkjenning: tegn bare på nytt når listen endrer seg (så lydavspilling ikke avbrytes)
@@ -414,6 +424,28 @@
     key = document.getElementById('k').value.trim();
     try { sessionStorage.setItem('bursdag-admin', key); } catch {}
     load();
+  });
+  // Vertsvisning: logg inn på denne enheten så hele siden åpner seg bak teaseren
+  async function loadVert() {
+    const v = await fetch('api/vert').then((r) => r.json()).catch(() => null);
+    if (!v) return;
+    const box = document.getElementById('vertBox');
+    box.hidden = !v.teaser;
+    if (!v.teaser) return;
+    const opens = v.opensAt ? new Date(v.opensAt).toLocaleString('no', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : null;
+    document.getElementById('vertLine').textContent = (v.vert ? '✅ Du er logget inn som vert på denne enheten. ' : 'Gjestene ser «Noe kommer» nå. ') + (opens ? `Siden åpner av seg selv ${opens}.` : 'Fjern TEASER for å åpne siden.');
+    document.getElementById('vertInn').textContent = v.vert ? '👀 Åpne siden' : '👀 Se siden som vert';
+    document.getElementById('vertUt').hidden = !v.vert;
+  }
+  document.getElementById('vertInn').addEventListener('click', async () => {
+    const r = await api('api/vert/inn', { method: 'POST', body: JSON.stringify({ key }) });
+    if (!r.ok) return alert((await r.json().catch(() => ({}))).error || 'Feil');
+    window.open('./', '_blank');
+    loadVert();
+  });
+  document.getElementById('vertUt').addEventListener('click', async () => {
+    await fetch('api/vert/ut', { method: 'POST' });
+    loadVert();
   });
   if (key) load();
   setInterval(() => { if (key && !document.getElementById('panel').hidden) load(); }, 8000);

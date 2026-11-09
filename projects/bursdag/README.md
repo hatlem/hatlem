@@ -144,6 +144,8 @@ npm start
 
 ## Generalprøve (gjør dette en uke før)
 
+**Test siden som vert mens gjestene ser «Noe kommer»:** gå til `/admin`, logg inn med admin-nøkkelen og trykk «👀 Se siden som vert». Da settes en kjeks på enheten (30 dager), og hele siden åpner seg der: forside, tegning, selfie, sang, hilsen, klipp, quiz og Mine ting. Nederst ligger stripen «Du ser siden som vert» med «Se som gjest» som logger ut igjen. Alternativer: lenken «Er du verten?» nederst på teasersiden, eller `?admin=NØKKEL` på en hvilken som helst adresse (nøkkelen fjernes fra adressen med én gang). Kjeksen inneholder bare en HMAC av nøkkelen, og ti feil forsøk på ti minutter sperrer adressen. Vertsinnloggingen åpner bare teaseren; admin-API-et krever fortsatt nøkkelen i `x-admin-key`.
+
 ```bash
 npm run sjekk                                    # gratis: sjekker oppsett, party.json, mapper og serveren
 npm run sjekk -- --ekte --bilde min-selfie.jpg   # lager 1 ekte video + 1 ekte sang (koster kreditter)

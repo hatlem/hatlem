@@ -27,6 +27,7 @@ const { imageSize, nearestAspect } = require('./lib/imagesize');
 const { widen } = require('./lib/widen');
 const mine = require('./lib/mine');
 const teaser = require('./lib/teaser');
+const vert = require('./lib/vert');
 const pingpong = require('./lib/pingpong');
 const clip = require('./lib/clip');
 const party = require('./lib/party');
@@ -558,6 +559,10 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype)),
 });
 
+// Verten kan logge inn på enheten sin og se hele siden mens «kommer snart» er på (lib/vert.js).
+const isVert = (req) => vert.isVert(req.headers.cookie, ADMIN_KEY);
+const VERT_BANNER_SKIP = new Set(['snart', 'skjerm']); // TV-en og teaseren skal ikke ha vertsstripen
+const vertLimiter = new vert.Limiter();
 const pageCache = new Map();
 const page = (name) => (req, res) => {
   // <base> gjør at alle relative lenker i sidene virker både på rot og under BASE_PATH
@@ -566,12 +571,47 @@ const page = (name) => (req, res) => {
     html = fs.readFileSync(path.join(__dirname, 'public', `${name}.html`), 'utf8').replace('<head>', `<head>\n<base href="${BASE_PATH}/">`);
     pageCache.set(name, html);
   }
+  // Stripen «Du ser siden som vert» vises bare mens gjestene fortsatt ser teaseren
+  if (teaserOn() && !VERT_BANNER_SKIP.has(name) && isVert(req)) html = html.replace('</body>', '<script src="vert.js"></script>\n</body>');
   res.type('html').setHeader('Cache-Control', 'no-cache');
   res.send(html);
 };
+
+// ?admin=NØKKEL i lenka logger inn som vert og fjerner nøkkelen fra adressen igjen
+r.use((req, res, next) => {
+  if (typeof req.query.admin !== 'string') return next();
+  if (vertLimiter.blocked(req.ip) || !vert.keyMatches(req.query.admin, ADMIN_KEY)) {
+    vertLimiter.fail(req.ip);
+    return next();
+  }
+  vertLimiter.reset(req.ip);
+  res.setHeader('Set-Cookie', vert.setCookie(ADMIN_KEY, { secure: req.secure }));
+  const url = new URL(req.originalUrl, 'http://x');
+  url.searchParams.delete('admin');
+  res.redirect(303, url.pathname + url.search);
+});
+
+const vertStatus = (req) => ({ vert: isVert(req), teaser: teaserOn(), opensAt: teaserConfig.openAt ? new Date(teaserConfig.openAt).toISOString() : null });
+r.get('/api/vert', (req, res) => res.json(vertStatus(req)));
+r.post('/api/vert/inn', (req, res) => {
+  if (!ADMIN_KEY) return res.status(403).json({ error: 'Sett ADMIN_KEY for å logge inn som vert.' });
+  if (vertLimiter.blocked(req.ip)) return res.status(429).json({ error: 'For mange forsøk. Vent ti minutter.' });
+  if (!vert.keyMatches((req.body || {}).key, ADMIN_KEY)) {
+    vertLimiter.fail(req.ip);
+    return res.status(401).json({ error: 'Feil nøkkel' });
+  }
+  vertLimiter.reset(req.ip);
+  res.setHeader('Set-Cookie', vert.setCookie(ADMIN_KEY, { secure: req.secure }));
+  res.json({ ok: true, ...vertStatus(req), vert: true });
+});
+r.post('/api/vert/ut', (req, res) => {
+  res.setHeader('Set-Cookie', vert.clearCookie());
+  res.json({ ok: true, ...vertStatus(req), vert: false });
+});
+
 if (teaserConfig.teaser) {
-  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks)(\/|$)|style\.css$|common\.js$|player\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
-  const isAdmin = (req) => ADMIN_KEY && (req.get('x-admin-key') || req.query.admin) === ADMIN_KEY;
+  const open = /^\/(admin(\/|$)|api\/(admin|health|player|queue|kahoot|hooks|vert)(\/|$)|style\.css$|common\.js$|player\.js$|vert\.js$|lyd$|musikk$|skjerm$|program$|qr(\.svg)?$|api\/(program|config|screen|examples|reactions|qr-info|stamps|react|votes\/mine|screen\/shown)$|api\/mine(\/|$)|api\/jobs\/|media\/|nostalgi\/|spilleliste\/)/;
+  const isAdmin = (req) => vert.keyMatches(req.get('x-admin-key'), ADMIN_KEY) || isVert(req);
   r.use((req, res, next) => (!teaserOn() || open.test(req.path) || isAdmin(req) ? next() : page('snart')(req, res)));
 }
 r.get('/', page('index'));
