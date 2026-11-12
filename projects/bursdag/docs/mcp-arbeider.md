@@ -4,6 +4,10 @@ Når Railway-tjenesten kjører med `VIDEO_PROVIDER=mcp`, lages ingen filmer av H
 som en Claude Code-økt på Andreas' Mac tømmer med Higgsfield-MCP-en (`mcp__higgsfield__*`). Da brukes kredittene på
 higgsfield.ai-kontoen. Arbeideren må kjøre så lenge festen varer.
 
+**API-reserve:** er `HF_KEY` satt, tar appen over selv. En jobb ingen arbeider har tatt etter 4 min (`MCP_FALLBACK_MIN`), eller som
+er claimet uten levering i 12 min (`MCP_STUCK_MIN`), lages via Higgsfield-API-et og betales fra API-lommeboken. Jobben forsvinner da
+fra listen, og leverer arbeideren likevel senere, svarer appen 404: hopp over jobben. `MCP_FALLBACK_MIN=0` slår reserven av.
+
 ## Endepunkter (krever `x-admin-key`)
 
 | Kall | Gjør |

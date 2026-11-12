@@ -20,6 +20,7 @@ const os = require('os');
 const path = require('path');
 
 const higgsfield = require('./lib/higgsfield');
+const mcpFallback = require('./lib/mcp-fallback');
 const suno = require('./lib/suno');
 const demo = require('./lib/demo');
 const { DRAWING_STYLES, SELFIE_EFFECTS, FRAMING, pickVariant, imagePrompt, drawingImagePrompt, SONG_GENRES, SONG_MOODS } = require('./lib/catalog');
@@ -82,6 +83,8 @@ const GALLERY_TYPES = new Set([...AI_TYPES, 'clip', 'greeting']);
 // henter jobbene via /api/admin/mcp og leverer bilde og film tilbake. Da brukes Higgsfield-kontoens kreditter.
 const MCP_MODE = /^mcp$/i.test(process.env.VIDEO_PROVIDER || '');
 const useHiggsfield = MCP_MODE || higgsfield.isConfigured();
+// Reserve: filmer arbeideren ikke tar (eller ikke leverer) i tide, lages via API-et med HF_KEY.
+const MCP_FALLBACK = MCP_MODE && higgsfield.isConfigured() ? mcpFallback.settings() : null;
 const useImageFix = MCP_MODE || higgsfield.imageFixConfigured();
 const useSuno = suno.isConfigured();
 // Filmene vises frem og tilbake (ping-pong). Krever ffmpeg; uten den vises originalen i vanlig loop.
@@ -313,6 +316,10 @@ async function startVideoJob(job) {
     updateJob(job, { status: 'processing', provider: { name: 'mcp', stage: fix && fix.prompt && !job.fixedImageUrl ? 'image' : 'video' } });
     return;
   }
+  return startApiVideo(job);
+}
+
+async function startApiVideo(job) {
   if (!useHiggsfield) {
     updateJob(job, { status: 'processing', demo: true, provider: { name: 'demo', readyAt: Date.now() + demo.VIDEO_DELAY_MS } });
     return;
@@ -321,7 +328,7 @@ async function startVideoJob(job) {
   const imageUrl = job.hfImageUrl || (await higgsfield.upload(buffer, job.input.contentType || 'image/jpeg'));
   if (!job.hfImageUrl) updateJob(job, { hfImageUrl: imageUrl }); // ikke last opp på nytt ved nytt forsøk
   const fix = job.input.fix;
-  if (useImageFix && fix && fix.prompt && !job.fixedImageUrl) {
+  if (higgsfield.imageFixConfigured() && fix && fix.prompt && !job.fixedImageUrl) {
     const { requestId } = await higgsfield.submitImageFix({ imageUrl, prompt: fix.prompt, aspectRatio: fix.aspectRatio, webhookUrl: hookUrl(job) });
     updateJob(job, { status: 'processing', provider: { name: 'higgsfield', stage: 'image', requestId } });
     return;
@@ -448,7 +455,7 @@ async function pollJob(job) {
   // Tidsfristen regnes fra jobben faktisk startet, ikke fra den kom i kø.
   if (Date.now() - (job.startedAt || job.createdAt) > JOB_TIMEOUT_MS) return fail(job, 'Det tok for lang tid. Prøv igjen!');
 
-  if (p.name === 'mcp') return; // arbeideren leverer via /api/admin/mcp
+  if (p.name === 'mcp') return MCP_FALLBACK && mcpToApi(job); // arbeideren leverer via /api/admin/mcp
   if (p.name === 'demo') {
     if (Date.now() < p.readyAt) return;
     if (job.type === 'song') {
@@ -504,6 +511,23 @@ async function pollJob(job) {
     const s = await suno.status(p.taskId);
     if (s.failed) return fail(job, s.message || 'Sangen kunne ikke lages. Prøv et annet tema!');
     if (s.done && s.track) return completeSong(job, s.track);
+  }
+}
+
+/** Arbeideren tok ikke jobben (eller ble ikke ferdig): lag den via API-et. Sene leveranser fra arbeideren avvises. */
+async function mcpToApi(job) {
+  const reason = mcpFallback.fallbackReason(job, Date.now(), MCP_FALLBACK);
+  if (!reason) return;
+  const p = job.provider;
+  console.warn(`[MCP ${job.id}] ${reason === 'stuck' ? 'arbeideren ble ikke ferdig' : 'ingen arbeider tok jobben'}, bruker API-reserven`);
+  try {
+    await startApiVideo(job);
+    updateJob(job, { startedAt: Date.now(), apiFallback: reason }); // ny tidsfrist fra API-starten
+  } catch (err) {
+    const tries = (p.fallbackTries || 0) + 1;
+    if (tries >= 5 && !RATE_LIMITED.test(err.message)) return fail(job, friendly(err));
+    console.warn(`[MCP ${job.id}] API-reserven feilet (${tries}), prøver igjen om ett minutt:`, err.message.slice(0, 120));
+    updateJob(job, { provider: { ...p, fallbackTries: tries, fallbackRetryAt: Date.now() + 60000 } });
   }
 }
 
@@ -1335,7 +1359,7 @@ r.get('/api/admin/mcp/jobs', requireAdmin, (req, res) => {
     .filter((j) => j.status === 'processing' && j.provider && j.provider.name === 'mcp')
     .sort((a, b) => a.createdAt - b.createdAt)
     .map((j) => mcpJobView(req, j));
-  res.json({ mode: MCP_MODE ? 'mcp' : 'api', jobs: list, waiting: videoWaitList().length });
+  res.json({ mode: MCP_MODE ? 'mcp' : 'api', apiFallbackMin: MCP_FALLBACK ? MCP_FALLBACK.unclaimedMs / 60000 : null, jobs: list, waiting: videoWaitList().length });
 });
 r.post('/api/admin/mcp/jobs/:id/claim', requireAdmin, (req, res) => {
   const job = jobs.get(req.params.id);
