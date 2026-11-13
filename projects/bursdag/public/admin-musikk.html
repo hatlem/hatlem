@@ -53,7 +53,7 @@
       <button data-t="queue" class="on">Kø</button>
       <button data-t="songs">Alle sanger</button>
       <button data-t="played">Spilt</button>
-      <button data-t="playlist">Årsspilleliste</button>
+      <button data-t="playlist">Spilleliste</button>
     </div>
     <input type="text" class="search" id="search" placeholder="🔍 Søk etter tittel, gjest eller år">
     <div id="list"></div>
@@ -106,7 +106,7 @@
     if (now) {
       $('npArt').outerHTML = art(now).replace('class="art', 'id="npArt" class="art');
       $('npTitle').textContent = now.title;
-      $('npBy').textContent = now.kind === 'playlist' ? 'Årsspillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}${now.guest || 'anonym'}${now.label ? ' · ' + now.label : ''}`;
+      $('npBy').textContent = now.kind === 'playlist' ? 'Spillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}${now.guest || 'anonym'}${now.label ? ' · ' + now.label : ''}`;
     } else {
       $('npTitle').textContent = p.online ? 'Ingenting spilles' : 'Start /lyd på mobilen ved høyttaleren';
       $('npBy').textContent = '';
@@ -127,7 +127,7 @@
 
   function row(s, buttons, i) {
     const title = s.kind === 'playlist' ? s.title : (s.result && s.result.title) || s.label;
-    const by = s.kind === 'playlist' ? `${s.year || ''} · årsspilleliste` : `${s.guest || 'anonym'} · ${s.label}`;
+    const by = s.kind === 'playlist' ? `${s.year || ''} · spilleliste` : `${s.guest || 'anonym'} · ${s.label}`;
     const playing = d.player.report && d.player.report.now && d.player.report.now.id === s.id;
     return `<div class="song ${playing ? 'playing' : ''}" data-id="${esc(s.id)}">${art(s)}<div class="meta"><b>${i != null ? `${i + 1}. ` : ''}${playing ? '🔊 ' : ''}${esc(title)}</b><small>${esc(by)}</small></div>${buttons}</div>`;
   }
@@ -140,7 +140,7 @@
     if (tab === 'queue') {
       const list = d.queue.filter(match);
       html = list.map((s, i) => row(s, btn('play-now', '▶️', 'Spill nå') + btn('up', '⬆️', 'Flytt opp') + btn('down', '⬇️', 'Flytt ned') + btn('remove', '✖️', 'Fjern fra køen'), i)).join('')
-        || '<p class="empty">Køen er tom. Når den er tom, spilles årsspillelisten.</p>';
+        || '<p class="empty">Køen er tom. Når den er tom, spilles spillelisten.</p>';
     } else if (tab === 'songs') {
       html = d.songs.filter(match).map((s) => row(s, btn('play-now', '▶️', 'Spill nå') + btn('add', '➕', 'Legg i kø'))).join('') || '<p class="empty">Ingen sanger ennå.</p>';
     } else if (tab === 'played') {

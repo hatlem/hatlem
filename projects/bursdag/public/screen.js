@@ -159,7 +159,7 @@
       const cover = now.kind === 'playlist'
         ? `<div class="cover" style="font-size:1.8vw;font-weight:800">${esc(now.year || '🕰️')}</div>`
         : `<div class="cover">${now.imageUrl ? `<img src="${esc(now.imageUrl)}" alt="">` : '🎵'}</div>`;
-      const by = now.kind === 'playlist' ? 'Årsspillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}Laget av ${esc(now.guest || 'en hemmelig gjest')}`;
+      const by = now.kind === 'playlist' ? 'Spillelisten' : `${now.kind === 'reprise' ? 'Reprise · ' : ''}Laget av ${esc(now.guest || 'en hemmelig gjest')}`;
       el.innerHTML = `<div class="row2">${cover}<div><div class="title">${rep.paused ? '⏸️ ' : '<span class="eq"><i></i><i></i><i></i></span>'}${esc(now.title)}</div>
         <div class="by">${by}</div></div></div><div class="bar"><div id="nowBar"></div></div>`;
       tickBar();

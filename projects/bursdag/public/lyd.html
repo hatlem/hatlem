@@ -91,11 +91,11 @@
     } else if (!s) {
       $('art').className = 'art'; $('art').innerHTML = '🎵';
       $('title').textContent = 'Venter på musikk …';
-      $('by').textContent = 'Køen er tom og årsspillelisten er ikke lagt inn';
+      $('by').textContent = 'Køen er tom og spillelisten er ikke lagt inn';
     } else if (s.kind === 'playlist') {
       $('art').className = 'art year'; $('art').textContent = s.year || '🕰️';
       $('title').textContent = s.title;
-      $('by').textContent = 'Årsspillelisten';
+      $('by').textContent = 'Spillelisten';
     } else {
       const r = s.result || {};
       $('art').className = 'art';

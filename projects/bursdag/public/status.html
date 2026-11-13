@@ -25,7 +25,7 @@
       <li data-s="finishing"><i></i><b>Klipper frem og tilbake</b><small>noen sekunder</small></li>
       <li data-s="done"><i></i><b>Klar på skjermen</b></li>
     </ol>
-    <p class="hint" id="waitHint">Filmen tar noen minutter å lage. Du kan lukke siden, legge bort mobilen og kikke på skjermen. Vi sier fra her når den er klar.</p>
+    <p class="hint" id="waitHint">Filmen tar noen minutter å lage. Skjermen viser den med navnet ditt så snart den er klar, så du kan legge bort mobilen og kikke dit. Lar du siden stå åpen, sier vi fra her også. Du finner alltid filmen igjen under «Mine ting».</p>
   </div>
   <div id="stampLine" class="stamps" hidden><h3 id="stampMsg"></h3></div>
   <div id="react"></div>
@@ -89,6 +89,9 @@
     done = true;
     Party.confetti();
     showStamps();
+    // Si fra på mobilen også: vibrer (Android) og bytt fanetittel, så det synes om siden ligger i bakgrunnen
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch { /* ikke støttet */ }
+    document.title = '✅ Ferdig! ' + document.title.replace(/^✅ Ferdig! /, '');
     const r = job.result || {};
     let html = '<h2>Ferdig! 🎉</h2>';
     if (job.type === 'song') {

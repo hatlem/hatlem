@@ -90,6 +90,66 @@
         "riktig": 0
       },
       {
+        "q": "I 1996 spurte lokalavisa {navn} (9) hvordan han skulle feire 17. mai. Hva var han helt sikker på?",
+        "alt": [
+          "At han skulle gå først i toget",
+          "At han skulle spise popcorn og is",
+          "At han skulle på tivoli",
+          "At han skulle plage søstera si"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "Som 11-åring sendte {navn} en hilsen til lokalavisa fra ferie. Hvor hadde han nettopp svømt?",
+        "alt": [
+          "I Dødehavet",
+          "I Donau",
+          "I Nilen",
+          "I Amazonas"
+        ],
+        "riktig": 2
+      },
+      {
+        "q": "I 2001 spurte avisa {navn} (14) hva han ville gjort først som statsminister. Hva svarte han?",
+        "alt": [
+          "Gitt de eldre litt mer penger",
+          "Innført lengre sommerferie",
+          "Gitt gratis internett til alle",
+          "Fjernet leksene"
+        ],
+        "riktig": 0
+      },
+      {
+        "q": "Hvilken film anbefalte {navn} (15) i lokalavisa i 2002?",
+        "alt": [
+          "Gladiatoren",
+          "Ringenes herre",
+          "American Pie",
+          "Tigerland"
+        ],
+        "riktig": 3
+      },
+      {
+        "q": "Som 15-åring ledet {navn} en protestaksjon som havnet i avisa. Hva ville han redde?",
+        "alt": [
+          "Ungdomsklubben",
+          "Badeplassen Høla",
+          "Skolekantina",
+          "Fotballbanen"
+        ],
+        "riktig": 1
+      },
+      {
+        "q": "{navn} satt i russestyret på Greåker i 2005. Hvilken rolle hadde han?",
+        "alt": [
+          "President",
+          "Festansvarlig",
+          "Nettansvarlig",
+          "Orakelet"
+        ],
+        "riktig": 2
+      },
+      {
         "q": "{navn} ble født i 1986. Hvilken stor ulykke skjedde i Ukraina i april det året?",
         "alt": [
           "Tsjernobyl",

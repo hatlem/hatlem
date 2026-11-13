@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * Det analoge rundt det digitale: program, quiz, hilsener, nostalgivegg og årsspilleliste.
+ * Det analoge rundt det digitale: program, quiz, hilsener, nostalgivegg og egen spilleliste.
  * Innholdet ligger i party.json, og bilder/musikk i mapper du fyller selv:
  *   DATA_DIR/nostalgi/1990 barnehage.jpg   -> vises på skjermen med «1990»
- *   DATA_DIR/spilleliste/1986 a-ha - Take On Me.mp3 -> spilles kronologisk når sangkøen er tom
+ *   DATA_DIR/spilleliste/1986 a-ha - Take On Me.mp3 -> spilles i rekkefølge når sangkøen er tom («07 Tittel.m4a» går også)
  */
 
 const fs = require('fs');
@@ -42,7 +42,8 @@ const AUDIO = /\.(mp3|m4a|aac|ogg|wav)$/i;
 function parseName(file) {
   const base = file.replace(/\.[^.]+$/, '');
   const m = base.match(/^(\d{4})[\s._-]*(.*)$/);
-  return { year: m ? Number(m[1]) : null, title: (m ? m[2] : base).replace(/_/g, ' ').trim() };
+  const rest = m ? m[2] : base.replace(/^\d{1,3}[\s._-]+/, ''); // «07 Tittel»: tallet styrer bare rekkefølgen
+  return { year: m ? Number(m[1]) : null, title: rest.replace(/_/g, ' ').trim() };
 }
 
 function makeFolderScanner(dir, pattern) {

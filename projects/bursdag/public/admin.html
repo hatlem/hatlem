@@ -256,7 +256,7 @@
     document.getElementById('partyWarn').innerHTML = p.quiz.example ? '<div class="demo-banner">⚠️ Quiz-spørsmålene er fortsatt eksempler. Rediger party.json og sett "eksempel": false.</div>' : '';
     const used = p.usage.videos + p.usage.songs;
     document.getElementById('usage').innerHTML = `💳 Brukt: <b>${p.usage.videos}</b> videoer og <b>${p.usage.songs}</b> sanger (${used} av maks ${p.usage.max})`;
-    document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.questions} spørsmål · Nostalgibilder: ${p.nostalgia} · Årsspilleliste: ${p.playlist} låter`;
+    document.getElementById('partyInfo').textContent = `Video: ${p.videoSlots.active}/${p.videoSlots.max} i arbeid, ${p.videoSlots.waiting} i kø · Quiz: ${p.quiz.questions} spørsmål · Nostalgibilder: ${p.nostalgia} · Spilleliste: ${p.playlist} låter`;
     document.getElementById('moderation').checked = p.moderation;
 
     // Finale
