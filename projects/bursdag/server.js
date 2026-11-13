@@ -1494,11 +1494,11 @@ r.post('/api/admin/queue', requireAdmin, (req, res) => {
 
 // --- Kjøreplan og handleliste (delt mellom alle som er logget inn i admin) ---
 r.get('/api/admin/plan', requireAdmin, (req, res) => {
-  res.json({ plan: state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] }, schedule: schedule(), birthdayName: BIRTHDAY_NAME });
+  res.json({ plan: state.plan || { adults: 40, kids: 19, venue: 'inne', checked: {}, extra: [] }, schedule: schedule(), birthdayName: BIRTHDAY_NAME });
 });
 r.post('/api/admin/plan', requireAdmin, (req, res) => {
   const b = req.body || {};
-  const plan = state.plan || { adults: 30, kids: 15, venue: 'inne', checked: {}, extra: [] };
+  const plan = state.plan || { adults: 40, kids: 19, venue: 'inne', checked: {}, extra: [] };
   if (b.adults != null) plan.adults = Math.max(0, Math.min(500, Math.round(Number(b.adults) || 0)));
   if (b.kids != null) plan.kids = Math.max(0, Math.min(500, Math.round(Number(b.kids) || 0)));
   if (['inne', 'ute', 'begge'].includes(b.venue)) plan.venue = b.venue;

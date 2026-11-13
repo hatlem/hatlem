@@ -8,78 +8,222 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <title>QR-plakater</title>
 <style>
-  :root { --ink: #1d1038; --pink: #ff4fa3; --yellow: #ffd23f; --cyan: #3ee6d8; --violet: #9b6bff; }
+  :root {
+    --bg: #120a24; --text: #fff8ec; --muted: #c9bde6; --ink: #1d1038;
+    --pink: #ff4fa3; --yellow: #ffd23f; --cyan: #3ee6d8; --violet: #9b6bff;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Baloo 2', ui-rounded, system-ui, sans-serif; color: var(--ink); background: #f3eefc; }
+  body { margin: 0; font-family: 'Baloo 2', ui-rounded, system-ui, sans-serif; color: var(--text); background: #0b0617; }
   .tools { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
   .tools h1 { margin: 0 0 6px; }
-  .warn { background: #fff3c4; border: 1px solid #f0c419; border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+  .tools p { color: var(--muted); margin: 0 0 10px; }
+  .warn { background: #fff3c4; color: var(--ink); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
   .warn code { background: #fff; padding: 1px 6px; border-radius: 6px; }
-  button { font: inherit; font-weight: 800; font-size: 18px; border: 0; border-radius: 999px; padding: 12px 22px; background: linear-gradient(90deg, var(--yellow), var(--pink)); cursor: pointer; }
-  .sheets { display: grid; gap: 24px; padding: 0 16px 40px; justify-items: center; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+  button { font: inherit; font-weight: 800; font-size: 18px; border: 0; border-radius: 999px; padding: 12px 22px; color: var(--ink); background: linear-gradient(90deg, var(--yellow), var(--pink)); cursor: pointer; }
+  .toggle { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; background: rgba(255,255,255,.08); padding: 10px 14px; border-radius: 999px; cursor: pointer; }
+  .picks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .picks label { background: rgba(255,255,255,.08); border-radius: 999px; padding: 6px 12px; font-weight: 700; cursor: pointer; }
+  .sheets { display: grid; gap: 28px; padding: 0 16px 40px; justify-items: center; }
+
+  /* ---------- Plakaten (A4) ---------- */
   .poster {
-    width: min(100%, 180mm); aspect-ratio: 210 / 297; background: #fff; padding: 10mm;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
-    border: 6mm solid; border-image: var(--grad) 1; box-shadow: 0 10px 30px rgba(29,16,56,.12);
+    --accent: var(--pink);
+    position: relative; overflow: hidden;
+    width: min(100%, 190mm); aspect-ratio: 210 / 297;
+    padding: 12mm 13mm 10mm; border-radius: 6mm;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4mm;
+    color: var(--text);
+    border: 2.2mm solid transparent;
+    background:
+      radial-gradient(140mm 90mm at 0% -5%, color-mix(in srgb, var(--c1) 45%, transparent), transparent 70%) padding-box,
+      radial-gradient(120mm 90mm at 105% 15%, color-mix(in srgb, var(--c2) 35%, transparent), transparent 70%) padding-box,
+      radial-gradient(150mm 100mm at 50% 115%, rgba(155,107,255,.45), transparent 70%) padding-box,
+      linear-gradient(var(--bg), var(--bg)) padding-box,
+      linear-gradient(135deg, var(--c1), var(--c2)) border-box;
+    box-shadow: 0 14px 40px rgba(0,0,0,.5);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    container-type: inline-size;
   }
-  .poster .emoji { font-size: 34mm; line-height: 1; }
-  .poster h2 { font-size: 15mm; line-height: 1; margin: 2mm 0; }
-  .poster p { font-size: 6mm; margin: 0; max-width: 140mm; }
-  .poster img { width: 85mm; height: 85mm; }
-  .poster .scan { font-weight: 800; font-size: 7mm; padding: 2mm 8mm; border-radius: 999px; color: #fff; background: var(--ink); }
-  .poster .url { font-size: 4mm; opacity: .6; word-break: break-all; margin-top: 2mm; }
+  .tag { font-weight: 800; font-size: 4.2mm; letter-spacing: .04em; color: var(--muted); background: rgba(255,255,255,.08); border: .3mm solid rgba(255,255,255,.16); padding: 1mm 5mm; border-radius: 999px; }
+  .emoji { font-size: 22mm; line-height: 1; margin-top: 1mm; }
+  .poster h2 { font-size: 15mm; line-height: 1.05; margin: 0; padding: 0 2mm; font-weight: 800; letter-spacing: -.01em;
+    background: linear-gradient(90deg, var(--c1), var(--c2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: 6mm; line-height: 1.2; margin: 0; max-width: 160mm; font-weight: 700; }
+
+  .mid { display: flex; gap: 6mm; width: 100%; align-items: stretch; flex: 1; min-height: 0; }
+  .steps { flex: 1.15; text-align: left; background: rgba(255,255,255,.07); border: .3mm solid rgba(255,255,255,.14); border-radius: 5mm; padding: 4mm 5mm; display: flex; flex-direction: column; justify-content: center; gap: 3mm; }
+  .steps h3, .can h3 { margin: 0; font-size: 4.6mm; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .step { display: flex; gap: 3mm; align-items: center; font-size: 5mm; line-height: 1.15; font-weight: 700; }
+  .step b { flex: none; width: 9mm; height: 9mm; border-radius: 50%; display: grid; place-items: center; font-size: 5mm; color: var(--ink); background: linear-gradient(135deg, var(--c1), var(--c2)); }
+  .qr { flex: .85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5mm; }
+  .qr .box { background: #fff; border-radius: 5mm; padding: 3mm; box-shadow: 0 0 0 1.2mm color-mix(in srgb, var(--c1) 60%, transparent), 0 0 12mm color-mix(in srgb, var(--c1) 45%, transparent); }
+  .qr img { display: block; width: 62mm; height: 62mm; }
+  .scan { font-weight: 800; font-size: 5mm; padding: 1.5mm 6mm; border-radius: 999px; color: var(--ink); background: linear-gradient(90deg, var(--c1), var(--c2)); white-space: nowrap; }
+
+  .can { width: 100%; display: flex; flex-direction: column; gap: 2.5mm; }
+  .thumbs { display: flex; justify-content: center; gap: 3mm; }
+  .thumb { flex: 0 0 var(--w, 23.5%); position: relative; border-radius: 3.5mm; overflow: hidden; aspect-ratio: 4 / 3; background: rgba(255,255,255,.08); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb span { position: absolute; left: 0; right: 0; bottom: 0; padding: 4mm 2mm 1.2mm; font-size: 3.6mm; font-weight: 800; line-height: 1.05;
+    background: linear-gradient(transparent, rgba(18,10,36,.92)); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 2mm; }
+  .chip { font-size: 4.4mm; font-weight: 700; padding: 1mm 4mm; border-radius: 999px; background: rgba(255,255,255,.09); border: .3mm solid rgba(255,255,255,.16); }
+  .acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+  .act { background: rgba(255,255,255,.07); border: .3mm solid rgba(255,255,255,.14); border-radius: 4mm; padding: 3mm; display: flex; flex-direction: column; gap: 1.5mm; }
+  .act .e { font-size: 9mm; line-height: 1; }
+  .act strong { font-size: 5mm; line-height: 1; }
+  .act small { font-size: 3.7mm; color: var(--muted); line-height: 1.15; }
+  .foot { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 4mm; color: var(--muted); gap: 4mm; }
+  .foot .url { font-size: 3.4mm; opacity: .8; white-space: nowrap; text-align: right; }
+
+  /* Lys variant som sparer blekk */
+  body.light .poster { --bg: #fff; color: var(--ink); background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, var(--c1), var(--c2)) border-box; }
+  body.light .poster .tag, body.light .steps, body.light .act, body.light .chip { background: #f5f0ff; border-color: #e3d9fb; color: var(--ink); }
+  body.light .steps h3, body.light .can h3, body.light .act small, body.light .foot { color: #6b5b8f; }
+  body.light .thumb span { background: linear-gradient(transparent, rgba(29,16,56,.85)); }
+
   @media print {
     @page { size: A4; margin: 0; }
     body { background: #fff; }
-    .tools { display: none; }
-    .sheets { padding: 0; gap: 0; }
-    .poster { width: 210mm; height: 297mm; aspect-ratio: auto; box-shadow: none; break-after: page; border-width: 10mm; }
+    .tools, .poster.skip { display: none; }
+    .qr img { width: 76mm; height: 76mm; }
+    .step { font-size: 6.2mm; }
+    .step b { width: 11mm; height: 11mm; font-size: 6mm; }
+    .steps { gap: 4.5mm; }
+    .steps h3, .can h3 { font-size: 5mm; }
+    .sheets { padding: 0; gap: 0; display: block; }
+    .poster { width: 210mm; height: 297mm; aspect-ratio: auto; border-radius: 0; box-shadow: none; break-after: page; page-break-after: always; padding: 12mm 13mm 10mm; border-width: 4mm; }
   }
 </style>
 </head>
 <body>
 <div class="tools">
   <h1>🖨️ QR-plakater til lokalet</h1>
-  <p>Skriv ut og heng opp rundt i lokalet. Hver plakat sender gjestene rett til riktig aktivitet.</p>
+  <p>Skriv ut i A4 og heng opp ved hver stasjon. Hver plakat sier hva man kan gjøre, hvordan, og sender gjestene rett dit.</p>
   <div id="warn"></div>
-  <button onclick="print()">Skriv ut</button>
+  <div class="bar">
+    <button onclick="print()">🖨️ Skriv ut</button>
+    <label class="toggle"><input type="checkbox" id="light"> Lys bakgrunn (sparer blekk)</label>
+  </div>
+  <p>Velg hvilke som skal skrives ut:</p>
+  <div class="picks" id="picks"></div>
 </div>
 <div class="sheets" id="sheets"></div>
 <script>
+  const T = (id, name) => ({ img: 'stiler/' + id + '.jpg', name });
   const POSTERS = [
-    { path: '/', emoji: '🎂', title: 'Bursdagsmoro!', text: 'Lag en film av tegningen din, din egen sang eller en selfie med magisk effekt', grad: 'linear-gradient(135deg,#ffd23f,#ff4fa3,#9b6bff)' },
-    { path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', text: 'For store og små: tegn noe, ta bilde av det, og se det bli levende på skjermen', grad: 'linear-gradient(135deg,#ffd23f,#ff9f1c)' },
-    { path: '/sang', emoji: '🎤', title: 'Lag en sang', text: 'Om hva som helst, i sjangeren du vil. Sangen din legges i spillelisten på festen!', grad: 'linear-gradient(135deg,#ff4fa3,#9b6bff)' },
-    { path: '/selfie', emoji: '🤳', title: 'Selfie med effekt', text: 'Få en tiger til å gå rundt deg, bli et spøkelse eller fly som en superhelt', grad: 'linear-gradient(135deg,#3ee6d8,#3a86ff)' },
-    { path: '/quiz', emoji: '🧠', title: 'Quiz', text: 'Live-quiz på skjermen kl. 17. Skann og meld deg på nå!', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
-    { path: '/hilsen', emoji: '💌', title: 'Gjestebok med vri', text: 'Gi 40-åringen ett råd, eller gjett hva bursdagsbarnet gjorde som 20-åring', grad: 'linear-gradient(135deg,#ff4fa3,#ffd23f)' },
-    { path: '/klipp', emoji: '🎥', title: 'Film et klipp', text: 'Maks 15 sekunder: en hilsen, en dans eller et trylletriks rett på skjermen', grad: 'linear-gradient(135deg,#9b6bff,#3ee6d8)' },
-    { path: '/selfie?effekt=attitall', emoji: '📼', title: 'Fotohjørnet: 1986', text: 'Ta på deg 80-tallsrekvisittene, ta en selfie og bli en del av en 80-tallsvideo!', grad: 'linear-gradient(135deg,#ff4fa3,#3ee6d8)' },
-    { path: '/selfie?effekt=tiger', emoji: '🐯', title: 'Tiger-hjørnet', text: 'Still deg her, ta en selfie, og se en tiger gå rundt deg!', grad: 'linear-gradient(135deg,#ff9f1c,#ff4f4f)' },
-    { path: '/selfie?effekt=gammel', emoji: '👴', title: 'Bli 80 år', text: 'Ta en selfie og se hvordan du ser ut om 40 år!', grad: 'linear-gradient(135deg,#c9b8a6,#6b5b8f)' },
-    { path: '/selfie?effekt=spokelse', emoji: '👻', title: 'Spøkelseshjørnet', text: 'Ta en selfie og forsvinn som et spøkelse …', grad: 'linear-gradient(135deg,#b8c1ff,#5b4bdb)' },
+    { key: 'start', path: '/', emoji: '🎂', title: 'Lag noe gøy!', lead: 'Skann koden, velg hva du vil lage, og se det på skjermen.',
+      c1: '#ffd23f', c2: '#ff4fa3', overview: true,
+      steps: ['Skann QR-koden med kameraet', 'Velg tegning, sang eller selfie', 'Følg stegene. Det tar et par minutter', 'Se resultatet på skjermen 📺'] },
+    { key: 'tegning', path: '/tegning', emoji: '🖍️', title: 'Tegning blir film', lead: 'Tegn hva som helst, så gjør vi det om til en levende film. For både store og små!',
+      c1: '#ffd23f', c2: '#ff9f1c',
+      steps: ['Tegn noe på et ark ved tegnebordet', 'Skann koden og ta bilde av tegningen', 'Velg stil: magisk, tegnefilm, anime eller ekte', 'Filmen dukker opp på skjermen 🎬'],
+      thumbs: [T('tegning-original', 'Tegningen'), T('tegning-magisk', 'Magisk'), T('tegning-tegnefilm', 'Tegnefilm'), T('tegning-ekte', 'Ekte')] },
+    { key: 'sang', path: '/sang', emoji: '🎤', title: 'Lag en sang', lead: 'Skriv hva sangen skal handle om, så lager AI-en en ekte låt med sang og musikk.',
+      c1: '#ff4fa3', c2: '#9b6bff',
+      steps: ['Skann koden', 'Skriv hva sangen skal handle om', 'Velg sjanger og stemning', 'Låten spilles på festen 🔊'],
+      chips: ['🎸 Rock', '🪩 Disko', '🎤 Rap', '🤠 Country', '💃 Dansband', '🎭 Opera', '…om hva som helst!'] },
+    { key: 'selfie', path: '/selfie', emoji: '🤳', title: 'Selfie med effekt', lead: 'Ta en selfie og bli til en liten film med en sprø effekt.',
+      c1: '#3ee6d8', c2: '#3a86ff',
+      steps: ['Skann koden', 'Velg en effekt', 'Ta en selfie (alene eller flere)', 'Se deg selv på skjermen 📺'],
+      thumbs: [T('selfie-gammel', 'Bli 80 år'), T('selfie-trex', 'T-rex bak deg'), T('selfie-kake', 'Kake i fjeset'), T('selfie-tiger', 'Tiger rundt deg')] },
+    { key: 'quiz', path: '/quiz', emoji: '🧠', title: 'Quiz', lead: 'Live-quiz på skjermen kl. {quiz}. Svar på mobilen, raskest får flest poeng!',
+      c1: '#9b6bff', c2: '#3ee6d8',
+      steps: ['Skann koden', 'Skriv navnet ditt og trykk «Bli med»', 'Følg med på skjermen kl. {quiz}', 'Trykk på riktig svar, fort! ⚡'],
+      chips: ['📻 Radio', '🌍 Reiser', '📼 1986', '🎶 Musikk', '🏆 Toppliste på skjermen'], canTitle: 'Spørsmål om blant annet' },
+    { key: 'hilsen', path: '/hilsen', emoji: '💌', title: 'Gjestebok med vri', lead: 'Skriv en hilsen til {name}. Den vises på skjermen og samles i gjesteboken.',
+      c1: '#ff4fa3', c2: '#ffd23f',
+      steps: ['Skann koden', 'Velg et spørsmål eller skriv fritt', 'Send hilsenen', 'Se den dukke opp på skjermen 💬'],
+      chips: ['🦉 Gi 40-åringen et råd', '🤔 Gjett hva {name} gjorde som 20-åring', '❤️ Ditt beste minne med {name}'] },
+    { key: 'klipp', path: '/klipp', emoji: '🎥', title: 'Film et klipp', lead: 'Har du filmet noe gøy? Last det opp, så vises det på skjermen.',
+      c1: '#9b6bff', c2: '#3ee6d8',
+      steps: ['Skann koden', 'Film eller velg et klipp på mobilen', 'Velg de beste 15 sekundene', 'Klippet vises på skjermen 📺'],
+      chips: ['👋 En hilsen', '💃 En dans', '🎩 Et triks', '🎂 Gratulasjon'] },
+    { key: 'attitall', path: '/selfie?effekt=attitall', emoji: '📼', title: 'Fotohjørnet: 1986', lead: 'Ta på deg 80-tallsrekvisittene og bli en del av en 80-tallsvideo!',
+      c1: '#ff4fa3', c2: '#3ee6d8', corner: true,
+      steps: ['Ta på deg rekvisitter 🕶️', 'Skann koden', 'Ta selfien her i hjørnet', 'Se 80-tallsvideoen på skjermen'],
+      thumbs: [T('selfie-attitall', 'Tilbake til 1986'), T('selfie-disco', 'Disko-feber')] },
+    { key: 'tiger', path: '/selfie?effekt=tiger', emoji: '🐯', title: 'Tiger-hjørnet', lead: 'Still deg her, ta en selfie, og se en tiger gå rundt deg!',
+      c1: '#ff9f1c', c2: '#ff4f4f', corner: true,
+      steps: ['Still deg foran veggen', 'Skann koden', 'Ta selfien, gjerne hele kroppen', 'Tigeren dukker opp på skjermen 🐯'],
+      thumbs: [T('selfie-tiger', 'Tiger rundt deg')] },
+    { key: 'gammel', path: '/selfie?effekt=gammel', emoji: '👴', title: 'Bli 80 år', lead: 'Ta en selfie og se hvordan du ser ut om 40 år!',
+      c1: '#e8d5bd', c2: '#9b6bff', corner: true,
+      steps: ['Skann koden', 'Ta en selfie, se rett i kameraet', 'Vent et par minutter', 'Se deg selv som 80-åring på skjermen'],
+      thumbs: [T('selfie-gammel', 'Bli 80 år'), T('selfie-barn', 'Bli 5 år igjen')] },
+    { key: 'spokelse', path: '/selfie?effekt=spokelse', emoji: '👻', title: 'Spøkelseshjørnet', lead: 'Ta en selfie og forsvinn som et spøkelse …',
+      c1: '#b8c1ff', c2: '#5b4bdb', corner: true,
+      steps: ['Skann koden', 'Ta en selfie', 'Vent et par minutter', 'Se deg selv forsvinne på skjermen 👻'],
+      thumbs: [T('selfie-spokelse', 'Bli et spøkelse')] },
   ];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const OFF_KEY = 'qr-off';
+  let off = new Set(); try { off = new Set(JSON.parse(localStorage.getItem(OFF_KEY) || '[]')); } catch {}
+  const light = document.getElementById('light');
+  try { light.checked = localStorage.getItem('qr-light') === '1'; } catch {}
+  const applyLight = () => { document.body.classList.toggle('light', light.checked); try { localStorage.setItem('qr-light', light.checked ? '1' : '0'); } catch {} };
+  light.onchange = applyLight; applyLight();
 
-  Promise.all([fetch('api/qr-info').then((r) => r.json()), fetch('api/config').then((r) => r.json())]).then(([info, cfg]) => {
-    for (const p of POSTERS) {
-      p.title = p.title.replace('bursdagsbarnet', cfg.birthdayName);
-      p.text = p.text.replace(/bursdagsbarnet/g, cfg.birthdayName);
+  function qrSrc(p) {
+    const [qrPath, query] = p.path.split('?');
+    return 'qr.svg?path=' + encodeURIComponent(qrPath) + (query ? '&q=' + encodeURIComponent(query) : '');
+  }
+
+  function render(p, ctx) {
+    const fill = (s) => String(s).replace(/\{name\}/g, ctx.name).replace(/\{quiz\}/g, ctx.quiz);
+    let can = '';
+    if (p.overview) {
+      can = `<div class="can"><h3>Dette kan du gjøre</h3><div class="acts">
+        <div class="act"><span class="e">🖍️</span><strong>Tegning blir film</strong><small>Tegn noe, ta bilde, se det bli levende</small></div>
+        <div class="act"><span class="e">🎤</span><strong>Lag en sang</strong><small>Om hva som helst. Den spilles på festen</small></div>
+        <div class="act"><span class="e">🤳</span><strong>Selfie med effekt</strong><small>Bli 80 år, få en T-rex bak deg og mer</small></div>
+      </div><div class="chips">
+        <span class="chip">🧠 Quiz kl. ${esc(ctx.quiz)}</span><span class="chip">💌 Gjestebok</span><span class="chip">🎥 Last opp klipp</span><span class="chip">🎟️ Samle 3 stempler</span>
+      </div></div>`;
+    } else if (p.thumbs) {
+      can = `<div class="can"><h3>${p.corner ? 'Slik kan det bli' : 'Du kan for eksempel lage'}</h3><div class="thumbs" style="--w:${p.thumbs.length >= 4 ? '23.5%' : p.thumbs.length === 3 ? '31.5%' : '40%'}">${p.thumbs.map((t) => `<div class="thumb"><img src="${esc(t.img)}" alt=""><span>${esc(t.name)}</span></div>`).join('')}</div></div>`;
+    } else if (p.chips) {
+      can = `<div class="can"><h3>${p.canTitle || 'Du kan for eksempel'}</h3><div class="chips">${p.chips.map((c) => `<span class="chip">${esc(fill(c))}</span>`).join('')}</div></div>`;
     }
+    return `<section class="poster${off.has(p.key) ? ' skip' : ''}" data-key="${p.key}" style="--c1:${p.c1};--c2:${p.c2}">
+      <div class="tag">${esc(ctx.title)}</div>
+      <div class="emoji">${p.emoji}</div>
+      <h2>${esc(fill(p.title))}</h2>
+      <p class="lead">${esc(fill(p.lead))}</p>
+      <div class="mid">
+        <div class="steps"><h3>Slik gjør du</h3>${p.steps.map((s, i) => `<div class="step"><b>${i + 1}</b><span>${esc(fill(s))}</span></div>`).join('')}</div>
+        <div class="qr"><div class="box"><img src="${qrSrc(p)}" alt="QR-kode til ${esc(fill(p.title))}"></div><div class="scan">📱 Skann med kameraet</div></div>
+      </div>
+      ${can}
+      <div class="foot"><span>Står du fast? Trykk 🙋 Hjelp på mobilen, eller spør noen rundt deg</span><span class="url">${esc(ctx.base + p.path)}</span></div>
+    </section>`;
+  }
+
+  Promise.all([
+    fetch('api/qr-info').then((r) => r.json()),
+    fetch('api/config').then((r) => r.json()),
+    fetch('api/program').then((r) => r.json()).catch(() => ({})),
+  ]).then(([info, cfg, prog]) => {
+    const sched = prog.schedule || cfg.schedule || [];
+    const q = sched.find((s) => /quiz/i.test(s.title || s.tittel || ''));
+    const ctx = {
+      name: cfg.birthdayName || 'bursdagsbarnet',
+      title: cfg.partyTitle || ((cfg.birthdayName || '') + (cfg.age ? ' ' + cfg.age + ' år' : '') + ' 🎂'),
+      quiz: (q && (q.time || q.tid)) || '17',
+      base: info.base,
+    };
     if (info.local) {
       document.getElementById('warn').innerHTML = `<div class="warn">⚠️ QR-kodene peker nå til <code>${esc(info.base)}</code>, som telefoner ikke når. Åpne denne siden via nettverksadressen (${info.lan.map((u) => `<a href="${esc(u)}/qr">${esc(u)}</a>`).join(', ') || 'ingen funnet'}) eller start serveren med <code>PUBLIC_URL=https://din-adresse</code>.</div>`;
     }
-    document.getElementById('sheets').innerHTML = POSTERS.map((p) => {
-      const qrPath = p.path.split('?')[0];
-      const query = p.path.includes('?') ? '?' + p.path.split('?')[1] : '';
-      const src = 'qr.svg?path=' + encodeURIComponent(qrPath) + (query ? '&q=' + encodeURIComponent(query.slice(1)) : '');
-      return `<section class="poster" style="--grad:${p.grad}">
-        <div><div class="emoji">${p.emoji}</div><h2>${esc(p.title)}</h2><p>${esc(p.text)}</p></div>
-        <img src="${src}" alt="QR-kode til ${esc(p.title)}">
-        <div><div class="scan">📱 Skann med kameraet</div><div class="url">${esc(info.base + p.path)}</div></div>
-      </section>`;
-    }).join('');
+    document.getElementById('sheets').innerHTML = POSTERS.map((p) => render(p, ctx)).join('');
+    document.getElementById('picks').innerHTML = POSTERS.map((p) => `<label><input type="checkbox" data-k="${p.key}" ${off.has(p.key) ? '' : 'checked'}> ${p.emoji} ${esc(p.title.replace('{name}', ctx.name))}</label>`).join('');
+    document.getElementById('picks').onchange = (e) => {
+      const k = e.target.dataset.k; if (!k) return;
+      e.target.checked ? off.delete(k) : off.add(k);
+      document.querySelector(`.poster[data-key="${k}"]`).classList.toggle('skip', !e.target.checked);
+      try { localStorage.setItem(OFF_KEY, JSON.stringify([...off])); } catch {}
+    };
   });
 </script>
 </body>
