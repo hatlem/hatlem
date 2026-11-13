@@ -94,7 +94,7 @@
   }
 
   function art(s, cls = 'art') {
-    if (s.kind === 'playlist') return `<div class="${cls} y">${esc(s.year || '🕰️')}</div>`;
+    if (s.kind === 'playlist') return `<div class="${cls} y">${esc(s.year || '🎵')}</div>`;
     const img = (s.result && s.result.imageUrl) || s.imageUrl;
     return `<div class="${cls}">${img ? `<img src="${esc(img)}" alt="">` : '🎵'}</div>`;
   }
@@ -127,7 +127,8 @@
 
   function row(s, buttons, i) {
     const title = s.kind === 'playlist' ? s.title : (s.result && s.result.title) || s.label;
-    const by = s.kind === 'playlist' ? `${s.year || ''} · spilleliste` : `${s.guest || 'anonym'} · ${s.label}`;
+    const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + '.' + String(m % 60).padStart(2, '0');
+    const by = s.kind === 'playlist' ? `${s.year || ''} · spilleliste${s.after != null ? ' · tidligst kl. ' + hhmm(s.after) : ''}` : `${s.guest || 'anonym'} · ${s.label}`;
     const playing = d.player.report && d.player.report.now && d.player.report.now.id === s.id;
     return `<div class="song ${playing ? 'playing' : ''}" data-id="${esc(s.id)}">${art(s)}<div class="meta"><b>${i != null ? `${i + 1}. ` : ''}${playing ? '🔊 ' : ''}${esc(title)}</b><small>${esc(by)}</small></div>${buttons}</div>`;
   }

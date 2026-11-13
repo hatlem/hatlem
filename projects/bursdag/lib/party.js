@@ -4,7 +4,7 @@
  * Det analoge rundt det digitale: program, quiz, hilsener, nostalgivegg og egen spilleliste.
  * Innholdet ligger i party.json, og bilder/musikk i mapper du fyller selv:
  *   DATA_DIR/nostalgi/1990 barnehage.jpg   -> vises på skjermen med «1990»
- *   DATA_DIR/spilleliste/1986 a-ha - Take On Me.mp3 -> spilles i rekkefølge når sangkøen er tom («07 Tittel.m4a» går også)
+ *   DATA_DIR/spilleliste/1986 a-ha - Take On Me.mp3 -> spilles i rekkefølge når sangkøen er tom («07 Tittel.m4a» går også, «07 kl1930 Tittel.m4a» tidligst kl. 19.30)
  */
 
 const fs = require('fs');
@@ -42,8 +42,34 @@ const AUDIO = /\.(mp3|m4a|aac|ogg|wav)$/i;
 function parseName(file) {
   const base = file.replace(/\.[^.]+$/, '');
   const m = base.match(/^(\d{4})[\s._-]*(.*)$/);
-  const rest = m ? m[2] : base.replace(/^\d{1,3}[\s._-]+/, ''); // «07 Tittel»: tallet styrer bare rekkefølgen
-  return { year: m ? Number(m[1]) : null, title: rest.replace(/_/g, ' ').trim() };
+  let rest = m ? m[2] : base.replace(/^\d{1,3}[\s._-]+/, ''); // «07 Tittel»: tallet styrer bare rekkefølgen
+  const t = rest.match(/^kl[\s._-]?([01]\d|2[0-3])[.:]?([0-5]\d)[\s._-]+(.*)$/i); // «kl1930 Tittel»: spilles tidligst da
+  if (t) rest = t[3];
+  return { year: m ? Number(m[1]) : null, title: rest.replace(/_/g, ' ').trim(), after: t ? Number(t[1]) * 60 + Number(t[2]) : null };
+}
+
+/** Minutter siden midnatt i Oslo, uansett hvilken tidssone serveren står i. */
+function osloMinutes(date = new Date()) {
+  const [h, min] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date).split(':').map(Number);
+  return h * 60 + min;
+}
+
+/**
+ * Neste låt fra spillelisten når sangkøen er tom. Låter med klokkeslett («kl1930 …») holdes tilbake til da.
+ * Når tiden er inne, går låta foran de andre én gang, og er deretter med i den vanlige runden.
+ * @param {{id:string, after?:number|null}[]} list
+ * @returns {{song:any, index:number, due:string[]} | null}
+ */
+function pickFromPlaylist(list, index, now, due = []) {
+  if (!list.length) return null;
+  const ready = (s) => s.after == null || s.after <= now;
+  const fresh = list.find((s) => s.after != null && ready(s) && !due.includes(s.id));
+  if (fresh) return { song: fresh, index, due: [...due, fresh.id] };
+  for (let k = 0; k < list.length; k++) {
+    const i = (index + k) % list.length;
+    if (ready(list[i])) return { song: list[i], index: (i + 1) % list.length, due };
+  }
+  return null;
 }
 
 function makeFolderScanner(dir, pattern) {
@@ -63,4 +89,4 @@ function makeFolderScanner(dir, pattern) {
   };
 }
 
-module.exports = { loadConfig, parseName, makeFolderScanner, IMAGE, AUDIO };
+module.exports = { loadConfig, parseName, osloMinutes, pickFromPlaylist, makeFolderScanner, IMAGE, AUDIO };

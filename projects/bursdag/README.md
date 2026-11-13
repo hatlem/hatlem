@@ -124,7 +124,7 @@ Sider for verten:
 
 1. **`party.json`**: programmet (vises på skjermen med nedtelling til høydepunktet), hilsen-temaene og quizen. Quiz-spørsmålene er **eksempler**: skriv dine egne, sett riktig svar (`riktig` er 0–3) og sett `"eksempel": false`.
 2. **Nostalgivegg:** legg bilder av deg i `data/nostalgi/` med årstall først, f.eks. `1990 barnehage.jpg`. De vises med stort årstall mellom gjestenes kreasjoner.
-3. **Spilleliste:** legg lydfiler i `data/spilleliste/`, enten med årstall først (`1986 a-ha - Take On Me.mp3`) eller med et rekkefølgenummer (`07 Greåker.m4a`). De spilles i rekkefølge når ingen gjestesanger står i kø. Gjestesangene går alltid foran.
+3. **Spilleliste:** legg lydfiler i `data/spilleliste/`, enten med årstall først (`1986 a-ha - Take On Me.mp3`) eller med et rekkefølgenummer (`07 Greåker.m4a`). Legg til et klokkeslett for låter som skal vente: `29 kl1930 Takk for at dere kom.m4a` spilles tidligst 19.30, går da foran de andre én gang, og er siden med i runden. De spilles i rekkefølge når ingen gjestesanger står i kø. Gjestesangene går alltid foran.
 
 ## Kom i gang
 

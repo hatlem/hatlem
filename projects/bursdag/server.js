@@ -101,6 +101,7 @@ const state = {
   nowPlaying: null,
   played: [],
   playlistIndex: 0,
+  playlistDue: [], // låter med klokkeslett som allerede har fått gå foran
   takeover: null,
   moderation: /^(1|on|ja|true)$/i.test(process.env.GODKJENNING || ''),
   finaleId: null,
@@ -878,11 +879,11 @@ r.get('/api/screen', (req, res) => {
 });
 
 // Lydkilden sier fra når en sang er ferdig spilt. Svarer med neste sang:
-// gjestesang fra køen → spillelisten (kronologisk) → reprise av gjestesanger.
+// gjestesang fra køen → spillelisten (i rekkefølge, låter med klokkeslett tidligst da) → reprise av gjestesanger.
 function playlistEntries() {
   return playlistFiles().map((f) => {
-    const { year, title } = party.parseName(f);
-    return { id: 'p:' + f, kind: 'playlist', year, title, url: 'spilleliste/' + encodeURIComponent(f) };
+    const { year, title, after } = party.parseName(f);
+    return { id: 'p:' + f, kind: 'playlist', year, title, after, url: 'spilleliste/' + encodeURIComponent(f) };
   });
 }
 
@@ -903,10 +904,12 @@ function nextSong(finished) {
   save();
   if (state.nowPlaying) return publicJob(jobs.get(state.nowPlaying));
   const list = playlistEntries();
-  if (list.length) {
-    const song = list[state.playlistIndex % list.length];
-    state.playlistIndex = (state.playlistIndex + 1) % list.length;
-    return song;
+  const pick = party.pickFromPlaylist(list, state.playlistIndex % (list.length || 1), party.osloMinutes(), state.playlistDue || []);
+  if (pick) {
+    state.playlistIndex = pick.index;
+    state.playlistDue = pick.due;
+    save();
+    return pick.song;
   }
   const played = state.played.map((id) => jobs.get(id)).filter((j) => j && onScreen(j));
   if (played.length) return { ...publicJob(played[Math.floor(Math.random() * played.length)]), kind: 'reprise' };
