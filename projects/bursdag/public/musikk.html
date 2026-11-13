@@ -151,9 +151,9 @@
       $('by').textContent = 'Lag en sang med QR-koden, så havner den her!';
       $('blur').style.backgroundImage = '';
     } else if (now.kind === 'playlist') {
-      $('art').className = 'art year'; $('art').textContent = now.year || '🕰️';
+      $('art').className = now.year ? 'art year' : 'art'; $('art').textContent = now.year || '🎵';
       $('title').textContent = now.title;
-      $('by').textContent = 'Årsspillelisten · én låt for hvert år';
+      $('by').textContent = now.year ? 'Spillelisten · ' + now.year : 'Fra vertens spilleliste · lag din egen sang med QR-koden!';
       $('blur').style.backgroundImage = '';
     } else {
       $('art').className = 'art';

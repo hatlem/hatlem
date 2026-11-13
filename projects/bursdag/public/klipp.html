@@ -15,7 +15,7 @@
 <main class="wrap">
   <div class="top"><a class="back" href="./">‹ Tilbake</a></div>
   <h1>🎥 Last opp et klipp</h1>
-  <p class="hint">Film noe gøy, <strong>maks <span class="maxsec">15</span> sekunder</strong>. Klippet vises frem og tilbake på skjermen, så det blir litt levende av seg selv.</p>
+  <p class="hint">Film noe gøy, <strong>maks <span class="maxsec">15</span> sekunder</strong>. Er klippet lengre, velger du selv hvilke sekunder som skal med. Klippet vises frem og tilbake på skjermen, så det blir litt levende av seg selv.</p>
 
   <form id="f">
     <div class="card">
@@ -48,7 +48,7 @@
   const drop = document.getElementById('drop');
   const info = document.getElementById('clipInfo');
   const err = document.getElementById('err');
-  let file = null, maxSec = 15;
+  let file = null, maxSec = 15, start = 0;
   Party.rememberName(document.getElementById('name'));
   Party.config().then((c) => {
     maxSec = c.maxClipSeconds || 15;
@@ -75,6 +75,7 @@
       v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
       drop.prepend(v);
     }
+    v.loop = true; v.ontimeupdate = null; v.onended = null; // nytt klipp: glem utsnittet fra det forrige
     v.src = URL.createObjectURL(f);
     if (!drop.querySelector('.retake')) {
       const r = document.createElement('span');
@@ -86,24 +87,39 @@
 
   async function useFile(f) {
     err.textContent = '';
-    file = null; go.disabled = true;
+    file = null; go.disabled = true; start = 0;
     showClip(f);
     const d = await probe(f);
     const mb = f.size / 1048576;
     info.hidden = false;
-    if (d != null && d > maxSec + 0.25) {
-      info.innerHTML = '<strong>⏱️ ' + Math.round(d) + ' sekunder: for langt.</strong> Maks ' + maxSec + ' sek. Film på nytt, eller klipp det ned i kamerarullen først.';
-      info.className = 'clip-info bad';
-      return;
-    }
     if (mb > 200) {
       info.innerHTML = '<strong>Filen er for stor</strong> (' + Math.round(mb) + ' MB). Velg et mindre klipp.';
       info.className = 'clip-info bad';
       return;
     }
-    info.innerHTML = (d != null ? '✅ ' + (Math.round(d * 10) / 10) + ' sekunder' : '✅ Klippet er klart') + (mb > 1 ? ' · ' + Math.round(mb) + ' MB' : '');
     info.className = 'clip-info';
+    if (d != null && d > maxSec + 0.25) trimmer(d);
+    else info.innerHTML = (d != null ? '✅ ' + (Math.round(d * 10) / 10) + ' sekunder' : '✅ Klippet er klart') + (mb > 1 ? ' · ' + Math.round(mb) + ' MB' : '');
     file = f; go.disabled = false;
+  }
+
+  const mmss = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+  /** For langt klipp: gjesten drar til de sekundene som skal med, og forhåndsvisningen går i løkke over akkurat dem. */
+  function trimmer(d) {
+    const v = drop.querySelector('video');
+    info.innerHTML = '<strong>✂️ Klippet er ' + Math.round(d) + ' sek. Velg de ' + maxSec + ' sekundene du vil vise:</strong>'
+      + '<input type="range" class="trim" min="0" max="' + (Math.floor((d - maxSec) * 10) / 10) + '" step="0.1" value="0" aria-label="Hvor klippet skal starte">'
+      + '<span class="trim-at"></span>';
+    const range = info.querySelector('.trim'), at = info.querySelector('.trim-at');
+    const show = () => { at.textContent = 'Viser ' + mmss(start) + '–' + mmss(start + maxSec); };
+    range.addEventListener('input', () => { start = Number(range.value); show(); if (v) v.currentTime = start; });
+    if (v) {
+      v.loop = false;
+      v.ontimeupdate = () => { if (v.currentTime < start - 0.3 || v.currentTime >= start + maxSec) v.currentTime = start; };
+      v.onended = () => { v.currentTime = start; v.play().catch(() => {}); };
+    }
+    show();
   }
 
   document.querySelectorAll('input[type=file]').forEach((inp) => inp.addEventListener('change', () => {
@@ -121,6 +137,7 @@
       fd.append('video', file, file.name || 'klipp.mp4');
       fd.append('name', form.name.value);
       fd.append('deviceId', Party.deviceId());
+      if (start > 0) fd.append('start', String(start));
       const { id } = await Party.submit('api/clip', fd);
       location.href = 'status/' + id;
     } catch (ex) {

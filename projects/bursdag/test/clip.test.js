@@ -45,3 +45,15 @@ test('stående 9:16-klipp blir 1280x720', { skip: !hasFfmpeg && 'ffmpeg mangler'
   const probe = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', path.join(dir, 'out.mp4')], { encoding: 'utf8' });
   assert.equal(probe.stdout.trim(), '1280,720');
 });
+
+test('lengre klipp: gjesten velger hvor utsnittet starter, aldri forbi slutten', () => {
+  assert.equal(clip.startAt(12.34, 60), 12.3);
+  assert.equal(clip.startAt(58, 60), 45);
+  assert.equal(clip.startAt(5, 10), 0); // kort klipp: ingenting å velge
+  assert.equal(clip.startAt('tull', 60), 0);
+  assert.equal(clip.startAt(-4, 60), 0);
+  const a = clip.transcodeArgs('inn.mov', 'ut.mp4', 15, true, 12.3);
+  assert.equal(a[a.indexOf('-ss') + 1], '12.3');
+  assert.ok(a.indexOf('-ss') < a.indexOf('-i'));
+  assert.ok(!clip.transcodeArgs('inn.mov', 'ut.mp4', 15).includes('-ss'));
+});

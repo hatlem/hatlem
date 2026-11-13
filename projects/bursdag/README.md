@@ -97,7 +97,7 @@ To skjermer, og **lyden går fra en mobil koblet til høyttaleren** (Bluetooth e
 - **Mobilen holder skjermen våken** (Wake Lock). Hold den på lading og ikke lås den, for nettlesere kan stoppe lyden når skjermen er låst.
 - **Låseskjermen og knappene på høyttaleren** (pause/neste) fungerer, og viser tittel og cover.
 - **iPhone:** volum og demping styres via Web Audio, siden iPhone ikke lar nettsider sette volumet. Slå av lydløs-bryteren. På iOS 17+ spiller den likevel.
-- **Musikken går hele tiden.** Rekkefølgen er gjestesanger i kø, så årsspillelisten (kronologisk), så reprise. En ny gjestesang avbryter årsspillelisten.
+- **Musikken går hele tiden.** Rekkefølgen er gjestesanger i kø, så spillelisten (i rekkefølge), så reprise. En låt fra spillelisten spilles ferdig før neste gjestesang starter; en reprise avbrytes med en gang.
 - **Under kake og hilsener** settes musikken på pause automatisk. Under quizen dempes den til en firedel.
 - **Finalen:** skjermen viser videoen stumt, og mobilen spiller lyden. Begge starter på en felles starttid og holdes i takt. Er mobilen ikke på, spiller skjermen lyden selv.
 
@@ -111,7 +111,7 @@ Sider for verten:
 - `/admin`: godkjenning, felles høydepunkt (🎂 kake, 💌 hilsener, 🎬 finale), live-quiz med én «Neste»-knapp, og forbruk.
 - `/admin/musikk`: fjernkontroll i Spotify-stil.
   - Nå spilles med ⏯️, ⏭️ og volum.
-  - Fanene **Kø** (⬆️⬇️, ▶️ spill nå, ✖️ fjern), **Alle sanger** og **Spilt** (▶️ / ➕ legg i kø) og **Årsspilleliste**.
+  - Fanene **Kø** (⬆️⬇️, ▶️ spill nå, ✖️ fjern), **Alle sanger** og **Spilt** (▶️ / ➕ legg i kø) og **Spilleliste**.
   - Søk på tittel, gjest eller år.
 - `/galleri`: galleri i Google Photos-stil.
   - Tidslinje per time.
@@ -124,7 +124,7 @@ Sider for verten:
 
 1. **`party.json`**: programmet (vises på skjermen med nedtelling til høydepunktet), hilsen-temaene og quizen. Quiz-spørsmålene er **eksempler**: skriv dine egne, sett riktig svar (`riktig` er 0–3) og sett `"eksempel": false`.
 2. **Nostalgivegg:** legg bilder av deg i `data/nostalgi/` med årstall først, f.eks. `1990 barnehage.jpg`. De vises med stort årstall mellom gjestenes kreasjoner.
-3. **Årsspilleliste 1986–2026:** legg lydfiler i `data/spilleliste/` med årstall først, f.eks. `1986 a-ha - Take On Me.mp3`. De spilles kronologisk når ingen gjestesanger står i kø. Gjestesangene går alltid foran.
+3. **Spilleliste:** legg lydfiler i `data/spilleliste/`, enten med årstall først (`1986 a-ha - Take On Me.mp3`) eller med et rekkefølgenummer (`07 Greåker.m4a`). De spilles i rekkefølge når ingen gjestesanger står i kø. Gjestesangene går alltid foran.
 
 ## Kom i gang
 
@@ -190,7 +190,7 @@ Vil du heller ha et subdomene (`bursdag.andreashatlem.no`), legg det til som ege
 1. Nytt prosjekt fra GitHub-repoet med **Root Directory** `projects/bursdag`. `railway.json` setter startkommando og helsesjekk (`/api/health`).
 2. Legg til et **volum** montert på `/data`, og sett `DATA_DIR=/data`. Da overlever bilder, sanger og køen en omstart.
 3. Sett variablene fra `.env.example`, med `PUBLIC_URL` lik Railway-adressen.
-4. Legg nostalgibilder og årsspilleliste i `/data/nostalgi` og `/data/spilleliste`, for eksempel med `railway run` eller ved å laste dem opp før festen.
+4. Legg nostalgibilder og spilleliste i `/data/nostalgi` og `/data/spilleliste`, for eksempel med `railway run` eller ved å laste dem opp før festen.
 5. Ha en mobil klar som hotspot til skjermen. Hvis skjermen mister kontakten, viser den et rødt varsel og prøver igjen av seg selv.
 
 ## Nettverk på festen

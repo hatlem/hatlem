@@ -878,7 +878,7 @@ r.get('/api/screen', (req, res) => {
 });
 
 // Lydkilden sier fra når en sang er ferdig spilt. Svarer med neste sang:
-// gjestesang fra køen → årsspillelisten (kronologisk) → reprise av gjestesanger.
+// gjestesang fra køen → spillelisten (kronologisk) → reprise av gjestesanger.
 function playlistEntries() {
   return playlistFiles().map((f) => {
     const { year, title } = party.parseName(f);
@@ -1212,7 +1212,7 @@ r.post('/api/clip', clipUpload.single('video'), (req, res) => {
   if (limit) return res.status(429).json({ error: limit });
   const type = { 'video/quicktime': 'video/quicktime', 'video/webm': 'video/webm' }[req.file.mimetype] || 'video/mp4';
   const sourceUrl = saveMedia(req.file.buffer, type);
-  const job = newJob('clip', { status: 'processing', startedAt: Date.now(), deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: 'Eget klipp', emoji: '🎥', inputUrl: sourceUrl, sourceUrl, input: {} });
+  const job = newJob('clip', { status: 'processing', startedAt: Date.now(), deviceId: clean(req.body.deviceId, 64), guest: clean(req.body.name, 40), label: 'Eget klipp', emoji: '🎥', inputUrl: sourceUrl, sourceUrl, input: { start: Math.max(0, Number(req.body.start) || 0) } });
   res.json({ id: job.id });
   finishClip(job).catch((err) => {
     console.warn(`[clip ${job.id}]`, err.message);
@@ -1226,7 +1226,7 @@ async function finishClip(job) {
   if (useClipTranscode) {
     const base = path.basename(job.sourceUrl, path.extname(job.sourceUrl));
     const out = `${base}-h264.mp4`, poster = `${base}-bilde.jpg`;
-    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster), { wide: VIDEO_ASPECT === '16:9' });
+    const r2 = await clip.prepare(mediaPath(job.sourceUrl), path.join(MEDIA_DIR, out), path.join(MEDIA_DIR, poster), { wide: VIDEO_ASPECT === '16:9', start: (job.input && job.input.start) || 0 });
     videoUrl = 'media/' + out;
     extra.seconds = Math.round(r2.seconds * 10) / 10;
     extra.trimmed = r2.trimmed;
@@ -1534,7 +1534,7 @@ r.post('/api/admin/film', requireAdmin, async (req, res) => {
     return img && fs.existsSync(img) ? { file: img, image: true } : null;
   }).filter(Boolean);
   if (!clips.length) return res.status(400).json({ error: 'Det finnes ingen filmer eller bilder ennå.' });
-  // Musikk: de mest stemte/første gjestesangene (maks 3), ellers årsspillelisten
+  // Musikk: de mest stemte/første gjestesangene (maks 3), ellers spillelisten
   const songs = [...jobs.values()].filter((j) => j.type === 'song' && j.status === 'done' && onScreen(j)).map((j) => fileOf(j.result.audioUrl)).filter(Boolean).slice(0, 3);
   const audio = songs.length ? songs : playlistFiles().slice(0, 3).map((f) => path.join(PLAYLIST_DIR, f));
   const name = `kveldens-film-${Date.now()}.mp4`;

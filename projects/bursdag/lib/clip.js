@@ -37,13 +37,20 @@ function plan(seconds, max = MAX_CLIP_SECONDS) {
   return { seconds: d == null ? max : Math.min(d, max), trimmed };
 }
 
+/** Hvor utsnittet starter når gjesten har valgt sine sekunder av et lengre klipp: aldri forbi slutten. */
+function startAt(wanted, seconds, max = MAX_CLIP_SECONDS) {
+  const w = Number(wanted);
+  if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(seconds) || seconds <= max) return 0;
+  return Math.round(Math.min(w, seconds - max) * 10) / 10;
+}
+
 /**
  * Omkoding: H.264 + AAC, 30 fps, kuttet til `seconds`. Rotasjon fra mobil følger med (autorotate).
  * wide (standard): alltid 1280x720 (16:9) så klippet fyller skjermen. Stående (9:16) og andre formater
  * legges i midten, og sidene fylles med en forstørret, uskarp kopi av klippet i stedet for svarte kanter.
  * wide = false: beholder formen fra mobilen (maks 1280 px).
  */
-function transcodeArgs(input, output, seconds, wide = true) {
+function transcodeArgs(input, output, seconds, wide = true, start = 0) {
   const video = wide
     ? ['-filter_complex',
       `[0:v]split[a][b];[a]scale=${WIDE_W}:${WIDE_H}:force_original_aspect_ratio=increase,crop=${WIDE_W}:${WIDE_H},boxblur=20:2,eq=brightness=-0.08[bg];` +
@@ -52,7 +59,7 @@ function transcodeArgs(input, output, seconds, wide = true) {
     : ['-vf', `scale='min(${MAX_SIDE},iw)':'min(${MAX_SIDE},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30,format=yuv420p`];
   return [
     '-y', '-hide_banner', '-loglevel', 'error',
-    '-i', input, '-t', String(seconds),
+    ...(start > 0 ? ['-ss', String(start)] : []), '-i', input, '-t', String(seconds),
     ...video,
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-profile:v', 'high', '-level', '4.1',
     '-c:a', 'aac', '-b:a', '128k', '-ac', '2',
@@ -76,11 +83,12 @@ function run(args) {
 }
 
 /**
- * @returns {Promise<{seconds:number, trimmed:boolean, poster:boolean}>}
+ * @returns {Promise<{seconds:number, trimmed:boolean, start:number, poster:boolean}>}
  */
-async function prepare(input, output, poster, { wide = true } = {}) {
-  const p = plan(duration(input));
-  await run(transcodeArgs(input, output, p.seconds, wide));
+async function prepare(input, output, poster, { wide = true, start = 0 } = {}) {
+  const d = duration(input);
+  const p = { ...plan(d), start: startAt(start, d) };
+  await run(transcodeArgs(input, output, p.seconds, wide, p.start));
   let hasPoster = false;
   try {
     await run(posterArgs(output, poster));
@@ -91,4 +99,4 @@ async function prepare(input, output, poster, { wide = true } = {}) {
   return { ...p, poster: hasPoster };
 }
 
-module.exports = { MAX_CLIP_SECONDS, available, duration, plan, transcodeArgs, posterArgs, prepare };
+module.exports = { MAX_CLIP_SECONDS, available, duration, plan, startAt, transcodeArgs, posterArgs, prepare };

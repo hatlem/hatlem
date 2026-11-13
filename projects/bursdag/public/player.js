@@ -24,7 +24,7 @@
     return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
 
-  const isGuestSong = (s) => s && !s.kind; // gjestesang (ikke årsspilleliste/reprise)
+  const isGuestSong = (s) => s && !s.kind; // gjestesang (ikke spilleliste/reprise)
   const abs = (u) => (u ? new URL(u, document.baseURI).href : u);
 
   function create(opts = {}) {
@@ -61,7 +61,7 @@
       if (!song) { navigator.mediaSession.metadata = null; return; }
       const r = song.result || {};
       const title = song.kind === 'playlist' ? song.title : r.title || song.label;
-      const artist = song.kind === 'playlist' ? `Årsspillelisten ${song.year || ''}`.trim() : `Laget av ${song.guest || 'en gjest'}`;
+      const artist = song.kind === 'playlist' ? song.year ? `Spillelisten ${song.year}` : 'Vertens spilleliste' : `Laget av ${song.guest || 'en gjest'}`;
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
           title, artist, album: opts.album || 'Bursdag',
@@ -263,8 +263,8 @@
           if (r.cmd.type === 'play') start(r.cmd.song);
         }
       }
-      // Ny gjestesang i kø mens årsspillelisten eller en reprise går: bytt med en gang
-      if (st.active && st.current && !isGuestSong(st.current) && r.queueLength > 0 && !fin.playing && !fin.done) next(null);
+      // Ny gjestesang i kø mens en reprise går: bytt med en gang. Låter fra spillelisten spilles ferdig først.
+      if (st.active && st.current && st.current.kind === 'reprise' && r.queueLength > 0 && !fin.playing && !fin.done) next(null);
       apply();
       emit();
     }
