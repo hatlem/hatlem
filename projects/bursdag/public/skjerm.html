@@ -11,8 +11,9 @@
 <style>
   html, body { height: 100%; overflow: hidden; }
   body { background: #000; cursor: none; }
-  .screen { display: grid; grid-template-columns: 1fr 27vw; height: 100vh; }
-  .stage { position: relative; overflow: hidden; background: #000; }
+  /* Raden er låst til skjermhøyden: et langt sidefelt skal aldri strekke filmfeltet og skyve filmen ned. */
+  .screen { display: grid; grid-template-columns: 1fr 27vw; grid-template-rows: minmax(0, 1fr); height: 100vh; }
+  .stage { position: relative; overflow: hidden; background: #000; min-height: 0; }
   .layer { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; display: grid; place-items: center; }
   .layer.on { opacity: 1; }
   .layer .bg { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(40px) brightness(0.45); }
@@ -35,6 +36,7 @@
   .empty p { font-size: 2vw; color: var(--muted); }
 
   .side {
+    min-height: 0; overflow: hidden;
     display: flex; flex-direction: column; gap: 1.4vw; padding: 1.6vw;
     background:
       radial-gradient(600px 400px at 0% 0%, rgba(255, 79, 163, 0.35), transparent 60%),
