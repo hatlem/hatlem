@@ -999,6 +999,31 @@ r.get('/api/kahoot', (req, res) => {
   res.json(kahoot.playerView(clean(req.query.deviceId, 64)));
 });
 r.get('/api/kahoot/screen', (req, res) => res.json(kahoot.screenView()));
+
+// Verten styrer quizen fra mobilen som spiller musikken (/lyd), uten å bytte side. Lav innsats: en kort kode holder.
+const QUIZ_PIN = String(process.env.QUIZ_PIN || PARTY.birthYear || '');
+const quizHostLimiter = new vert.Limiter();
+r.post('/api/kahoot/host', (req, res) => {
+  const b = req.body || {};
+  if (!isVert(req)) {
+    const pin = String(b.pin || '');
+    if (!QUIZ_PIN || !pin) return res.status(403).json({ error: 'Skriv inn koden' }); // uten kode: ikke et gjetteforsøk
+    if (quizHostLimiter.blocked(req.ip)) return res.status(429).json({ error: 'For mange forsøk. Vent litt.' });
+    if (pin !== QUIZ_PIN) {
+      quizHostLimiter.fail(req.ip);
+      return res.status(403).json({ error: 'Feil kode' });
+    }
+  }
+  if (b.action === 'next') kahoot.next();
+  else if (b.action === 'end') kahoot.end();
+  else if (b.action !== 'status') return res.status(400).json({ error: 'Ukjent handling' });
+  if (b.action !== 'status') {
+    if (kahoot.state.phase) state.takeover = { mode: 'kahoot', at: (state.takeover && state.takeover.mode === 'kahoot' && state.takeover.at) || Date.now() };
+    else if (state.takeover && state.takeover.mode === 'kahoot') state.takeover = null;
+    save();
+  }
+  res.json(kahoot.adminView());
+});
 r.post('/api/kahoot/join', (req, res) => {
   const deviceId = clean((req.body || {}).deviceId, 64);
   const name = clean((req.body || {}).name, 24);
