@@ -79,7 +79,8 @@
   }
 
   // ------------------------------------------------------------------ galleri
-  let showing = false, idx = 0, nIdx = 0, slideNo = 0, timer = null;
+  let showing = false, idx = 0, nIdx = 0, slideNo = 0, timer = null, nostalgiaDebt = 0;
+  const MIN_ROUND = 14; // lysbilder før samme gjestefilm vises igjen (ca. to minutter)
 
   function swap(layer) {
     layer.classList.add('on');
@@ -100,12 +101,20 @@
       isNew = !!item && !p.featured;
     }
     slideNo++;
-    // Nostalgivegg: hvert tredje lysbilde (eller alle, hvis ingen har laget noe ennå)
-    if (!item && data.nostalgia.length && (slideNo % 3 === 0 || !data.gallery.length)) {
-      item = data.nostalgia[nIdx % data.nostalgia.length];
-      nIdx++;
+    // Få gjestefilmer skal ikke gå i ring: samme film kommer tidligst igjen etter MIN_ROUND lysbilder,
+    // og nostalgiveggen fyller resten. Med mange filmer er det som før: ett nostalgibilde per to filmer.
+    if (!item) {
+      const g = data.gallery.length, n = data.nostalgia.length;
+      if (n && (!g || nostalgiaDebt >= 1)) {
+        item = data.nostalgia[nIdx % n];
+        nIdx++;
+        if (g) nostalgiaDebt -= 1;
+      } else {
+        item = data.gallery[idx % g];
+        idx++;
+        if (n) nostalgiaDebt += Math.max(0.5, (MIN_ROUND - g) / g);
+      }
     }
-    if (!item) { item = data.gallery[idx % data.gallery.length]; idx++; }
 
     const layer = layers[1 - active];
     const badge = isNew ? '<div class="badge-new">NYTT! 🎉</div>' : '';
