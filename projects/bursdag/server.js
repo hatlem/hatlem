@@ -1748,7 +1748,8 @@ r.get('/api/gallery', (req, res) => {
     .sort((a, b) => a.createdAt - b.createdAt)
     .map(publicJob);
   const finale = jobs.get(state.finaleId);
-  res.json({ partyTitle: PARTY_TITLE, items, finale: finale && finale.status === 'done' ? finale.result : null, film: state.film && state.film.url ? { url: state.film.url, seconds: state.film.seconds } : null });
+  const playlist = playlistEntries().map(({ id, title, url }) => ({ id, title, url }));
+  res.json({ partyTitle: PARTY_TITLE, items, playlist, finale: finale && finale.status === 'done' ? finale.result : null, film: state.film && state.film.url ? { url: state.film.url, seconds: state.film.seconds } : null });
 });
 
 // Helsesjekk for overvåking (f.eks. Railway eller UptimeRobot). Svarer også på rotstien når appen ligger under BASE_PATH.

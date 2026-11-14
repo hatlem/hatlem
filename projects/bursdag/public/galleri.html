@@ -36,6 +36,16 @@
   .cell.greet q { font-weight: 800; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
   .cell.song .note { width: 100%; height: 100%; display: grid; place-items: center; font-size: 56px; background: linear-gradient(135deg, var(--pink), var(--violet)); }
   .finale { margin: 16px 0; }
+  .plist { margin: 18px 0 6px; padding: 14px; border-radius: 18px; background: var(--card); border: 1px solid var(--card-border); }
+  .plist[hidden] { display: none; }
+  .plist h2 { font-size: 20px; margin: 0 0 2px; }
+  .plist .hint { margin: 0 0 10px; }
+  .plist audio { width: 100%; margin-bottom: 8px; }
+  .plist ol { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+  .plist li button { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; font: inherit; font-weight: 700; color: var(--text); background: none; border: 0; border-radius: 10px; padding: 9px 8px; cursor: pointer; }
+  .plist li button span { flex: none; width: 24px; color: var(--muted); font-weight: 500; text-align: right; }
+  .plist li button.on { background: rgba(255,255,255,.12); }
+  .plist li button.on span { color: var(--pink); }
   .finale video { width: 100%; border-radius: 16px; background: #000; }
 
   .lb { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; touch-action: pan-y; }
@@ -79,6 +89,12 @@
     <a class="dl" href="api/gallery/zip" download>⬇️ Last ned alt</a>
   </div>
   <p class="vote-hint">❤️ Trykk på en film og gi den et hjerte. De mest likte vises som «Kveldens favoritter»!</p>
+  <section class="plist" id="plist" hidden>
+    <h2>🎧 Vertens spilleliste</h2>
+    <p class="hint" id="plistHint"></p>
+    <audio id="plistAudio" controls preload="none"></audio>
+    <ol id="plistList"></ol>
+  </section>
   <div id="groups"></div>
 </main>
 
@@ -130,6 +146,7 @@
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(cell(j, i));
     });
+    $('plist').hidden = !playlist.length || !(filter === 'all' || filter === 'song');
     $('groups').innerHTML = [...groups].map(([k, cells]) => '<section class="group"><h2>' + k + '</h2><div class="grid">' + cells.join('') + '</div></section>').join('')
       || '<p class="hint" style="text-align:center;margin-top:30px">Ingenting her ennå.</p>';
   }
@@ -140,6 +157,7 @@
     const j = shown[pos];
     const r = j.result || {};
     const stage = $('lbStage');
+    $('plistAudio').pause();
     if (j.type === 'greeting') stage.innerHTML = '<div class="greet-big"><small>' + esc(j.emoji) + ' ' + esc(j.label) + '</small><q>«' + esc(j.text) + '»</q></div>';
     else if (j.type === 'song') stage.innerHTML = '<div class="song-big"><div class="cover">' + (r.imageUrl ? '<img src="' + esc(r.imageUrl) + '" alt="">' : '🎵') + '</div><h2>' + esc(r.title || j.label) + '</h2><p class="hint">' + esc(j.label) + '</p><audio controls autoplay src="' + esc(r.audioUrl) + '"></audio></div>';
     else if (r.videoUrl) stage.innerHTML = '<video src="' + esc(r.videoUrl) + '" controls autoplay loop playsinline></video>';
@@ -170,6 +188,24 @@
     $('lbHeart').classList.remove('pop'); void $('lbHeart').offsetWidth; $('lbHeart').classList.add('pop');
     if (r.mine && navigator.vibrate) navigator.vibrate(20);
   });
+  // ---------------------------------------------------------- vertens spilleliste
+  let playlist = [], track = -1;
+  function play(i) {
+    track = (i + playlist.length) % playlist.length;
+    const a = $('plistAudio');
+    a.src = playlist[track].url;
+    a.play().catch(() => {});
+    document.querySelectorAll('#plistList button').forEach((b, n) => b.classList.toggle('on', n === track));
+  }
+  function renderPlaylist() {
+    $('plistHint').textContent = playlist.length + ' låter. Trykk på en, så spiller resten etter hverandre.';
+    $('plistList').innerHTML = playlist.map((s, i) => '<li><button data-i="' + i + '"><span>' + (i + 1) + '</span>' + esc(s.title) + '</button></li>').join('');
+    $('plistAudio').src = playlist[0].url;
+  }
+  $('plistList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) play(Number(b.dataset.i)); });
+  $('plistAudio').addEventListener('ended', () => play(track + 1));
+  $('plistAudio').addEventListener('play', () => { if (track < 0) { track = 0; document.querySelector('#plistList button').classList.add('on'); } });
+
   function close() { $('lb').hidden = true; $('lbStage').innerHTML = ''; document.body.style.overflow = ''; render(); }
 
   $('groups').addEventListener('click', (e) => { const c = e.target.closest('.cell'); if (c) open(Number(c.dataset.i)); });
@@ -220,6 +256,8 @@
   Promise.all([fetch('api/gallery').then((r) => r.json()), fetch('api/votes/mine?deviceId=' + encodeURIComponent(Party.deviceId())).then((r) => r.json()).catch(() => ({ ids: [] }))]).then(([d, v]) => {
     v.ids.forEach((id) => mine.add(id));
     items = d.items.slice().reverse(); // nyeste først, som i en fotoapp
+    playlist = d.playlist || [];
+    if (playlist.length) renderPlaylist();
     $('title').textContent = d.partyTitle;
     document.title = 'Galleri · ' + d.partyTitle;
     const n = (t) => d.items.filter((j) => j.type === t).length;

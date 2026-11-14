@@ -77,6 +77,11 @@ h1, h2, h3 { line-height: 1.05; margin: 0 0 0.4em; letter-spacing: -0.01em; }
 .c-drawing .icon { background: linear-gradient(135deg, var(--yellow), #ff9f1c); }
 .c-song .icon { background: linear-gradient(135deg, var(--pink), var(--violet)); }
 .c-selfie .icon { background: linear-gradient(135deg, var(--cyan), #3a86ff); }
+.hero .thanks { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+.c-gallery { margin-top: 24px; padding: 24px 20px; border: 0; background: linear-gradient(120deg, var(--yellow), var(--pink)); color: #2a0b2b; box-shadow: 0 10px 30px rgba(255, 79, 163, 0.35); }
+.c-gallery .icon { background: rgba(255, 255, 255, 0.35); }
+.c-gallery h2 { font-size: 27px; }
+.c-gallery p, .c-gallery::after { color: rgba(42, 11, 43, 0.75); }
 
 .more-title { margin: 28px 0 10px; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; }
 .more { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
