@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { SELFIE_EFFECTS, FRAMING, imagePrompt } = require('../lib/catalog');
+const { SELFIE_EFFECTS, FRAMING, pickVariant, imagePrompt } = require('../lib/catalog');
 
 test('alle selfie-effekter har rammekrav, scene og prompt', () => {
   for (const e of SELFIE_EFFECTS) {
@@ -56,4 +56,28 @@ test('nye effekter finnes og har riktig rammekrav', () => {
   assert.equal(by.trex.framing, 'full');
   assert.equal(by.gammel.framing, 'portrait');
   assert.equal(new Set(SELFIE_EFFECTS.map((e) => e.id)).size, SELFIE_EFFECTS.length, 'unike id-er');
+});
+
+test('hver effekt har flere varianter, og hver variant gir komplett scene og prompt', () => {
+  for (const e of SELFIE_EFFECTS) {
+    assert.ok(e.variants && e.variants.length >= 3, e.id + ' har for få varianter');
+    e.variants.forEach((_, i) => {
+      const v = pickVariant(e, { random: () => i / e.variants.length });
+      assert.equal(v.variant, i);
+      assert.equal(v.id, e.id);
+      assert.equal(v.framing, e.framing, 'rammekravet skal ikke endres av en variant');
+      assert.ok(v.scene && v.scene.length > 10 && v.prompt && v.prompt.length > 20, `${e.id} variant ${i} mangler scene/prompt`);
+      assert.ok(!('variants' in v));
+    });
+  }
+});
+
+test('pickVariant unngår forrige variant og tilpasser bildefiksen til personen', () => {
+  const hero = SELFIE_EFFECTS.find((e) => e.id === 'superhelt');
+  for (let i = 0; i < 20; i++) assert.notEqual(pickVariant(hero, { avoid: 0 }).variant, 0);
+  assert.match(imagePrompt(pickVariant(hero, { random: () => 0 })), /dominant color of the person's own clothes/);
+  assert.match(imagePrompt(SELFIE_EFFECTS.find((e) => e.id === 'slange')), /blue scarf gives a blue snake/);
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) seen.add(pickVariant(hero).variant);
+  assert.equal(seen.size, hero.variants.length, 'alle varianter skal kunne trekkes');
 });
