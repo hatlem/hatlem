@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   CHAPTER_TIMES,
+  filmProgress,
+  loopTimeForHandoff,
+  nextLoopBoundary,
   chapterForProgress,
   frameForProgress,
   loadOrder,
@@ -48,5 +51,35 @@ describe("nearestLoaded", () => {
     expect(nearestLoaded(12, new Set([8, 16]))).toBe(8);
     expect(nearestLoaded(15, new Set([8, 16]))).toBe(16);
     expect(nearestLoaded(5, new Set())).toBeNull();
+  });
+});
+
+describe("filmProgress", () => {
+  it("holds the film on its first frame during the loop handoff, then spans the rest", () => {
+    expect(filmProgress(0, 0.03)).toBe(0);
+    expect(filmProgress(0.03, 0.03)).toBe(0);
+    expect(filmProgress(1, 0.03)).toBe(1);
+    expect(filmProgress(0.515, 0.03)).toBeCloseTo(0.5, 5);
+    expect(filmProgress(-1, 0.03)).toBe(0);
+  });
+});
+
+describe("nextLoopBoundary", () => {
+  it("returns the next time the loop is back on the film's first frame", () => {
+    expect(nextLoopBoundary(0, 12, 2)).toBe(0);
+    expect(nextLoopBoundary(2, 12, 2)).toBe(6);
+    expect(nextLoopBoundary(6, 12, 2)).toBe(6);
+    expect(nextLoopBoundary(7.5, 12, 2)).toBe(12);
+    expect(nextLoopBoundary(3, 12, 1)).toBe(12);
+    expect(nextLoopBoundary(3, Number.NaN, 2)).toBe(3);
+  });
+});
+
+describe("loopTimeForHandoff", () => {
+  it("scrubs the loop from where it paused to its boundary across the handoff zone", () => {
+    expect(loopTimeForHandoff(0, 0.03, 2, 6)).toBe(2);
+    expect(loopTimeForHandoff(0.015, 0.03, 2, 6)).toBe(4);
+    expect(loopTimeForHandoff(0.03, 0.03, 2, 6)).toBe(6);
+    expect(loopTimeForHandoff(0.5, 0.03, 2, 6)).toBe(6);
   });
 });

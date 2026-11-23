@@ -9,6 +9,7 @@ export interface FilmManifest {
   fps: number;
   frameCount: number;
   duration: number;
+  loopSegments?: number;
 }
 
 export const MOBILE_QUERY = "(max-aspect-ratio: 4/5), (max-width: 640px)";

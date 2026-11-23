@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { CHAPTER_TIMES, chapterForProgress, frameForProgress } from "@/lib/scrollFilm";
+import {
+  CHAPTER_TIMES,
+  chapterForProgress,
+  filmProgress,
+  frameForProgress,
+  loopTimeForHandoff,
+  nextLoopBoundary,
+} from "@/lib/scrollFilm";
 import { drawCover, sizeCanvas } from "./drawCover";
 import { MOBILE_QUERY, frameUrl, useFrameSequence, useMediaQuery } from "./useFrameSequence";
 import { ChapterPanel, type ChapterContent } from "./ChapterPanel";
@@ -15,8 +22,9 @@ interface ScrollFilmProps {
 }
 
 const FALLBACK_FPS = 12;
-// Loopen tones ut over denne delen av skrollengden, så overgangen følger fingeren/hjulet
-const FADE_SPAN = 0.035;
+// Første del av skrollengden spoler loopen fram til den er tilbake på filmens første bilde; der tar filmen over
+const HANDOFF = 0.03;
+const AT_TOP = 0.0005;
 // Hvor raskt vist posisjon glir mot skrollposisjonen per bilde (0–1)
 const EASE = 0.18;
 const SETTLED = 0.0004;
@@ -41,24 +49,52 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
   const handleFrameLoaded = useCallback(() => drawRef.current(shownRef.current ?? 0), []);
   const { set, manifest, nearestImage } = useFrameSequence(!reducedMotion, handleFrameLoaded);
 
-  const fadeLoop = useCallback((progress: number, hasFrame: boolean) => {
-    const video = videoRef.current;
-    if (!video) return;
-    const visible = hasFrame ? 1 - Math.min(1, Math.max(0, progress / FADE_SPAN)) : 1;
-    video.style.opacity = String(visible);
-    if (visible === 0 && !video.paused) video.pause();
-    else if (visible > 0 && video.paused) void video.play().catch(() => {});
-  }, []);
+  const handoffRef = useRef<{ from: number; to: number } | null>(null);
+
+  const syncLoop = useCallback(
+    (progress: number, hasFrame: boolean) => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (!hasFrame || progress <= AT_TOP) {
+        handoffRef.current = null;
+        video.style.visibility = "visible";
+        if (video.paused) void video.play().catch(() => {});
+        return;
+      }
+
+      if (progress >= HANDOFF) {
+        video.style.visibility = "hidden";
+        if (!video.paused) video.pause();
+        return;
+      }
+
+      if (!handoffRef.current) {
+        video.pause();
+        const from = video.currentTime;
+        handoffRef.current = {
+          from,
+          to: nextLoopBoundary(from, video.duration, manifest?.loopSegments ?? 1),
+        };
+      }
+      const { from, to } = handoffRef.current;
+      const time = Math.min(loopTimeForHandoff(progress, HANDOFF, from, to), video.duration - 0.001);
+      video.style.visibility = "visible";
+      if (Math.abs(video.currentTime - time) > 1 / 48) video.currentTime = time;
+    },
+    [manifest],
+  );
 
   const draw = useCallback(
     (progress: number, force = false) => {
       const canvas = canvasRef.current;
       if (!canvas || !manifest) return;
-      setChapter(chapterForProgress(progress, manifest.duration));
-      setAtTop(progress < FADE_SPAN / 2);
+      const film = filmProgress(progress, HANDOFF);
+      setChapter(chapterForProgress(film, manifest.duration));
+      setAtTop(progress <= AT_TOP);
 
-      const frame = nearestImage(frameForProgress(progress, manifest.frameCount));
-      fadeLoop(progress, frame !== null);
+      const frame = nearestImage(frameForProgress(film, manifest.frameCount));
+      syncLoop(progress, frame !== null);
       if (!frame) return;
       const drawn = drawnRef.current;
       if (!force && drawn && drawn.index === frame.index && drawn.set === set) return;
@@ -69,7 +105,7 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
       drawCover(ctx, frame.image, canvas.width, canvas.height);
       drawnRef.current = { index: frame.index, set };
     },
-    [manifest, nearestImage, set, fadeLoop],
+    [manifest, nearestImage, set, syncLoop],
   );
 
   const currentTarget = useCallback(

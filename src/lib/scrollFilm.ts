@@ -53,3 +53,22 @@ export const nearestLoaded = (
   }
   return best;
 };
+
+/** Skrollposisjon → filmposisjon: filmen står på første bilde mens loopen spoles fram (0…handoff). */
+export const filmProgress = (progress: number, handoff: number): number =>
+  clamp01((clamp01(progress) - handoff) / (1 - handoff));
+
+/** Neste tidspunkt der loopen er tilbake på filmens første bilde (start på hver ventesløyfe, og slutten). */
+export const nextLoopBoundary = (time: number, duration: number, segments: number): number => {
+  if (!Number.isFinite(duration) || duration <= 0 || segments < 1) return time;
+  const segment = duration / segments;
+  return Math.min(duration, Math.max(0, Math.ceil(time / segment - 1e-6)) * segment);
+};
+
+/** Loopens tid mens man skroller gjennom overgangen: fra der den ble stoppet til grensen. */
+export const loopTimeForHandoff = (
+  progress: number,
+  handoff: number,
+  from: number,
+  to: number,
+): number => from + (to - from) * Math.min(1, clamp01(progress) / handoff);
