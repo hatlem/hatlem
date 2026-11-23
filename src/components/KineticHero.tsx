@@ -1,10 +1,16 @@
 "use client";
 
-const name = "HALEM";
+const name = "HATLEM";
 
-export const KineticHero = () => {
+interface KineticHeroProps {
+  className?: string;
+}
+
+export const KineticHero = ({
+  className = "display-massive text-cream select-none",
+}: KineticHeroProps) => {
   return (
-    <h1 className="display-massive text-cream select-none">
+    <h1 className={className}>
       {name.split("").map((letter, i) => (
         <span
           key={i}

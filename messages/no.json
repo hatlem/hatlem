@@ -118,5 +118,39 @@
     "ready": "ready_",
     "blogCd": "cd ~/blogg",
     "contactInit": "contact.init()"
+  },
+  "film": {
+    "scrollHint": "Skroll",
+    "chapters": {
+      "c1": {
+        "title": "Født i 1986 – samme år som Halleys komet passerte.",
+        "body": "Den dro videre. Jeg ble igjen og begynte å bygge. Andreas Hatlem, produktbygger i Oslo."
+      },
+      "c2": {
+        "title": "Rett inn i dot-com-boblen.",
+        "body": "Gratis .com-domener, leksikonsider og SEO før det hadde et navn. Harry Potter-sidene vant priser, provisjonene slo ukepengene. Første lønnsslipp: Radio 3 i Sarpsborg. Nettansvarlig i russestyret på Greåker, selvfølgelig."
+      },
+      "c3": {
+        "title": "Av med det som holder deg tilbake.",
+        "body": "To nettbutikker og et nettverk av kupongsider. Lager, logistikk og kundeservice – lært på den harde måten."
+      },
+      "c4": {
+        "title": "Så foldet det seg ut.",
+        "body": "Startet et medie- og webbyrå, jobbet med Norges største merkevarer, bygde et team – og solgte det."
+      },
+      "c5": {
+        "title": "Hoppet i det igjen.",
+        "body": "Har svømt i Nilen som 11-åring og ligget i Adriaterhavet 18+ somre, men AI var det dypeste vannet. Watson i 2017, ChatGPT, BurnBacon i 2023. Nå bygger jeg ikke på noen annen måte."
+      },
+      "c6": {
+        "title": "Fast grunn.",
+        "body": "Gift i 2024, pappa i 2025. Fortsatt den 15-åringen som ledet aksjonen for å redde Høla – bare med bedre verktøy."
+      }
+    },
+    "links": {
+      "projects": "Prosjekter",
+      "about": "Om meg",
+      "contact": "Kontakt"
+    }
   }
 }

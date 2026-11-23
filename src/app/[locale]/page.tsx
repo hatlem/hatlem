@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
 import { KineticHero } from "@/components/KineticHero";
+import { ScrollFilm, type ChapterContent } from "@/components/scroll-film/ScrollFilm";
 import { JsonLd } from "@/components/JsonLd";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
@@ -60,82 +61,23 @@ interface HeroTranslations {
   location: string;
 }
 
-const HeroSection = ({ t }: { t: HeroTranslations }) => (
-  <section className="relative flex flex-col justify-center overflow-hidden pt-32 pb-20">
-    {/* Grid lines - subtle technical background */}
-    <div className="absolute inset-0 opacity-[0.02]">
-      <div
-        className="h-full w-full"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, #f0ebe3 1px, transparent 1px),
-            linear-gradient(to bottom, #f0ebe3 1px, transparent 1px)
-          `,
-          backgroundSize: "60px 60px",
-        }}
-      />
+/* ─────────────────────────────────────────────
+   FILM INTRO — H1 and role inside the first chapter
+   ───────────────────────────────────────────── */
+const FilmIntro = ({ t }: { t: HeroTranslations }) => (
+  <div>
+    <div className="mb-4 font-mono text-xs text-muted">
+      <span className="text-aurora">&gt;</span> {t.terminal.replace("> ", "")}
+      <span className="terminal-cursor" />
     </div>
-
-    <div className="relative mx-auto w-full max-w-6xl px-6 lg:px-8">
-      {/* Terminal header */}
-      <div
-        className="mb-8 font-mono text-xs text-muted"
-        style={{ animation: "fade-up 0.6s ease both", animationDelay: "0.1s" }}
-      >
-        <span className="text-aurora">&gt;</span> {t.terminal.replace("> ", "")}
-        <span className="terminal-cursor" />
-      </div>
-
-      {/* Kinetic name */}
-      <KineticHero />
-
-      {/* Role with accent */}
-      <div
-        className="mt-6 flex items-center gap-4"
-        style={{ animation: "fade-up 0.6s ease both", animationDelay: "0.8s" }}
-      >
-        <div className="h-px w-12 bg-aurora" />
-        <span className="font-mono text-xs uppercase tracking-[0.2em] text-aurora">
-          {t.role}
-        </span>
-      </div>
-
-      {/* Description - raw, honest */}
-      <p
-        className="mt-6 max-w-lg text-cream-dim leading-relaxed"
-        style={{ animation: "fade-up 0.6s ease both", animationDelay: "0.9s" }}
-      >
-        {t.description}
-      </p>
-
-      {/* CTAs - brutalist buttons */}
-      <div
-        className="mt-8 flex flex-wrap gap-4"
-        style={{ animation: "fade-up 0.6s ease both", animationDelay: "1s" }}
-      >
-        <Link href="/about" className="btn-primary">
-          {t.ctaAbout} <ArrowIcon />
-        </Link>
-        <Link href="/projects" className="btn-secondary">
-          {t.ctaProjects} <ArrowIcon />
-        </Link>
-      </div>
-
-      {/* Coordinates - Norwegian location pride */}
-      <div
-        className="absolute bottom-8 right-6 hidden lg:block"
-        style={{ animation: "fade-up 0.6s ease both", animationDelay: "1.2s" }}
-      >
-        <div className="font-mono text-[10px] text-right">
-          <div className="text-muted">59°54&apos;N 10°45&apos;E</div>
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <span className="text-sm">🇳🇴</span>
-            <span className="text-aurora">{t.location}</span>
-          </div>
-        </div>
-      </div>
+    <KineticHero className="font-serif text-6xl leading-[0.85] tracking-tight text-cream select-none md:text-8xl" />
+    <div className="mt-4 flex items-center gap-4">
+      <div className="h-px w-12 bg-aurora" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-aurora md:text-xs">
+        {t.role}
+      </span>
     </div>
-  </section>
+  </div>
 );
 
 /* ─────────────────────────────────────────────
@@ -288,6 +230,26 @@ export default async function Home({ params }: Props) {
     location: t("hero.location"),
   };
 
+  const chapterIds = ["c1", "c2", "c3", "c4", "c5", "c6"] as const;
+  const chapters: ChapterContent[] = chapterIds.map((id) => ({
+    id,
+    title: t(`film.chapters.${id}.title`),
+    body: t(`film.chapters.${id}.body`),
+  }));
+  chapters[chapters.length - 1].footer = (
+    <div className="flex flex-wrap gap-3">
+      <Link href="/projects" className="btn-primary">
+        {t("film.links.projects")} <ArrowIcon />
+      </Link>
+      <Link href="/about" className="btn-secondary">
+        {t("film.links.about")} <ArrowIcon />
+      </Link>
+      <Link href="/contact" className="btn-secondary">
+        {t("film.links.contact")} <ArrowIcon />
+      </Link>
+    </div>
+  );
+
   const blogTranslations: BlogTranslations = {
     title: t("blog.title"),
     section: t("blog.section"),
@@ -339,7 +301,11 @@ export default async function Home({ params }: Props) {
     <>
       <JsonLd data={personJsonLd} />
       <JsonLd data={websiteJsonLd} />
-      <HeroSection t={heroTranslations} />
+      <ScrollFilm
+        intro={<FilmIntro t={heroTranslations} />}
+        chapters={chapters}
+        scrollHint={t("film.scrollHint")}
+      />
       <BlogSection t={blogTranslations} posts={getPosts(locale as Locale)} />
       <Footer />
     </>

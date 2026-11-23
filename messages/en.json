@@ -118,5 +118,39 @@
     "ready": "ready_",
     "blogCd": "cd ~/blog",
     "contactInit": "contact.init()"
+  },
+  "film": {
+    "scrollHint": "Scroll",
+    "chapters": {
+      "c1": {
+        "title": "Born in 1986 – the year Halley's Comet passed by.",
+        "body": "It moved on. I stayed and started building. Andreas Hatlem, product builder in Oslo."
+      },
+      "c2": {
+        "title": "Straight into the dot-com bubble.",
+        "body": "Free .com domains, encyclopedia sites and SEO before it had a name. My Harry Potter sites won awards and the commissions beat my pocket money. First payslip: Radio 3 in Sarpsborg. Web lead on the graduation committee at Greåker, of course."
+      },
+      "c3": {
+        "title": "Shed what holds you back.",
+        "body": "Two online stores and a network of coupon sites. Inventory, logistics and customer service – learned the hard way."
+      },
+      "c4": {
+        "title": "Then it all unfolded.",
+        "body": "Founded a media and web agency, worked with Norway's biggest brands, built a team – and sold it."
+      },
+      "c5": {
+        "title": "Jumped in again.",
+        "body": "I swam in the Nile at 11 and have spent 18+ summers in the Adriatic, but AI was the deepest water yet. Watson in 2017, ChatGPT, BurnBacon in 2023. Now I don't build any other way."
+      },
+      "c6": {
+        "title": "Solid ground.",
+        "body": "Married in 2024, a dad in 2025. Still the 15-year-old who led the campaign to save the Høla swimming spot – just with better tools."
+      }
+    },
+    "links": {
+      "projects": "Projects",
+      "about": "About me",
+      "contact": "Contact"
+    }
   }
 }

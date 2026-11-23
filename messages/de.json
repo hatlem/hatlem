@@ -118,5 +118,39 @@
     "ready": "ready_",
     "blogCd": "cd ~/blog",
     "contactInit": "contact.init()"
+  },
+  "film": {
+    "scrollHint": "Scrollen",
+    "chapters": {
+      "c1": {
+        "title": "Geboren 1986 – im Jahr, als der Halleysche Komet vorbeizog.",
+        "body": "Er zog weiter. Ich blieb und fing an zu bauen. Andreas Hatlem, Produktentwickler in Oslo."
+      },
+      "c2": {
+        "title": "Mitten hinein in die Dotcom-Blase.",
+        "body": "Kostenlose .com-Domains, Lexikonseiten und SEO, bevor es einen Namen hatte. Meine Harry-Potter-Seiten gewannen Preise, die Provisionen übertrafen das Taschengeld. Erste Gehaltsabrechnung: Radio 3 in Sarpsborg. Webverantwortlicher im Abiturkomitee in Greåker, natürlich."
+      },
+      "c3": {
+        "title": "Weg mit dem, was dich zurückhält.",
+        "body": "Zwei Onlineshops und ein Netzwerk aus Gutscheinseiten. Lager, Logistik und Kundenservice – auf die harte Tour gelernt."
+      },
+      "c4": {
+        "title": "Dann entfaltete sich alles.",
+        "body": "Eine Medien- und Webagentur gegründet, mit Norwegens größten Marken gearbeitet, ein Team aufgebaut – und sie verkauft."
+      },
+      "c5": {
+        "title": "Wieder hineingesprungen.",
+        "body": "Mit 11 im Nil geschwommen und über 18 Sommer an der Adria verbracht, aber KI war das tiefste Wasser. Watson 2017, ChatGPT, BurnBacon 2023. Heute baue ich nicht mehr anders."
+      },
+      "c6": {
+        "title": "Fester Boden.",
+        "body": "Verheiratet seit 2024, Papa seit 2025. Immer noch der 15-Jährige, der die Aktion zur Rettung der Badestelle Høla anführte – nur mit besseren Werkzeugen."
+      }
+    },
+    "links": {
+      "projects": "Projekte",
+      "about": "Über mich",
+      "contact": "Kontakt"
+    }
   }
 }
