@@ -15,7 +15,11 @@ interface ScrollFilmProps {
 }
 
 const FALLBACK_FPS = 12;
-const SCRUB_START = 0.002;
+// Loopen tones ut over denne delen av skrollengden, så overgangen følger fingeren/hjulet
+const FADE_SPAN = 0.035;
+// Hvor raskt vist posisjon glir mot skrollposisjonen per bilde (0–1)
+const EASE = 0.18;
+const SETTLED = 0.0004;
 
 const scrollProgress = (section: HTMLElement): number => {
   const rect = section.getBoundingClientRect();
@@ -27,25 +31,35 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const drawnRef = useRef<{ index: number; set: string } | null>(null);
+  const shownRef = useRef<number | null>(null);
   const [chapter, setChapter] = useState(0);
-  const [scrubbing, setScrubbing] = useState(false);
+  const [atTop, setAtTop] = useState(true);
 
-  const drawRef = useRef<(force?: boolean) => void>(() => {});
-  const handleFrameLoaded = useCallback(() => drawRef.current(), []);
+  const drawRef = useRef<(progress: number, force?: boolean) => void>(() => {});
+  const handleFrameLoaded = useCallback(() => drawRef.current(shownRef.current ?? 0), []);
   const { set, manifest, nearestImage } = useFrameSequence(!reducedMotion, handleFrameLoaded);
 
+  const fadeLoop = useCallback((progress: number, hasFrame: boolean) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const visible = hasFrame ? 1 - Math.min(1, Math.max(0, progress / FADE_SPAN)) : 1;
+    video.style.opacity = String(visible);
+    if (visible === 0 && !video.paused) video.pause();
+    else if (visible > 0 && video.paused) void video.play().catch(() => {});
+  }, []);
+
   const draw = useCallback(
-    (force = false) => {
-      const section = sectionRef.current;
+    (progress: number, force = false) => {
       const canvas = canvasRef.current;
-      if (!section || !canvas || !manifest) return;
-      const progress = scrollProgress(section);
+      if (!canvas || !manifest) return;
       setChapter(chapterForProgress(progress, manifest.duration));
+      setAtTop(progress < FADE_SPAN / 2);
 
       const frame = nearestImage(frameForProgress(progress, manifest.frameCount));
+      fadeLoop(progress, frame !== null);
       if (!frame) return;
-      setScrubbing(progress > SCRUB_START);
       const drawn = drawnRef.current;
       if (!force && drawn && drawn.index === frame.index && drawn.set === set) return;
 
@@ -55,25 +69,37 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
       drawCover(ctx, frame.image, canvas.width, canvas.height);
       drawnRef.current = { index: frame.index, set };
     },
-    [manifest, nearestImage, set],
+    [manifest, nearestImage, set, fadeLoop],
+  );
+
+  const currentTarget = useCallback(
+    () => (sectionRef.current ? scrollProgress(sectionRef.current) : 0),
+    [],
   );
 
   useEffect(() => {
     drawRef.current = draw;
-    draw(true);
-  }, [draw]);
+    const progress = shownRef.current ?? currentTarget();
+    shownRef.current = progress;
+    draw(progress, true);
+  }, [draw, currentTarget]);
 
   useEffect(() => {
     if (reducedMotion) return;
     let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        drawRef.current();
-      });
+    const step = () => {
+      const target = currentTarget();
+      const shown = shownRef.current ?? target;
+      const diff = target - shown;
+      const next = Math.abs(diff) < SETTLED ? target : shown + diff * EASE;
+      shownRef.current = next;
+      drawRef.current(next);
+      raf = next === target ? 0 : requestAnimationFrame(step);
     };
-    const onResize = () => drawRef.current(true);
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(step);
+    };
+    const onResize = () => drawRef.current(shownRef.current ?? currentTarget(), true);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
     return () => {
@@ -81,7 +107,7 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, currentTarget]);
 
   if (reducedMotion) {
     const fps = manifest?.fps ?? FALLBACK_FPS;
@@ -108,8 +134,6 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
     );
   }
 
-  const progressLabel = `${chapter + 1} / ${chapters.length}`;
-
   return (
     <section ref={sectionRef} className="relative" style={{ height: "500vh" }}>
       <div className="sticky top-0 h-[100svh] w-full overflow-hidden bg-bg">
@@ -124,6 +148,7 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
         </picture>
         <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full" />
         <video
+          ref={videoRef}
           key={set}
           autoPlay
           muted
@@ -131,9 +156,7 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
           playsInline
           preload="auto"
           aria-hidden="true"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-            scrubbing ? "opacity-0" : "opacity-100"
-          }`}
+          className="absolute inset-0 h-full w-full object-cover"
         >
           <source src={set === "mobil" ? "/film/loop-mobil.mp4" : "/film/loop-desktop.mp4"} type="video/mp4" />
         </video>
@@ -143,8 +166,7 @@ export const ScrollFilm = ({ chapters, intro, scrollHint }: ScrollFilmProps) => 
           active={chapter}
           intro={intro}
           scrollHint={scrollHint}
-          showHint={!scrubbing}
-          progressLabel={progressLabel}
+          showHint={atTop}
         />
       </div>
     </section>

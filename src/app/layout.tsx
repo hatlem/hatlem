@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Agentation } from "agentation";
-import { instrumentSerif, jetbrainsMono } from "../fonts";
+import { fraunces, inter } from "../fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html className="dark">
       <body
-        className={`${instrumentSerif.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${fraunces.variable} ${inter.variable} antialiased`}
       >
         {children}
         {process.env.NODE_ENV === "development" && <Agentation endpoint="http://localhost:4747" />}

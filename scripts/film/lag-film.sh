@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Lager bildesekvens (desktop + mobil), loop-videoer, plakater og manifest til skrollfilmen.
-# Bruk: scripts/film/lag-film.sh <kilde.mp4> <loop.mp4> [kvalitet]
+# Loopen er filmens første sekunder spilt forover og baklengs, så den starter på nøyaktig samme bilde.
+# Bruk: scripts/film/lag-film.sh <kilde.mp4> [kvalitet] [loop-sekunder]
 set -euo pipefail
 
 SRC="$1"
-LOOP="$2"
-Q="${3:-72}"
+Q="${2:-72}"
+LOOP_SECONDS="${3:-3}"
 FPS=12
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/public/film"
@@ -30,9 +31,10 @@ done
 cp "$OUT/desktop/f0001.webp" "$OUT/poster-desktop.webp"
 cp "$OUT/mobil/f0001.webp" "$OUT/poster-mobil.webp"
 
-ffmpeg -loglevel error -y -i "$LOOP" -an -vf "scale=1280:720:flags=lanczos,format=yuv420p" \
+PINGPONG="split[f][b];[b]reverse,trim=start_frame=1,setpts=PTS-STARTPTS[r];[f][r]concat=n=2:v=1:a=0"
+ffmpeg -loglevel error -y -t "$LOOP_SECONDS" -i "$SRC" -an -vf "scale=1280:720:flags=lanczos,$PINGPONG,format=yuv420p" \
   -c:v libx264 -crf 23 -preset slow -movflags +faststart "$OUT/loop-desktop.mp4"
-ffmpeg -loglevel error -y -i "$LOOP" -an -vf "$MOBIL_CROP,scale=608:1080:flags=lanczos,format=yuv420p" \
+ffmpeg -loglevel error -y -t "$LOOP_SECONDS" -i "$SRC" -an -vf "$MOBIL_CROP,scale=608:1080:flags=lanczos,$PINGPONG,format=yuv420p" \
   -c:v libx264 -crf 23 -preset slow -movflags +faststart "$OUT/loop-mobil.mp4"
 
 DESKTOP_N=$(find "$OUT/desktop" -name '*.webp' | wc -l | tr -d ' ')

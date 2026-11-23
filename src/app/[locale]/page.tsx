@@ -4,7 +4,6 @@ import { getPosts, type BlogPost } from "@/data/posts";
 import type { Locale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
-import { KineticHero } from "@/components/KineticHero";
 import { ScrollFilm, type ChapterContent } from "@/components/scroll-film/ScrollFilm";
 import { JsonLd } from "@/components/JsonLd";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -61,23 +60,9 @@ interface HeroTranslations {
   location: string;
 }
 
-/* ─────────────────────────────────────────────
-   FILM INTRO — H1 and role inside the first chapter
-   ───────────────────────────────────────────── */
-const FilmIntro = ({ t }: { t: HeroTranslations }) => (
-  <div>
-    <div className="mb-4 font-mono text-xs text-muted">
-      <span className="text-aurora">&gt;</span> {t.terminal.replace("> ", "")}
-      <span className="terminal-cursor" />
-    </div>
-    <KineticHero className="font-serif text-6xl leading-[0.85] tracking-tight text-cream select-none md:text-8xl" />
-    <div className="mt-4 flex items-center gap-4">
-      <div className="h-px w-12 bg-aurora" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-aurora md:text-xs">
-        {t.role}
-      </span>
-    </div>
-  </div>
+/* Skjult H1 for søk og skjermlesere; filmen og kapitlene bærer det visuelle. */
+const FilmIntro = ({ role }: { role: string }) => (
+  <h1 className="sr-only">Andreas Hatlem – {role}</h1>
 );
 
 /* ─────────────────────────────────────────────
@@ -302,7 +287,7 @@ export default async function Home({ params }: Props) {
       <JsonLd data={personJsonLd} />
       <JsonLd data={websiteJsonLd} />
       <ScrollFilm
-        intro={<FilmIntro t={heroTranslations} />}
+        intro={<FilmIntro role={heroTranslations.role} />}
         chapters={chapters}
         scrollHint={t("film.scrollHint")}
       />
