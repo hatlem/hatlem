@@ -1,0 +1,9 @@
+{
+  "fps": 12,
+  "frameCount": 361,
+  "duration": 30,
+  "sets": {
+    "desktop": { "width": 1280, "height": 720 },
+    "mobil": { "width": 608, "height": 1080 }
+  }
+}
