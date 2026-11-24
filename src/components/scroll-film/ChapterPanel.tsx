@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { FlowingWords, enterDelay, wordClass } from "@/components/ui/FlowingWords";
 
 export interface ChapterContent {
   id: string;
@@ -19,49 +20,6 @@ const TITLE_STEP_MS = 55;
 const BODY_STEP_MS = 14;
 const BODY_GAP_MS = 120;
 const MAX_BODY_SPAN_MS = 700;
-
-const wordClass = (visible: boolean) =>
-  `inline-block transition-[opacity,transform,filter] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
-    visible
-      ? "translate-y-0 opacity-100 blur-0 duration-700"
-      : "-translate-y-2 opacity-0 blur-[3px] duration-300"
-  }`;
-
-const enterDelay = (visible: boolean, ms: number): CSSProperties =>
-  ({ transitionDelay: visible ? `${Math.round(ms)}ms` : "0ms" });
-
-/** Ord som glir inn ett og ett når kapittelet blir aktivt, og forsvinner samlet når det forlates. */
-const FlowingWords = ({
-  text,
-  visible,
-  startMs,
-  stepMs,
-}: {
-  text: string;
-  visible: boolean;
-  startMs: number;
-  stepMs: number;
-}) => {
-  const words = text.split(" ");
-  return (
-    <>
-      <span className="sr-only">{text}</span>
-      <span aria-hidden="true">
-        {words.map((word, i) => (
-          <span key={i}>
-            <span
-              className={`${wordClass(visible)} ${visible ? "" : "translate-y-[0.4em]"}`}
-              style={enterDelay(visible, startMs + i * stepMs)}
-            >
-              {word}
-            </span>
-            {i < words.length - 1 && " "}
-          </span>
-        ))}
-      </span>
-    </>
-  );
-};
 
 /** Kapitteltekst over filmen: til venstre på PC, nederst over en gradient på mobil. */
 export const ChapterPanel = ({ chapters, active, intro, scrollHint, showHint }: ChapterPanelProps) => (

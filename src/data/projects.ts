@@ -8,71 +8,107 @@ export interface Project {
   live?: string;
   featured: boolean;
   status?: "active" | "on-ice";
+  /** Produktfarge fra GetPlatform (platforms.color) */
+  color: string;
 }
 
 export const projects: Project[] = [
   {
-    slug: "burnbacon",
-    title: "BurnBacon",
-    description:
-      "AI-powered fitness and nutrition coaching with personalized meal plans and workout tracking.",
+    slug: "attorly",
+    color: "#6366F1",
+    title: "Attorly",
+    description: "AI legal help for individuals, businesses and lawyers.",
     longDescription:
-      "My first AI project, vibe coded in early 2023. AI-powered fitness and nutrition coaching with personalized meal plans, workout tracking, and expert AI coaches. 4.9/5 rating from thousands of users.",
-    tech: ["Next.js", "TypeScript", "OpenAI", "PostgreSQL", "Tailwind CSS"],
-    live: "https://burnbacon.com",
+      "Describe what happened, and Attorly works out what the case is about, drafts the letters and keeps track of the deadlines.",
+    tech: ["Next.js", "TypeScript", "Claude", "PostgreSQL", "Stripe"],
+    live: "https://attorly.ai",
+    featured: true,
+  },
+  {
+    slug: "tenderen",
+    color: "#0EA5E9",
+    title: "Tenderen",
+    description: "Find public tenders and write the bid together with AI.",
+    longDescription:
+      "Tender monitoring and AI bid writing for suppliers bidding on public contracts in Norway and Europe: search Doffin, TED and more sources, get alerts and draft the bid.",
+    tech: ["Next.js", "TypeScript", "Node.js", "Claude", "PostgreSQL"],
+    live: "https://tenderen.com",
     featured: true,
   },
   {
     slug: "getintent",
+    color: "#A78BFA",
     title: "GetIntent",
-    description:
-      "AI-powered landing page personalization that matches headlines to visitor search intent.",
+    description: "AI landing page personalization based on visitor search intent.",
     longDescription:
-      "Automatically personalizes landing page headlines and CTAs based on visitor search intent. One line of code, sub-50ms response, 40% average lift in conversions. Supports 50+ languages.",
+      "Rewrites landing page headlines and calls to action to match what each visitor searched for, so the page answers the question they came with.",
     tech: ["Next.js", "TypeScript", "AI/LLM", "Edge Functions"],
     live: "https://getintent.co",
     featured: true,
   },
   {
-    slug: "getmailer",
-    title: "GetMailer",
-    description:
-      "Email API for developers with simple integration and enterprise-grade deliverability.",
+    slug: "faceshot",
+    color: "#F472B6",
+    title: "FaceShot",
+    description: "AI headshot generator: one selfie, a professional headshot.",
     longDescription:
-      "Transactional email service built for developers. Simple REST API, smart templates with Handlebars, real-time analytics, and 99.99% uptime. SDKs for Node.js, Python, Ruby, Go, and PHP.",
-    tech: ["Node.js", "TypeScript", "PostgreSQL", "AWS"],
-    live: "https://getmailer.co",
+      "Upload a selfie and get a LinkedIn-ready professional headshot in under a minute, without booking a photographer.",
+    tech: ["React", "Vite", "FastAPI", "Gemini", "PostgreSQL"],
+    live: "https://faceshot.ai",
+    featured: true,
+  },
+  {
+    slug: "shotvista",
+    color: "#6366F1",
+    title: "ShotVista",
+    description: "AI photo editing for real estate photographers.",
+    longDescription:
+      "Sky replacement, virtual staging, twilight conversions, delivery pages and payments in one workflow for real estate photographers.",
+    tech: ["React", "Vite", "FastAPI", "Gemini", "Stripe"],
+    live: "https://shotvista.com",
+    featured: true,
+  },
+  {
+    slug: "portifer",
+    color: "#6366F1",
+    title: "Portifer",
+    description: "Product seeding and testing platform for consumer brands.",
+    longDescription:
+      "Choose recipients, ship with your own carrier accounts, track every parcel and collect photo, video and survey feedback in one place.",
+    tech: ["Next.js", "TypeScript", "Claude", "PostgreSQL", "Stripe"],
+    live: "https://portifer.com",
     featured: true,
   },
   {
     slug: "getcookies",
+    color: "#F59E0B",
     title: "GetCookies",
-    description:
-      "Cookie consent management for GDPR and CCPA compliance.",
+    description: "Cookie consent management platform for GDPR and CCPA.",
     longDescription:
-      "Cloud-based consent management with customizable banners, auto-blocking, Google Consent Mode integration, and granular cookie categories. One script, full compliance.",
-    tech: ["TypeScript", "Next.js", "Edge Functions"],
+      "Self-service cookie consent: cookie scanning, script blocking, consent logs, Google Consent Mode v2 on every plan and IAB TCF 2.3 from Pro.",
+    tech: ["Next.js", "TypeScript", "FastAPI", "PostgreSQL"],
     live: "https://getcookies.co",
     featured: true,
   },
   {
-    slug: "human-like",
-    title: "Human-Like",
+    slug: "burnbacon",
+    color: "#EF4444",
+    title: "BurnBacon",
     description:
-      "Enterprise conversational AI platform.",
+      "AI-powered fitness and nutrition coaching with personalized meal plans and workout tracking.",
     longDescription:
-      "Enterprise conversational AI platform for building human-like AI experiences.",
-    tech: ["Next.js", "TypeScript", "AI/LLM", "Tailwind CSS"],
-    live: "https://human-like.ai",
+      "My first AI project, vibe coded in early 2023. AI-powered fitness and nutrition coaching with personalized meal plans, workout tracking and AI coaches.",
+    tech: ["Next.js", "TypeScript", "OpenAI", "PostgreSQL", "Tailwind CSS"],
+    live: "https://burnbacon.com",
     featured: false,
   },
   {
     slug: "utelivskartet",
+    color: "#C084FC",
     title: "Utelivskartet",
-    description:
-      "Norwegian nightlife discovery platform mapping bars, clubs, and venues.",
+    description: "Norwegian nightlife discovery platform mapping bars, clubs, and venues.",
     longDescription:
-      "Comprehensive guide to Norwegian nightlife. Discover bars, clubs, and venues across Norway with reviews, events, and real-time info. Currently on ice.",
+      "Guide to Norwegian nightlife: discover bars, clubs and venues across Norway. Currently on ice.",
     tech: ["Next.js", "TypeScript", "PostgreSQL", "Maps API"],
     live: "https://utelivskartet.no",
     featured: false,

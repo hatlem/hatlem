@@ -14,12 +14,15 @@ Andreas Hatlem is a product builder and founder based in Oslo, Norway. He has be
 ## Current Work
 
 Andreas runs Getia AS, which builds and operates multiple SaaS products including:
-- Lakehouse42 — Enterprise knowledge platform
-- SkyDrover — Drone operations management
-- GetMailer — Email marketing
-- GetChannel — Multi-channel communication
-- FaceShot — AI-powered headshot generation
-- And many more at https://getia.no
+- Attorly — AI legal help for individuals, businesses and lawyers (https://attorly.ai)
+- Tenderen — Public tender monitoring and AI bid writing (https://tenderen.com)
+- GetIntent — AI landing page personalization based on search intent (https://getintent.co)
+- FaceShot — AI headshot generator (https://faceshot.ai)
+- ShotVista — AI photo editing for real estate photographers (https://shotvista.com)
+- Portifer — Product seeding and testing for consumer brands (https://portifer.com)
+- GetCookies — Cookie consent management for GDPR and CCPA (https://getcookies.co)
+- BurnBacon — His first AI project (2023), AI fitness and nutrition coaching (https://burnbacon.com)
+- And more at https://getia.no
 
 ## Links
 

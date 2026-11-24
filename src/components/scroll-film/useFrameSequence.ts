@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { loadOrder, nearestLoaded } from "@/lib/scrollFilm";
+import { MOBILE_MEDIA, frameUrl, type FrameSet } from "@/lib/filmFrames";
 
-export type FrameSet = "desktop" | "mobil";
+export type { FrameSet };
+export { frameUrl };
 
 export interface FilmManifest {
   fps: number;
@@ -12,11 +14,9 @@ export interface FilmManifest {
   loopSegments?: number;
 }
 
-export const MOBILE_QUERY = "(max-aspect-ratio: 4/5), (max-width: 640px)";
+export const MOBILE_QUERY = MOBILE_MEDIA;
 const CONCURRENCY = 6;
 
-export const frameUrl = (set: FrameSet, index: number): string =>
-  `/film/${set}/f${String(index + 1).padStart(4, "0")}.webp`;
 
 const subscribeMedia = (query: string) => (onChange: () => void) => {
   const mql = window.matchMedia(query);

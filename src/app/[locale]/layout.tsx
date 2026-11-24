@@ -8,6 +8,7 @@ import type { Locale } from "@/i18n/config";
 import { ogLocaleMap } from "@/lib/seo";
 import { Navigation } from "@/components/Navigation";
 import { NoiseOverlay } from "@/components/NoiseOverlay";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 interface Props {
   children: React.ReactNode;
@@ -47,6 +48,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
+      <ScrollToTop />
       <NoiseOverlay />
       <div className="scan-line" aria-hidden="true" />
       <Navigation />

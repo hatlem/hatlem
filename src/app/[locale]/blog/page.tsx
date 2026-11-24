@@ -5,6 +5,7 @@ import { getPosts } from "@/data/posts";
 import type { Locale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
+import { PageHero } from "@/components/ui/PageHero";
 import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
 interface Props {
@@ -38,130 +39,88 @@ const ArrowIcon = () => (
   </svg>
 );
 
+const dateLocale: Record<string, string> = { no: "nb-NO", en: "en-GB", de: "de-DE" };
+
 export default async function BlogPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("blog");
-  const tTerminal = await getTranslations("terminal");
 
   const allPosts = getPosts(locale as Locale);
   const featured = allPosts.filter((p) => p.featured);
   const rest = allPosts.filter((p) => !p.featured);
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString(dateLocale[locale] ?? "nb-NO", { year: "numeric", month: "short" });
 
   return (
     <>
-      <div className="pt-32 pb-32">
-        <div className="mx-auto max-w-6xl px-6 lg:px-8">
-          {/* Terminal header */}
-          <ScrollReveal>
-            <div className="mb-4 font-mono text-xs text-muted">
-              <span className="text-aurora">&gt;</span> {tTerminal("blogCd")}
-              <span className="terminal-cursor" />
+      <PageHero second={26} title={t("title")} lead={t("description")} />
+
+      <section className="mx-auto max-w-6xl px-6 pb-28 pt-4 lg:px-8">
+        {featured.length > 0 && (
+          <div className="mb-16">
+            <ScrollReveal>
+              <h2 className="eyebrow mb-6">{t("featured")}</h2>
+            </ScrollReveal>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {featured.map((post, i) => (
+                <ScrollReveal key={post.slug} delay={0.05 * (i % 2)} className="h-full">
+                  <Link href={`/blog/${post.slug}`} className="soft-card group flex h-full flex-col p-7 lg:p-8">
+                    <div className="mb-4 flex items-center gap-3 text-xs text-cream-dim">
+                      <time dateTime={post.date}>{formatDate(post.date)}</time>
+                      <span aria-hidden="true">·</span>
+                      <span>{post.readingTime}</span>
+                    </div>
+                    <h3 className="mb-3 font-serif text-2xl leading-snug text-cream transition-colors group-hover:text-aurora">
+                      {post.title}
+                    </h3>
+                    <p className="mb-6 flex-1 leading-relaxed text-cream-dim">{post.excerpt}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="chip">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              ))}
             </div>
-          </ScrollReveal>
+          </div>
+        )}
 
-          <ScrollReveal delay={0.05}>
-            <div className="mb-4">
-              <div className="terminal-line mb-4">{t("section")}</div>
-              <h1 className="display-large text-cream">{t("title")}</h1>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.1}>
-            <p className="mb-16 max-w-lg text-cream-dim leading-relaxed">
-              {t("description")}
-            </p>
-          </ScrollReveal>
-
-          {/* Featured posts */}
-          {featured.length > 0 && (
-            <div className="mb-16">
-              <ScrollReveal>
-                <div className="mb-6 font-mono text-[10px] uppercase tracking-wider text-muted">
-                  <span className="text-aurora">{"/"}</span>
-                  <span className="text-aurora">/</span> {t("featured")}
-                </div>
-              </ScrollReveal>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                {featured.map((post, i) => (
-                  <ScrollReveal key={post.slug} delay={0.08 * i}>
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="brutal-card group flex h-full flex-col p-6 lg:p-8"
-                    >
-                      <div className="mb-4 flex items-center gap-4 font-mono text-[10px] uppercase tracking-wider text-muted">
-                        <time>
-                          {new Date(post.date).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                          })}
-                        </time>
-                        <span className="text-border">/</span>
+        {rest.length > 0 && (
+          <div>
+            <ScrollReveal>
+              <h2 className="eyebrow mb-6">{t("archive")}</h2>
+            </ScrollReveal>
+            <div className="space-y-3">
+              {rest.map((post) => (
+                <ScrollReveal key={post.slug}>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="soft-card group flex items-center justify-between gap-6 px-7 py-5"
+                  >
+                    <div className="min-w-0">
+                      <div className="mb-1.5 flex items-center gap-3 text-xs text-cream-dim">
+                        <time dateTime={post.date}>{formatDate(post.date)}</time>
+                        <span aria-hidden="true">·</span>
                         <span>{post.readingTime}</span>
                       </div>
-                      <h3 className="mb-3 font-serif text-2xl text-cream transition-colors group-hover:text-aurora">
+                      <h3 className="font-serif text-xl text-cream transition-colors group-hover:text-aurora">
                         {post.title}
                       </h3>
-                      <p className="mb-6 flex-1 text-sm text-cream-dim leading-relaxed">
-                        {post.excerpt}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {post.tags.map((tag) => (
-                          <span key={tag} className="tag">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </Link>
-                  </ScrollReveal>
-                ))}
-              </div>
+                    </div>
+                    <span className="shrink-0 text-cream-dim transition-all group-hover:translate-x-1 group-hover:text-aurora">
+                      <ArrowIcon />
+                    </span>
+                  </Link>
+                </ScrollReveal>
+              ))}
             </div>
-          )}
-
-          {/* All posts */}
-          {rest.length > 0 && (
-            <div>
-              <ScrollReveal>
-                <div className="mb-6 font-mono text-[10px] uppercase tracking-wider text-muted">
-                  <span className="text-aurora">{"/"}</span>
-                  <span className="text-aurora">/</span> {t("archive")}
-                </div>
-              </ScrollReveal>
-
-              <div className="space-y-1">
-                {rest.map((post, i) => (
-                  <ScrollReveal key={post.slug} delay={0.06 * i}>
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="group flex items-center justify-between border-b border-border py-6 transition-colors hover:border-aurora"
-                    >
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-4 font-mono text-[10px] uppercase tracking-wider text-muted">
-                          <time>
-                            {new Date(post.date).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "short",
-                            })}
-                          </time>
-                          <span>{post.readingTime}</span>
-                        </div>
-                        <h3 className="font-serif text-xl text-cream transition-colors group-hover:text-aurora">
-                          {post.title}
-                        </h3>
-                      </div>
-                      <div className="ml-8 text-muted opacity-0 transition-all group-hover:translate-x-1 group-hover:text-aurora group-hover:opacity-100">
-                        <ArrowIcon />
-                      </div>
-                    </Link>
-                  </ScrollReveal>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </section>
       <Footer />
     </>
   );

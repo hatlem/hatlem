@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="dark">
+    <html className="dark" data-scroll-behavior="smooth">
       <body
         className={`${fraunces.variable} ${inter.variable} antialiased`}
       >

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
+import { PageHero } from "@/components/ui/PageHero";
 import type { Locale } from "@/i18n/config";
 import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
@@ -60,129 +61,51 @@ export default async function ContactPage({ params }: ContactPageProps) {
   setRequestLocale(locale);
   const t = await getTranslations("contact");
   const tCommon = await getTranslations("common");
-  const tTerminal = await getTranslations("terminal");
+
+  const channels = [
+    { href: "mailto:andreas.hatlem@gmail.com", label: t("email"), value: "andreas.hatlem@gmail.com", icon: <MailIcon />, external: false },
+    { href: "https://www.linkedin.com/in/hatlem/", label: "LinkedIn", value: "linkedin.com/in/hatlem", icon: <LinkedInIcon />, external: true },
+    { href: "https://github.com/hatlem", label: "GitHub", value: "github.com/hatlem", icon: <GitHubIcon />, external: true },
+    { href: "https://www.facebook.com/andreas.hatlem/", label: "Facebook", value: "facebook.com/andreas.hatlem", icon: <FacebookIcon />, external: true },
+  ];
+
   return (
     <>
-      <div className="pt-32 pb-32">
-        <div className="mx-auto max-w-3xl px-6 lg:px-8">
-          {/* Terminal header */}
-          <ScrollReveal>
-            <div className="mb-4 font-mono text-xs text-muted">
-              <span className="text-aurora">&gt;</span> {tTerminal("contactInit")}
-              <span className="terminal-cursor" />
-            </div>
-          </ScrollReveal>
+      <PageHero second={29.5} title={t("title")} lead={t("description")} />
 
-          <ScrollReveal delay={0.05}>
-            <div className="mb-4">
-              <div className="terminal-line mb-4">{t("section")}</div>
-              <h1 className="display-large text-cream">{t("title")}</h1>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.1}>
-            <p className="mb-16 text-cream-dim leading-relaxed">
-              {t("description")}
-            </p>
-          </ScrollReveal>
-
-          {/* Contact cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ScrollReveal delay={0.15}>
+      <section className="mx-auto max-w-6xl px-6 pb-28 pt-4 lg:px-8">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {channels.map((c, i) => (
+            <ScrollReveal key={c.label} delay={0.05 * (i % 2)}>
               <a
-                href="mailto:andreas.hatlem@gmail.com"
-                className="brutal-card group flex flex-col items-center gap-4 p-8 text-center transition-colors hover:border-aurora"
+                href={c.href}
+                {...(c.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="soft-card group flex items-center gap-5 p-6 lg:p-7"
               >
-                <div className="text-muted transition-colors group-hover:text-aurora">
-                  <MailIcon />
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
-                    {t("email")}
-                  </div>
-                  <div className="font-mono text-sm text-cream-dim group-hover:text-aurora transition-colors">
-                    andreas.hatlem@gmail.com
-                  </div>
-                </div>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 text-cream-dim transition-colors group-hover:border-aurora/50 group-hover:text-aurora">
+                  {c.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs uppercase tracking-[0.14em] text-cream-dim">{c.label}</span>
+                  <span className="mt-1 block truncate text-lg text-cream transition-colors group-hover:text-aurora">
+                    {c.value}
+                  </span>
+                </span>
               </a>
             </ScrollReveal>
-
-            <ScrollReveal delay={0.2}>
-              <a
-                href="https://www.linkedin.com/in/hatlem/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="brutal-card group flex flex-col items-center gap-4 p-8 text-center transition-colors hover:border-aurora"
-              >
-                <div className="text-muted transition-colors group-hover:text-aurora">
-                  <LinkedInIcon />
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
-                    LinkedIn
-                  </div>
-                  <div className="font-mono text-sm text-cream-dim group-hover:text-aurora transition-colors">
-                    /in/hatlem
-                  </div>
-                </div>
-              </a>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.25}>
-              <a
-                href="https://www.facebook.com/andreas.hatlem/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="brutal-card group flex flex-col items-center gap-4 p-8 text-center transition-colors hover:border-aurora"
-              >
-                <div className="text-muted transition-colors group-hover:text-aurora">
-                  <FacebookIcon />
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
-                    Facebook
-                  </div>
-                  <div className="font-mono text-sm text-cream-dim group-hover:text-aurora transition-colors">
-                    /andreas.hatlem
-                  </div>
-                </div>
-              </a>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.3}>
-              <a
-                href="https://github.com/hatlem"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="brutal-card group flex flex-col items-center gap-4 p-8 text-center transition-colors hover:border-aurora"
-              >
-                <div className="text-muted transition-colors group-hover:text-aurora">
-                  <GitHubIcon />
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
-                    GitHub
-                  </div>
-                  <div className="font-mono text-sm text-cream-dim group-hover:text-aurora transition-colors">
-                    hatlem
-                  </div>
-                </div>
-              </a>
-            </ScrollReveal>
-          </div>
-
-          {/* Location info */}
-          <ScrollReveal delay={0.35}>
-            <div className="mt-16 flex items-center gap-4 font-mono text-xs text-muted">
-              <span className="text-lg">🇳🇴</span>
-              <div>
-                <div className="text-cream-dim">{tCommon("location")}</div>
-                <div>{tCommon("coordinates")} · {tCommon("timezone")}</div>
-              </div>
-            </div>
-          </ScrollReveal>
+          ))}
         </div>
-      </div>
+
+        <ScrollReveal>
+          <div className="mt-14 flex items-center gap-4 text-sm text-cream-dim">
+            <span className="text-lg" aria-hidden="true">🇳🇴</span>
+            <div>
+              <div className="text-cream">{tCommon("location")}</div>
+              <div>{tCommon("coordinates")} · {tCommon("timezone")}</div>
+            </div>
+          </div>
+        </ScrollReveal>
+      </section>
       <Footer />
     </>
   );

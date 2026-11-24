@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
+import { PageHero } from "@/components/ui/PageHero";
+import { FilmStill } from "@/components/ui/FilmStill";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { Locale } from "@/i18n/config";
 import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
@@ -38,41 +40,49 @@ export default async function AboutPage({ params }: PageProps) {
   const milestones = [
     {
       year: "1999",
+      second: 1,
       title: t("timeline.1999.title"),
       description: t("timeline.1999.description"),
     },
     {
       year: "2000s",
+      second: 6,
       title: t("timeline.2000s.title"),
       description: t("timeline.2000s.description"),
     },
     {
       year: "2005",
+      second: 11,
       title: t("timeline.2005.title"),
       description: t("timeline.2005.description"),
     },
     {
       year: "2012",
+      second: 13.5,
       title: t("timeline.2012.title"),
       description: t("timeline.2012.description"),
     },
     {
       year: "2015+",
+      second: 17,
       title: t("timeline.2015.title"),
       description: t("timeline.2015.description"),
     },
     {
       year: "2022",
+      second: 21.5,
       title: t("timeline.2022.title"),
       description: t("timeline.2022.description"),
     },
     {
       year: "2024",
+      second: 26,
       title: t("timeline.2024.title"),
       description: t("timeline.2024.description"),
     },
     {
       year: "2025",
+      second: 29.5,
       title: t("timeline.2025.title"),
       description: t("timeline.2025.description"),
     },
@@ -80,116 +90,74 @@ export default async function AboutPage({ params }: PageProps) {
 
   return (
     <>
-      <div className="pt-32 pb-32">
-        <div className="mx-auto max-w-6xl px-6 lg:px-8">
-          {/* Terminal header */}
-          <ScrollReveal>
-            <div className="mb-4 font-mono text-xs text-muted">
-              <span className="text-aurora">&gt;</span> {t("terminal").replace("> ", "")}
-              <span className="terminal-cursor" />
+      <PageHero second={1} title={t("title")} lead={t("description")} />
+
+      <section className="mx-auto max-w-6xl px-6 pb-12 pt-4 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-12">
+          <ScrollReveal className="lg:col-span-7">
+            <p className="font-serif text-3xl leading-snug text-cream md:text-4xl">{t("intro")}</p>
+            <div className="mt-8 space-y-5 text-lg leading-relaxed text-cream-dim">
+              <p>{t("story.p1")}</p>
+              <p>{t("story.p2")}</p>
+              <p>{t("story.p3")}</p>
+              <p>{t("story.p4")}</p>
             </div>
           </ScrollReveal>
 
-          <ScrollReveal delay={0.05}>
-            <div className="mb-4">
-              <div className="terminal-line mb-4">{t("section")}</div>
-              <h1 className="display-large text-cream">{t("title")}</h1>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.1}>
-            <p className="mb-16 max-w-lg text-cream-dim leading-relaxed">
-              {t("description")}
-            </p>
-          </ScrollReveal>
-
-          {/* Two column layout */}
-          <div className="grid gap-16 lg:grid-cols-12">
-            {/* Left - Main story */}
-            <div className="lg:col-span-7">
-              <ScrollReveal delay={0.15}>
-                <div className="brutal-card p-8 lg:p-10">
-                  <p className="mb-6 font-serif text-2xl text-cream leading-snug">
-                    {t("intro")}
-                  </p>
-
-                  <div className="space-y-4 text-cream-dim leading-relaxed">
-                    <p>{t("story.p1")}</p>
-                    <p>{t("story.p2")}</p>
-                    <p>{t("story.p3")}</p>
-                    <p>{t("story.p4")}</p>
-                  </div>
-
-                  {/* Stats row */}
-                  <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-8">
-                    <div>
-                      <div className="font-mono text-3xl text-aurora">25+</div>
-                      <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">
-                        {t("stats.years")}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-3xl text-aurora">1</div>
-                      <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">
-                        {t("stats.exit")}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-mono text-3xl text-aurora">∞</div>
-                      <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted">
-                        {t("stats.projects")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </ScrollReveal>
-            </div>
-
-            {/* Right - Timeline */}
-            <div className="lg:col-span-5">
-              <ScrollReveal delay={0.2}>
-                <div className="font-mono text-[10px] uppercase tracking-wider text-muted mb-6">
-                  <span className="text-aurora">{"/"}</span>
-                  <span className="text-aurora">/</span> {t("timeline.title")}
-                </div>
-              </ScrollReveal>
-
-              <div className="relative space-y-6">
-                {/* Timeline line */}
-                <div className="absolute left-[3px] top-2 bottom-2 w-px bg-border" />
-
-                {milestones.map((milestone, i) => (
-                  <ScrollReveal key={milestone.year} delay={0.25 + i * 0.08}>
-                    <div className="relative pl-8">
-                      {/* Timeline dot */}
-                      <div className="absolute left-0 top-2 h-[7px] w-[7px] border border-aurora bg-bg" />
-
-                      <div className="font-mono text-xs text-aurora mb-1">
-                        {milestone.year}
-                      </div>
-                      <h3 className="font-serif text-lg text-cream mb-2">
-                        {milestone.title}
-                      </h3>
-                      <p className="text-sm text-cream-dim leading-relaxed">
-                        {milestone.description}
-                      </p>
-                    </div>
-                  </ScrollReveal>
-                ))}
+          <ScrollReveal delay={0.1} className="lg:col-span-5">
+            <div className="soft-card grid grid-cols-3 gap-4 p-7 lg:sticky lg:top-28">
+              <div>
+                <div className="font-serif text-4xl text-aurora">25+</div>
+                <div className="mt-2 text-xs text-cream-dim">{t("stats.years")}</div>
               </div>
-
-              {/* Bottom note */}
-              <ScrollReveal delay={0.7}>
-                <div className="mt-10 border-t border-border pt-6">
-                  <p className="text-sm text-cream-dim italic">
-                    {t("note")}
-                  </p>
-                </div>
-              </ScrollReveal>
+              <div>
+                <div className="font-serif text-4xl text-aurora">1</div>
+                <div className="mt-2 text-xs text-cream-dim">{t("stats.exit")}</div>
+              </div>
+              <div>
+                <div className="font-serif text-4xl text-aurora">∞</div>
+                <div className="mt-2 text-xs text-cream-dim">{t("stats.projects")}</div>
+              </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
-      </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 pb-28 pt-16 lg:px-8">
+        <ScrollReveal>
+          <h2 className="eyebrow mb-10">{t("timeline.title")}</h2>
+        </ScrollReveal>
+
+        <ol className="space-y-6">
+          {milestones.map((milestone, i) => (
+            <ScrollReveal key={milestone.year}>
+              <li
+                className={`soft-card grid items-center gap-0 overflow-hidden md:grid-cols-2 ${
+                  i % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
+                }`}
+              >
+                <div className="relative aspect-[16/10] overflow-hidden md:aspect-auto md:h-full md:min-h-64">
+                  <FilmStill
+                    second={milestone.second}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-7 lg:p-10">
+                  <div className="font-serif text-5xl text-aurora/90">{milestone.year}</div>
+                  <h3 className="mt-3 font-serif text-2xl text-cream">{milestone.title}</h3>
+                  <p className="mt-3 leading-relaxed text-cream-dim">{milestone.description}</p>
+                </div>
+              </li>
+            </ScrollReveal>
+          ))}
+        </ol>
+
+        <ScrollReveal>
+          <p className="mx-auto mt-16 max-w-2xl text-center font-serif text-xl italic text-cream-dim">
+            {t("note")}
+          </p>
+        </ScrollReveal>
+      </section>
       <Footer />
     </>
   );
