@@ -92,7 +92,45 @@
     "sourceCode": "{title} Quellcode",
     "liveDemo": "{title} Live",
     "onIce": "Auf Eis",
-    "andMore": "...und viele weitere Projekte unter Getia."
+    "andMore": "...und viele weitere Projekte unter Getia.",
+    "items": {
+      "attorly": {
+        "description": "KI-Rechtshilfe für Privatpersonen, Unternehmen und Anwälte.",
+        "longDescription": "Beschreiben Sie, was passiert ist, und Attorly erkennt, worum es geht, entwirft die Schreiben und behält die Fristen im Blick."
+      },
+      "tenderen": {
+        "description": "Öffentliche Ausschreibungen finden und das Angebot mit KI schreiben.",
+        "longDescription": "Ausschreibungsüberwachung und KI-gestützte Angebotserstellung für Anbieter öffentlicher Aufträge in Norwegen und Europa: Doffin, TED und weitere Quellen durchsuchen, Benachrichtigungen erhalten und das Angebot entwerfen."
+      },
+      "getintent": {
+        "description": "KI-Personalisierung von Landingpages nach Suchintention der Besucher.",
+        "longDescription": "Schreibt Überschriften und Handlungsaufrufe so um, dass sie zu dem passen, wonach jeder Besucher gesucht hat, damit die Seite seine Frage beantwortet."
+      },
+      "faceshot": {
+        "description": "KI-Porträtgenerator: ein Selfie, ein professionelles Porträt.",
+        "longDescription": "Selfie hochladen und in weniger als einer Minute ein LinkedIn-taugliches Porträt erhalten, ohne einen Fotografen zu buchen."
+      },
+      "shotvista": {
+        "description": "KI-Bildbearbeitung für Immobilienfotografen.",
+        "longDescription": "Himmelaustausch, virtuelles Home Staging, Dämmerungsaufnahmen, Lieferseiten und Zahlungen in einem Arbeitsablauf für Immobilienfotografen."
+      },
+      "portifer": {
+        "description": "Plattform für Produkt-Seeding und Produkttests für Konsumgütermarken.",
+        "longDescription": "Empfänger auswählen, mit eigenen Versandverträgen verschicken, jedes Paket verfolgen und Foto-, Video- und Umfrage-Feedback an einem Ort sammeln."
+      },
+      "getcookies": {
+        "description": "Cookie-Consent-Management-Plattform für DSGVO und CCPA.",
+        "longDescription": "Cookie-Einwilligung in Eigenregie: Cookie-Scan, Skriptblockierung, Einwilligungsprotokolle, Google Consent Mode v2 in jedem Tarif und IAB TCF 2.3 ab Pro."
+      },
+      "burnbacon": {
+        "description": "KI-gestütztes Fitness- und Ernährungscoaching mit persönlichen Essensplänen und Trainingstracking.",
+        "longDescription": "Mein erstes KI-Projekt, Anfang 2023 per Vibe Coding gebaut. KI-gestütztes Fitness- und Ernährungscoaching mit persönlichen Essensplänen, Trainingstracking und KI-Coaches."
+      },
+      "utelivskartet": {
+        "description": "Plattform für das norwegische Nachtleben mit Bars, Clubs und Locations.",
+        "longDescription": "Guide zum norwegischen Nachtleben: Bars, Clubs und Locations in ganz Norwegen entdecken. Derzeit auf Eis."
+      }
+    }
   },
   "contact": {
     "title": "Kontakt",

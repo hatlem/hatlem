@@ -92,7 +92,45 @@
     "sourceCode": "{title} source code",
     "liveDemo": "{title} live",
     "onIce": "On Ice",
-    "andMore": "...and many more projects under Getia."
+    "andMore": "...and many more projects under Getia.",
+    "items": {
+      "attorly": {
+        "description": "AI legal help for individuals, businesses and lawyers.",
+        "longDescription": "Describe what happened, and Attorly works out what the case is about, drafts the letters and keeps track of the deadlines."
+      },
+      "tenderen": {
+        "description": "Find public tenders and write the bid together with AI.",
+        "longDescription": "Tender monitoring and AI bid writing for suppliers bidding on public contracts in Norway and Europe: search Doffin, TED and more sources, get alerts and draft the bid."
+      },
+      "getintent": {
+        "description": "AI landing page personalization based on visitor search intent.",
+        "longDescription": "Rewrites landing page headlines and calls to action to match what each visitor searched for, so the page answers the question they came with."
+      },
+      "faceshot": {
+        "description": "AI headshot generator: one selfie, a professional headshot.",
+        "longDescription": "Upload a selfie and get a LinkedIn-ready professional headshot in under a minute, without booking a photographer."
+      },
+      "shotvista": {
+        "description": "AI photo editing for real estate photographers.",
+        "longDescription": "Sky replacement, virtual staging, twilight conversions, delivery pages and payments in one workflow for real estate photographers."
+      },
+      "portifer": {
+        "description": "Product seeding and testing platform for consumer brands.",
+        "longDescription": "Choose recipients, ship with your own carrier accounts, track every parcel and collect photo, video and survey feedback in one place."
+      },
+      "getcookies": {
+        "description": "Cookie consent management platform for GDPR and CCPA.",
+        "longDescription": "Self-service cookie consent: cookie scanning, script blocking, consent logs, Google Consent Mode v2 on every plan and IAB TCF 2.3 from Pro."
+      },
+      "burnbacon": {
+        "description": "AI-powered fitness and nutrition coaching with personalized meal plans and workout tracking.",
+        "longDescription": "My first AI project, vibe coded in early 2023. AI-powered fitness and nutrition coaching with personalized meal plans, workout tracking and AI coaches."
+      },
+      "utelivskartet": {
+        "description": "Norwegian nightlife discovery platform mapping bars, clubs, and venues.",
+        "longDescription": "Guide to Norwegian nightlife: discover bars, clubs and venues across Norway. Currently on ice."
+      }
+    }
   },
   "contact": {
     "title": "Contact",

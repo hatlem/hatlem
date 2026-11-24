@@ -8,6 +8,8 @@ import { locales, defaultLocale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
+import { PageHero } from "@/components/ui/PageHero";
+import { formatPostDate } from "@/lib/dates";
 import { SITE_URL, SITE_NAME, ogLocaleMap, getCanonicalUrl } from "@/lib/seo";
 
 interface Props {
@@ -63,7 +65,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const ArrowLeft = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M9.5 6H2.5M5.5 3L2.5 6L5.5 9" />
   </svg>
 );
@@ -128,75 +130,57 @@ export default async function BlogPostPage({ params }: Props) {
     <>
       <JsonLd data={articleJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
-      <article className="pt-32 pb-32">
-        <div className="mx-auto max-w-3xl px-6 lg:px-8">
-          {/* Terminal breadcrumb */}
-          <ScrollReveal>
-            <div className="mb-8 font-mono text-xs text-muted">
-              <Link href="/" className="link-hover">
-                ~
+      <article>
+        <PageHero
+          compact
+          second={26}
+          title={post.title}
+          eyebrow={
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-sm text-cream-dim">
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 text-cream transition-colors hover:text-aurora"
+              >
+                <ArrowLeft />
+                {t("backToBlog")}
               </Link>
-              <span className="text-border"> / </span>
-              <Link href="/blog" className="link-hover">
-                blog
-              </Link>
-              <span className="text-border"> / </span>
-              <span className="text-aurora">{slug}</span>
-            </div>
-          </ScrollReveal>
-
-          {/* Header */}
-          <ScrollReveal delay={0.05}>
-            <div className="mb-4 flex items-center gap-4 font-mono text-[10px] uppercase tracking-wider text-muted">
-              <time>
-                {new Date(post.date).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
-              <span className="text-border">/</span>
+              <span aria-hidden="true" className="text-white/20">·</span>
+              <time dateTime={post.date}>{formatPostDate(post.date, locale, "long")}</time>
+              <span aria-hidden="true" className="text-white/20">·</span>
               <span>{post.readingTime}</span>
             </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.1}>
-            <h1 className="mb-6 font-serif text-4xl text-cream leading-tight sm:text-5xl">
-              {post.title}
-            </h1>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.15}>
-            <div className="mb-10 flex flex-wrap gap-2">
+          }
+        >
+          {post.tags.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
-                <span key={tag} className="tag">
+                <span key={tag} className="chip">
                   {tag}
                 </span>
               ))}
             </div>
+          )}
+        </PageHero>
+
+        <div className="mx-auto max-w-3xl px-6 pb-28 pt-6 lg:px-8">
+          {post.excerpt && (
+            <ScrollReveal>
+              <p className="mb-12 font-serif text-2xl leading-snug text-cream md:text-[1.7rem]">
+                {post.excerpt}
+              </p>
+            </ScrollReveal>
+          )}
+
+          <ScrollReveal delay={0.05}>
+            <div className="prose-custom" dangerouslySetInnerHTML={{ __html: post.content }} />
           </ScrollReveal>
 
-          {/* Divider */}
-          <ScrollReveal delay={0.18}>
-            <div className="divider mb-12" />
-          </ScrollReveal>
-
-          {/* Content */}
-          <ScrollReveal delay={0.2}>
-            <div
-              className="prose-custom"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-          </ScrollReveal>
-
-          {/* Footer nav */}
-          <ScrollReveal delay={0.1}>
-            <div className="mt-16 border-t border-border pt-8">
-              <Link
-                href="/blog"
-                className="link-hover inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted"
-              >
-                <ArrowLeft />
+          <ScrollReveal>
+            <div className="mt-20 border-t border-white/[0.07] pt-8">
+              <Link href="/blog" className="soft-card group inline-flex items-center gap-3 px-6 py-4 text-cream">
+                <span className="transition-transform group-hover:-translate-x-1">
+                  <ArrowLeft />
+                </span>
                 {t("backToBlog")}
               </Link>
             </div>

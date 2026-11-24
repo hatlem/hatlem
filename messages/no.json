@@ -92,7 +92,45 @@
     "sourceCode": "{title} kildekode",
     "liveDemo": "{title} live",
     "onIce": "På Is",
-    "andMore": "...og mange flere prosjekter under Getia."
+    "andMore": "...og mange flere prosjekter under Getia.",
+    "items": {
+      "attorly": {
+        "description": "AI-juridisk hjelp for privatpersoner, bedrifter og advokater.",
+        "longDescription": "Fortell hva som har skjedd, så finner Attorly ut hva saken handler om, skriver brevene og holder styr på fristene."
+      },
+      "tenderen": {
+        "description": "Finn offentlige anbud og skriv tilbudet sammen med AI.",
+        "longDescription": "Anbudsovervåking og AI-skriving av tilbud for leverandører som byr på offentlige kontrakter i Norge og Europa: søk i Doffin, TED og flere kilder, få varsler og lag utkast til tilbudet."
+      },
+      "getintent": {
+        "description": "AI-tilpassede landingssider basert på hva besøkende søkte etter.",
+        "longDescription": "Skriver om overskrifter og handlingsknapper på landingssiden etter hva hver besøkende søkte på, så siden svarer på spørsmålet de kom med."
+      },
+      "faceshot": {
+        "description": "AI-portrettbilder: én selfie, et profesjonelt portrett.",
+        "longDescription": "Last opp en selfie og få et profesjonelt portrett klart for LinkedIn på under ett minutt, uten å bestille fotograf."
+      },
+      "shotvista": {
+        "description": "AI-bilderedigering for eiendomsfotografer.",
+        "longDescription": "Himmelbytte, virtuell møblering, skumringsbilder, leveringssider og betaling i én arbeidsflyt for eiendomsfotografer."
+      },
+      "portifer": {
+        "description": "Plattform for produktutsendelser og produkttesting for forbrukermerker.",
+        "longDescription": "Velg mottakere, send med egne fraktavtaler, følg hver pakke og samle bilder, video og spørreundersøkelser på ett sted."
+      },
+      "getcookies": {
+        "description": "Plattform for samtykke til informasjonskapsler etter GDPR og CCPA.",
+        "longDescription": "Selvbetjent samtykke til informasjonskapsler: skanning, blokkering av skript, samtykkelogg, Google Consent Mode v2 i alle planer og IAB TCF 2.3 fra Pro."
+      },
+      "burnbacon": {
+        "description": "AI-drevet trenings- og kostholdsveiledning med personlige måltidsplaner og treningslogg.",
+        "longDescription": "Mitt første AI-prosjekt, vibe-kodet tidlig i 2023. AI-drevet trenings- og kostholdsveiledning med personlige måltidsplaner, treningslogg og AI-trenere."
+      },
+      "utelivskartet": {
+        "description": "Kart over norsk uteliv med barer, klubber og utesteder.",
+        "longDescription": "Guide til norsk uteliv: finn barer, klubber og utesteder over hele Norge. Ligger på is for øyeblikket."
+      }
+    }
   },
   "contact": {
     "title": "Kontakt",

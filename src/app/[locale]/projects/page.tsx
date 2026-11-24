@@ -80,7 +80,7 @@ export default async function ProjectsPage({ params }: Props) {
                     </span>
                     <div>
                       <h2 className="font-serif text-2xl text-cream">{project.title}</h2>
-                      <p className="mt-0.5 text-sm text-cream-dim">{project.description}</p>
+                      <p className="mt-0.5 text-sm text-cream-dim">{t(`items.${project.slug}.description`)}</p>
                     </div>
                   </div>
                   {project.status === "on-ice" && (
@@ -89,7 +89,7 @@ export default async function ProjectsPage({ params }: Props) {
                 </header>
 
                 <p className="relative mt-6 flex-1 leading-relaxed text-cream-dim">
-                  {project.longDescription}
+                  {t(`items.${project.slug}.longDescription`)}
                 </p>
 
                 <div className="relative mt-6 flex flex-wrap gap-2">

@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/config";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/ui/PageHero";
+import { formatPostDate } from "@/lib/dates";
 import { SITE_NAME, ogLocaleMap, getCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 
 interface Props {
@@ -39,8 +40,6 @@ const ArrowIcon = () => (
   </svg>
 );
 
-const dateLocale: Record<string, string> = { no: "nb-NO", en: "en-GB", de: "de-DE" };
-
 export default async function BlogPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -49,8 +48,7 @@ export default async function BlogPage({ params }: Props) {
   const allPosts = getPosts(locale as Locale);
   const featured = allPosts.filter((p) => p.featured);
   const rest = allPosts.filter((p) => !p.featured);
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString(dateLocale[locale] ?? "nb-NO", { year: "numeric", month: "short" });
+  const formatDate = (date: string) => formatPostDate(date, locale);
 
   return (
     <>

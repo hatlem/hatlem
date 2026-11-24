@@ -27,10 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="dark" data-scroll-behavior="smooth">
-      <body
-        className={`${fraunces.variable} ${inter.variable} antialiased`}
-      >
+    <html className={`dark ${fraunces.variable} ${inter.variable}`} data-scroll-behavior="smooth">
+      <body className="antialiased">
         {children}
         {process.env.NODE_ENV === "development" && <Agentation endpoint="http://localhost:4747" />}
       </body>
